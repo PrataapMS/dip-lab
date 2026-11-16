@@ -14,7 +14,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.3.0",
@@ -23,6 +25,7 @@
     "preact": "^11.2.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.8",
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
