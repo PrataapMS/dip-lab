@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Called by CI after verify passes on a major version bump on main, or run manually.
-# A manual run verifies the code itself before deploying.
+# Called by CI after verify and e2e pass on a major version bump on main, or run manually.
+# A manual run verifies the code itself before deploying. Each deploy tags a release.
 on:
   workflow_call:
   workflow_dispatch:
@@ -67,3 +67,23 @@ jobs:
               || { echo "::error::$URL$path not reachable"; exit 1; }
           done
           echo "### Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+  # Tags the deployed commit vX.Y.Z and publishes a GitHub Release with generated notes.
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p 'require("./package.json").version')"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists"; exit 0
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "Dip Lab $tag" --generate-notes
+          echo "### Released $tag" >> "$GITHUB_STEP_SUMMARY"

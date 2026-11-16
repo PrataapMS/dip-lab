@@ -110,7 +110,7 @@ jobs:
     needs: [verify, e2e, release-check]
     if: needs.release-check.outputs.deploy == 'true'
     permissions:
-      contents: read
+      contents: write # release tag
       pages: write
       id-token: write
     uses: ./.github/workflows/deploy.yml
