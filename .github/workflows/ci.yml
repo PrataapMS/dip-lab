@@ -79,6 +79,8 @@ jobs:
           path: dist
 
       - run: npm run test:e2e
+      # Airplane mode: a full session with the network off, served from the service worker cache.
+      - run: node e2e/offline.mjs
 
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
