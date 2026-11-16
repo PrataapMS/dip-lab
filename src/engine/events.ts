@@ -1,4 +1,4 @@
-import { daysFromCivil, type IsoDate, toDayNumber } from './calendar';
+import { dayNumbersOf, daysFromCivil, type IsoDate, toDayNumber } from './calendar';
 import { jumpSize } from './factors';
 import type { Instrument } from './instruments';
 import { BARS_PER_DAY } from './intraday';
@@ -78,21 +78,10 @@ function firstOnOrAfter(dayNumbers: readonly number[], target: number): number {
   return lo < dayNumbers.length ? lo : -1;
 }
 
-const dayNumberCache = new WeakMap<readonly IsoDate[], number[]>();
-
-function dayNumbers(dates: readonly IsoDate[]): number[] {
-  let nums = dayNumberCache.get(dates);
-  if (!nums) {
-    nums = dates.map(toDayNumber);
-    dayNumberCache.set(dates, nums);
-  }
-  return nums;
-}
-
 /** Days in the run when a ticker reports earnings (one per quarter in the run). */
 export function earningsDays(dates: readonly IsoDate[], ticker: string): number[] {
   if (dates.length === 0) return [];
-  const nums = dayNumbers(dates);
+  const nums = dayNumbersOf(dates);
   const first = nums[0] ?? 0;
   const last = nums[nums.length - 1] ?? 0;
   const slot = earningsSlot(ticker);

@@ -3,10 +3,12 @@ import {
   type AccountSettings,
   type AccountState,
   createAccount,
+  type DividendPayment,
   DEFAULT_ACCOUNT_SETTINGS,
   type Fill,
   type MarketTime,
   markToMarket,
+  payDividends,
   type PositionMark,
   recordClose,
   type SectorSlice,
@@ -24,6 +26,7 @@ import {
 } from './clock';
 import { halfSpread } from './costs';
 import { BARS_PER_DAY, POINTS_PER_DAY } from './intraday';
+import { type Dividend, reinvestFactors } from './dividends';
 import { type BuiltMarket, type DayBars, dayBars } from './market';
 import { cancelOrder, expireDayOrders, type Order, type OrderDraft, placeOrder, processOrders, type SegmentQuote } from './orders';
 import { REFERENCE_MARKET_VOL } from './regimes';
@@ -38,6 +41,9 @@ export interface AccountView {
   realised: number;
   feesPaid: number;
   spreadPaid: number;
+  dividendsReceived: number;
+  /** Newest first. */
+  recentDividends: DividendPayment[];
   /** Account value at the previous close (starting cash on the first day). */
   prevCloseValue: number;
   positions: PositionMark[];
@@ -64,11 +70,22 @@ export class Run {
   private bars: DayBars;
   private barsDay: number;
   private readonly tickerIndex: Map<string, number>;
+  /** Dividends by day. */
+  private readonly dividendsByDay: Map<number, Dividend[]>;
+  /** SPY with dividends reinvested is worth price × indexFactor[day]. */
+  readonly indexFactor: Float64Array;
 
   constructor(market: BuiltMarket, settings: AccountSettings = DEFAULT_ACCOUNT_SETTINGS, dayLengthMs = DEFAULT_DAY_LENGTH_MS) {
     this.market = market;
     this.tickerIndex = new Map(market.instruments.map((inst, i) => [inst.ticker, i]));
     this.indexInstrument = this.tickerIndex.get('SPY') ?? -1;
+    this.dividendsByDay = new Map();
+    for (const d of market.dividends) {
+      const list = this.dividendsByDay.get(d.day) ?? [];
+      list.push(d);
+      this.dividendsByDay.set(d.day, list);
+    }
+    this.indexFactor = reinvestFactors(market.dividends, this.indexInstrument, market.closes[this.indexInstrument] ?? [], market.dates.length);
     this.clock = createClock(market.dates.length, dayLengthMs);
     this.account = createAccount(settings);
     this.bars = dayBars(market, 0);
@@ -94,6 +111,17 @@ export class Run {
       this.barsDay = this.clock.day;
     }
     return this.bars;
+  }
+
+  /** SPY's total-return level (dividends reinvested) at closes index k: 0 = before day 0. */
+  indexClose(k: number): number {
+    const price = this.market.closes[this.indexInstrument]?.[k] ?? 0;
+    return k === 0 ? price : price * (this.indexFactor[k - 1] ?? 1);
+  }
+
+  /** Dividends going ex on a day. */
+  dividendsOn(day: number): readonly Dividend[] {
+    return this.dividendsByDay.get(day) ?? [];
   }
 
   /** Current price of instrument i. */
@@ -135,6 +163,8 @@ export class Run {
       realised: a.realised,
       feesPaid: a.feesPaid,
       spreadPaid: a.spreadPaid,
+      dividendsReceived: a.dividendsReceived,
+      recentDividends: a.dividends.slice(-RECENT_FILLS).reverse(),
       prevCloseValue: day > 0 ? (a.equityByDay[day - 1] ?? a.settings.startingCash) : a.settings.startingCash,
       positions: m.positions,
       sectorMix: m.sectorMix,
@@ -191,7 +221,8 @@ export class Run {
         };
       };
     } else {
-      // Overnight: the next day opens, possibly with a gap.
+      // Overnight: holders at the close get any dividends, then the next day opens, possibly with a gap.
+      this.account = payDividends(this.account, this.dividendsOn(at.day), at);
       const { points } = this.todayBars();
       quote = (ticker) => {
         const i = this.tickerIndex.get(ticker);

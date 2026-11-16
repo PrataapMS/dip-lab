@@ -50,6 +50,15 @@ export interface Fill {
   at: MarketTime;
 }
 
+/** Cash paid on shares held at the close before an ex-dividend date. */
+export interface DividendPayment {
+  ticker: string;
+  shares: number;
+  perShare: number;
+  amount: number;
+  at: MarketTime;
+}
+
 export interface AccountState {
   settings: AccountSettings;
   cash: number;
@@ -60,6 +69,8 @@ export interface AccountState {
   /** Cost of crossing the bid-ask spread, summed over all fills. */
   spreadPaid: number;
   fills: Fill[];
+  dividends: DividendPayment[];
+  dividendsReceived: number;
   /** Account value at each close so far. */
   equityByDay: number[];
   /** Every order placed, oldest first, whatever its status. */
@@ -99,6 +110,8 @@ export function createAccount(settings: AccountSettings = DEFAULT_ACCOUNT_SETTIN
     feesPaid: 0,
     spreadPaid: 0,
     fills: [],
+    dividends: [],
+    dividendsReceived: 0,
     equityByDay: [],
     orders: [],
     nextOrderId: 1,
@@ -264,6 +277,23 @@ export function markToMarket(state: AccountState, quote: (ticker: string) => Quo
     .map(([sector, value]) => ({ sector, value, share: holdingsValue > 0 ? value / holdingsValue : 0 }))
     .sort((a, b) => b.value - a.value || a.sector.localeCompare(b.sector));
   return { cash: state.cash, holdingsValue, value: state.cash + holdingsValue, unrealised, positions, sectorMix };
+}
+
+/** Pay dividends on shares held now (call at the ex-date open, before any trading). */
+export function payDividends(state: AccountState, due: readonly { ticker: string; perShare: number }[], at: MarketTime): AccountState {
+  const paid: DividendPayment[] = [];
+  for (const d of due) {
+    const shares = state.positions[d.ticker]?.shares ?? 0;
+    if (shares > 0 && d.perShare > 0) paid.push({ ticker: d.ticker, shares, perShare: d.perShare, amount: shares * d.perShare, at });
+  }
+  if (paid.length === 0) return state;
+  const total = paid.reduce((s, p) => s + p.amount, 0);
+  return {
+    ...state,
+    cash: state.cash + total,
+    dividends: [...state.dividends, ...paid],
+    dividendsReceived: state.dividendsReceived + total,
+  };
 }
 
 /** Record the account value at a day's close. */

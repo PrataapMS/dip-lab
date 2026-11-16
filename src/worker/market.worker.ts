@@ -51,7 +51,8 @@ function dayPayload(r: Run): Extract<WorkerEvent, { type: 'day' }> {
     type: 'day',
     day,
     prevCloses: Float32Array.from(r.market.closes, (c) => c[day] ?? 0),
-    indexHistory: r.indexInstrument < 0 ? [] : closesUpTo(r, r.indexInstrument, day, day + 1),
+    indexHistory: r.indexInstrument < 0 ? [] : Array.from({ length: day + 1 }, (_, k) => r.indexClose(k)),
+    indexFactor: r.indexFactor[day] ?? 1,
     watch: watchSeries(r, day),
     marketVol: r.market.factors.vols[day] ?? REFERENCE_MARKET_VOL,
   };
@@ -85,7 +86,7 @@ function emitTick(): void {
       day: r.clock.day,
       bar: r.clock.bar,
       prices,
-      indexToday: r.indexInstrument < 0 ? [] : r.today(r.indexInstrument),
+      indexToday: r.indexInstrument < 0 ? [] : r.today(r.indexInstrument).map((p) => p * (r.indexFactor[r.clock.day] ?? 1)),
       focus: inspected && focusIndex !== undefined ? { ticker: inspected, values: r.today(focusIndex) } : null,
       playing: r.clock.playing,
       finished: r.finished,

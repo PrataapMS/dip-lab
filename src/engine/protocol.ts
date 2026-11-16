@@ -63,8 +63,10 @@ export type WorkerEvent =
       day: number;
       /** Previous close per instrument, in `instruments` order. */
       prevCloses: Float32Array;
-      /** Market index closes from the start up to the previous close (day + 1 values). */
+      /** Market index closes from the start up to the previous close (day + 1 values), with dividends reinvested. */
       indexHistory: number[];
+      /** Today's index price × this = its total-return level (dividends reinvested). */
+      indexFactor: number;
       /** Recent closes (up to the previous close) for each watched ticker. */
       watch: Series[];
       /** Annualised market volatility today; spreads widen when it is high. */
@@ -76,7 +78,7 @@ export type WorkerEvent =
       bar: number;
       /** Current price per instrument, in `instruments` order. */
       prices: Float32Array;
-      /** Market index price at each bar so far today (bar + 1 values). */
+      /** Market index total-return level at each bar so far today (bar + 1 values). */
       indexToday: number[];
       /** The inspected ticker's price at each bar so far today. */
       focus: Series | null;

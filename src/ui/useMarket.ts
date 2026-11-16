@@ -41,6 +41,8 @@ export interface MarketView {
   marketVol: number;
   /** Market index closes up to yesterday. */
   indexHistory: number[];
+  /** Today's SPY price × this = its level with dividends reinvested. */
+  indexFactor: number;
   /** Market index price at each bar so far today. */
   indexToday: number[];
   /** Recent closes per watched ticker. */
@@ -75,6 +77,7 @@ export const initialView: MarketView = {
   prevCloses: EMPTY,
   marketVol: REFERENCE_MARKET_VOL,
   indexHistory: [],
+  indexFactor: 1,
   indexToday: [],
   watch: {},
   history: null,
@@ -120,7 +123,7 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'day': {
       const watch: Record<string, number[]> = {};
       for (const s of e.watch) watch[s.ticker] = s.values;
-      return { ...state, day: e.day, prevCloses: e.prevCloses, indexHistory: e.indexHistory, watch, marketVol: e.marketVol };
+      return { ...state, day: e.day, prevCloses: e.prevCloses, indexHistory: e.indexHistory, indexFactor: e.indexFactor, watch, marketVol: e.marketVol };
     }
     case 'tick': {
       const history =

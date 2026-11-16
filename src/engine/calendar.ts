@@ -155,3 +155,15 @@ export function tradingDaysFrom(start: IsoDate, count: number): IsoDate[] {
   for (let n = toDayNumber(start); out.length < count; n++) if (isTradingDayNumber(n)) out.push(fromDayNumber(n));
   return out;
 }
+
+const dayNumberCache = new WeakMap<readonly IsoDate[], number[]>();
+
+/** Day numbers of a list of dates, cached per list (a run's dates are reused a lot). */
+export function dayNumbersOf(dates: readonly IsoDate[]): number[] {
+  let nums = dayNumberCache.get(dates);
+  if (!nums) {
+    nums = dates.map(toDayNumber);
+    dayNumberCache.set(dates, nums);
+  }
+  return nums;
+}

@@ -20,10 +20,15 @@ export function runChange(view: MarketView): { value: number; dollars: number; p
   return { value, dollars: value - start, pct: start ? value / start - 1 : 0 };
 }
 
-/** SPY's change since the run started, as a fraction. */
+/** SPY's level now with dividends reinvested, comparable with `indexHistory`. */
+export function spyNow(view: MarketView): number {
+  return (view.prices[view.indexInstrument] ?? 0) * view.indexFactor;
+}
+
+/** SPY's change since the run started (dividends reinvested), as a fraction. */
 export function spyChange(view: MarketView): number {
   const start = view.indexHistory[0];
-  const now = view.prices[view.indexInstrument];
+  const now = spyNow(view);
   return start && now ? now / start - 1 : 0;
 }
 

@@ -2,7 +2,7 @@ import { describeOrder } from '../../engine/orders';
 import { CompareChart, rebased } from '../CompareChart';
 import { money, shares, signedMoney, signedPct, upDown } from '../format';
 import { formatRoute } from '../router';
-import { spyChange } from '../Shell';
+import { spyChange, spyNow } from '../Shell';
 import type { Market } from '../useMarket';
 
 /** Slices beyond this many sectors are merged into "Other". */
@@ -26,8 +26,7 @@ export function Portfolio({ market }: { market: Market }) {
   const todayPct = a.prevCloseValue ? today / a.prevCloseValue : 0;
   const total = a.value / start - 1;
   const spy = spyChange(view);
-  const spyNow = view.prices[view.indexInstrument] ?? 0;
-  const curves = rebased(start, a.equityByDay, a.value, view.indexHistory, spyNow, view.day);
+  const curves = rebased(start, a.equityByDay, a.value, view.indexHistory, spyNow(view), view.day);
   const slices = mixSlices(a.sectorMix, a.cash);
   const mixTotal = slices.reduce((s, x) => s + x.value, 0) || 1;
   const diffPts = (total - spy) * 100;
@@ -56,6 +55,12 @@ export function Portfolio({ market }: { market: Market }) {
           <dd class={upDown(total)}>
             {signedMoney(a.value - start, true)} ({signedPct(total)})
           </dd>
+          {a.dividendsReceived > 0 && (
+            <>
+              <dt>dividends</dt>
+              <dd class="up">{signedMoney(a.dividendsReceived, true)}</dd>
+            </>
+          )}
           <dt>SPY same period</dt>
           <dd class={upDown(spy)}>{signedPct(spy)}</dd>
           <dt>you vs SPY</dt>
@@ -79,7 +84,9 @@ export function Portfolio({ market }: { market: Market }) {
           capacity={view.dates.length + 1}
           label={`Your account ${signedPct(total)} against SPY ${signedPct(spy)} since the start, both rebased to 100`}
         />
-        <p class="tiny dim">Both start at 100. Above the dashed SPY line means you are beating buy-and-hold.</p>
+        <p class="tiny dim">
+          Both start at 100; SPY includes its dividends. Above the dashed SPY line means you are beating buy-and-hold.
+        </p>
       </section>
 
       <section class="panel">
@@ -164,6 +171,21 @@ export function Portfolio({ market }: { market: Market }) {
                 </span>
                 <span>@ {money(f.price, true)}</span>
                 {f.side === 'sell' && <span class={upDown(f.realised)}>{signedMoney(f.realised, true)}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {a.recentDividends.length > 0 && (
+          <ul class="fills mono">
+            {a.recentDividends.slice(0, 5).map((d, k) => (
+              <li key={`div-${k}`}>
+                <span class="dim">d{d.at.day + 1}</span>
+                <span class="accent">div</span>
+                <span>
+                  {shares(d.shares)} {d.ticker}
+                </span>
+                <span>× {money(d.perShare, true)}</span>
+                <span class="up">{signedMoney(d.amount, true)}</span>
               </li>
             ))}
           </ul>
