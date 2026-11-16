@@ -346,4 +346,16 @@ describe('market worker', () => {
     send({ type: 'loadSlot', slot: 2 });
     await vi.waitFor(() => expect(last('error').message).toMatch(/empty/));
   });
+
+  it('refuses to import a damaged run with a plain message', async () => {
+    send({
+      type: 'importRun',
+      slot: 0,
+      run: {
+        header: { config: { scenarioId: 'first-steps', seed: 1 } },
+        save: { format: 1, source: { scenarioId: 'first-steps', seed: 1 } },
+      } as never,
+    });
+    await vi.waitFor(() => expect(last('error').message).toMatch(/damaged/));
+  });
 });

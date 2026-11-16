@@ -162,7 +162,9 @@ export function SlotPicker({ market }: { market: Market }) {
         >
           Replace it and start
         </button>
-        <p class="tiny dim">The replaced run is deleted.</p>
+        <p class="tiny dim">
+          The replaced run is deleted. To keep it, export it from Settings first.
+        </p>
       </div>
     </div>
   );

@@ -1,12 +1,35 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { version } from '../../../package.json';
-import { emptyProgress } from '../../game/progress';
-import { checkName, DAY_LENGTHS, NAME_MAX, type PauseRule } from '../../game/settings';
-import { SLOTS, type SlotHeader } from '../../storage/slots';
+import { emptyProgress, migrate } from '../../game/progress';
+import {
+  checkName,
+  DAY_LENGTHS,
+  migrateSettings,
+  NAME_MAX,
+  type PauseRule,
+} from '../../game/settings';
+import {
+  type BackupFile,
+  backupFileName,
+  describeBackup,
+  isFullBackup,
+  makeBackup,
+  parseBackup,
+} from '../../storage/backup';
+import { save as saveRecord } from '../../storage/db';
+import {
+  freeSlot,
+  SLOTS,
+  type SlotBody,
+  type SlotHeader,
+  slotToReplace,
+} from '../../storage/slots';
+import { deliverFile } from '../files';
+import { navigate } from '../router';
 import { BackIcon } from '../icons';
 import { SlotSummary } from '../Slots';
 import type { Market } from '../useMarket';
-import { useProgress } from '../useProgress';
+import { today, useProgress } from '../useProgress';
 import { Choice } from './Scenarios';
 
 const PAUSE: { value: PauseRule; label: string }[] = [
@@ -92,15 +115,162 @@ function PlayerName() {
   );
 }
 
+function ImportPanel({
+  market,
+  file,
+  onDone,
+}: {
+  market: Market;
+  file: BackupFile;
+  /** Closes the panel; `message` is empty when cancelled, `slot` is where a run went. */
+  onDone: (message: string, slot?: number) => void;
+}) {
+  const { view, importRun, loadSlot, deleteSlot } = market;
+  const slots = view.slots ?? Array<SlotHeader | null>(SLOTS).fill(null);
+  const full = isFullBackup(file);
+  const [target, setTarget] = useState(() => freeSlot(slots) ?? slotToReplace(slots));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = file.runs[0];
+
+  const importOne = async () => {
+    if (!run) return;
+    const replacing = slots[target];
+    if (replacing && !confirm(`Replace the saved ${replacing.scenarioName} run?`)) return;
+    setBusy(true);
+    try {
+      await importRun(target, run);
+      // The run open now was replaced: open the imported one instead.
+      if (view.slot === target) loadSlot(target);
+      onDone(`Imported ${run.header.scenarioName} into slot ${target + 1}.`, target);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restoreAll = async () => {
+    if (
+      !confirm(
+        'Restore this backup? It replaces your progress, settings and every saved run on this device.',
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const runs = file.runs.slice(0, SLOTS);
+      for (let i = 0; i < runs.length; i++) await importRun(i, runs[i] as SlotBody);
+      for (let i = runs.length; i < SLOTS; i++) if (slots[i]) deleteSlot(i);
+      await saveRecord('progress', 'player', migrate(file.progress));
+      if (file.settings !== undefined)
+        await saveRecord('progress', 'settings', migrateSettings(file.settings));
+      // Start fresh so every screen reads the restored data.
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div class="panel stack gap-8 import-panel" role="group" aria-label="Import">
+      <span class="mono tiny accent">// IMPORT</span>
+      <p class="small strong">{describeBackup(file)}</p>
+      {full ? (
+        <>
+          <p class="tiny dim">
+            Restoring replaces your progress, settings and all {SLOTS} save slots on this device.
+          </p>
+          <button type="button" class="primary" disabled={busy} onClick={restoreAll}>
+            Restore this backup
+          </button>
+        </>
+      ) : (
+        <>
+          <span class="field-label">Into slot</span>
+          <div class="stack gap-6" role="radiogroup" aria-label="Save slot">
+            {slots.map((h, i) => (
+              <label key={i} class={`panel slot-choice ${target === i ? 'on' : ''}`}>
+                <input
+                  type="radio"
+                  name="import-slot"
+                  checked={target === i}
+                  onChange={() => setTarget(i)}
+                />
+                {h ? <SlotSummary h={h} /> : <span class="small dim">Slot {i + 1}: empty</span>}
+              </label>
+            ))}
+          </div>
+          <button type="button" class="primary" disabled={busy} onClick={importOne}>
+            {slots[target] ? 'Replace it with this run' : 'Import run'}
+          </button>
+        </>
+      )}
+      {error && (
+        <p class="small down" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" class="ghost" disabled={busy} onClick={() => onDone('')}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
 function SavesAndData({ market }: { market: Market }) {
-  const { view, deleteSlot } = market;
+  const { view, deleteSlot, exportSlots, loadSlot } = market;
+  const { progress, settings } = useProgress();
   const storage = useStorageInfo();
   const taken = (view.slots ?? []).filter((h): h is SlotHeader => !!h);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, setPending] = useState<BackupFile | null>(null);
+  const [opened, setOpened] = useState<number | null>(null);
+  const picker = useRef<HTMLInputElement>(null);
+
   const removeAll = () => {
     if (!taken.length) return;
     if (!confirm(`Delete all ${taken.length} saved runs? This can't be undone.`)) return;
     for (const h of taken) deleteSlot(h.slot);
   };
+  const fail = (err: unknown) =>
+    setMessage({ ok: false, text: err instanceof Error ? err.message : String(err) });
+
+  const exportFile = async (slots: number[], full: boolean) => {
+    setMessage(null);
+    setOpened(null);
+    try {
+      const runs = await exportSlots(slots);
+      const file = makeBackup({
+        app: version,
+        exportedAt: new Date().toISOString(),
+        ...(full ? { progress, settings } : {}),
+        runs,
+      });
+      const how = await deliverFile(backupFileName(file, today()), JSON.stringify(file));
+      setMessage({
+        ok: true,
+        text: how === 'downloaded' ? 'File saved to your downloads.' : 'Shared.',
+      });
+    } catch (err) {
+      fail(err);
+    }
+  };
+
+  const chooseFile = async (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    setMessage(null);
+    try {
+      setPending(parseBackup(await f.text()));
+    } catch (err) {
+      fail(err);
+    }
+  };
+
   return (
     <section class="panel stack gap-8" aria-labelledby="data-title">
       <h2 id="data-title" class="mono tiny accent">
@@ -112,9 +282,13 @@ function SavesAndData({ market }: { market: Market }) {
           <div key={h.slot} class="slot-row stack gap-6">
             <SlotSummary h={h} />
             <div class="row gap-8">
+              <button type="button" class="ghost grow" onClick={() => exportFile([h.slot], false)}>
+                Export
+              </button>
               <button
                 type="button"
                 class="ghost danger"
+                aria-label={`Delete ${h.scenarioName}`}
                 onClick={() => {
                   if (confirm(`Delete the saved ${h.scenarioName} run? This can't be undone.`))
                     deleteSlot(h.slot);
@@ -128,6 +302,66 @@ function SavesAndData({ market }: { market: Market }) {
       ) : (
         <p class="small">No saved runs yet.</p>
       )}
+      {pending ? (
+        <ImportPanel
+          market={market}
+          file={pending}
+          onDone={(text, slot) => {
+            setPending(null);
+            if (text) setMessage({ ok: true, text });
+            setOpened(slot ?? null);
+          }}
+        />
+      ) : (
+        <div class="row gap-8 wrap">
+          <button
+            type="button"
+            class="ghost grow"
+            onClick={() =>
+              exportFile(
+                taken.map((h) => h.slot),
+                true,
+              )
+            }
+          >
+            Back up everything
+          </button>
+          <button type="button" class="ghost grow" onClick={() => picker.current?.click()}>
+            Import a file
+          </button>
+          <input
+            ref={picker}
+            type="file"
+            accept="application/json,.json"
+            class="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={chooseFile}
+          />
+        </div>
+      )}
+      {message && (
+        <p class={`small ${message.ok ? '' : 'down'}`} role={message.ok ? 'status' : 'alert'}>
+          {message.text}{' '}
+          {message.ok && opened !== null && view.slot !== opened && (
+            <button
+              type="button"
+              class="link small"
+              onClick={() => {
+                const h = view.slots?.[opened];
+                loadSlot(opened);
+                if (h && !h.finished) navigate({ name: 'market' });
+              }}
+            >
+              Open it
+            </button>
+          )}
+        </p>
+      )}
+      <p class="tiny dim">
+        A backup holds your progress, settings and saved runs in one file. Keep it somewhere safe to
+        move Dip Lab to another device or browser.
+      </p>
       {taken.length > 1 && (
         <button type="button" class="ghost danger" onClick={removeAll}>
           Delete all saves

@@ -12,7 +12,7 @@ import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { customScenario, getScenario } from '../engine/scenarios';
 import type { ScenarioInfo } from '../engine/protocol';
-import { encodeSnapshots, type RunSource, restoreRun, saveRun } from '../engine/save';
+import { encodeSnapshots, type RunSource, restoreRun, SaveError, saveRun } from '../engine/save';
 import { daySummary } from '../engine/summary';
 import { deleteSlot, readHeaders, readSlot, writeSlot } from '../storage/saves';
 import {
@@ -20,6 +20,7 @@ import {
   chunksToWrite,
   createSaver,
   SLOTS,
+  type SlotBody,
   type SlotConfig,
   type SlotHeader,
 } from '../storage/slots';
@@ -424,6 +425,45 @@ async function removeSlot(s: number): Promise<void> {
   post({ type: 'slots', headers: [...headers] });
 }
 
+async function exportSlots(list: number[]): Promise<void> {
+  autosave();
+  await saver.idle();
+  const runs: SlotBody[] = [];
+  for (const s of list) {
+    const b = await readSlot(s);
+    if (b) runs.push(b);
+  }
+  post({ type: 'exported', runs });
+}
+
+/** Check a run from a file against its rebuilt market, then store it in a slot. */
+async function importRun(s: number, body: SlotBody): Promise<void> {
+  if (!Number.isInteger(s) || s < 0 || s >= SLOTS) throw new Error('No such save slot.');
+  try {
+    restoreRun(buildFor(body.header.config), body.save);
+  } catch (err) {
+    if (err instanceof SaveError) throw err;
+    throw new Error("This run is damaged and can't be opened.");
+  }
+  if (slot === s) {
+    // The run open now is being replaced: stop saving it over the import.
+    await saver.idle();
+    generation++;
+    slot = null;
+  }
+  const header: SlotHeader = { ...body.header, slot: s };
+  const snaps = body.save.snapshots;
+  const chunks = chunksToWrite(0, snaps.length).map((index) => ({
+    index,
+    snapshots: snaps.slice(index * CHUNK, (index + 1) * CHUNK),
+  }));
+  if (!(await writeSlot(header, body.save, chunks, true)))
+    throw new Error("Couldn't store the run on this device (storage is off or full).");
+  headers[s] = header;
+  post({ type: 'slots', headers: [...headers] });
+  post({ type: 'imported', slot: s });
+}
+
 /** Commands that touch storage: answered when it replies; errors go to the UI. */
 function handleAsync(cmd: Command): boolean {
   let job: Promise<void>;
@@ -439,6 +479,12 @@ function handleAsync(cmd: Command): boolean {
       break;
     case 'deleteSlot':
       job = removeSlot(cmd.slot);
+      break;
+    case 'exportSlots':
+      job = exportSlots(cmd.slots);
+      break;
+    case 'importRun':
+      job = importRun(cmd.slot, cmd.run);
       break;
     default:
       return false;

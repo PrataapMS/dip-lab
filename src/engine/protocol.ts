@@ -10,7 +10,7 @@ import type { Order, OrderDraft } from './orders';
 import type { CustomOptions } from './scenarios';
 import type { AccountView, BranchOf, EndReason, RunAlert } from './run';
 import type { DaySummary } from './summary';
-import type { SlotConfig, SlotHeader } from '../storage/slots';
+import type { SlotBody, SlotConfig, SlotHeader } from '../storage/slots';
 
 export type { AccountView } from './run';
 export type { Activity, HoldingFact } from './activity';
@@ -47,6 +47,10 @@ export type Command =
   | { type: 'deleteSlot'; slot: number }
   /** Save the current run now (the page is being hidden or closed); answered with `flushed`. */
   | { type: 'flush' }
+  /** Read whole slots for an export file (answered with `exported`). */
+  | { type: 'exportSlots'; slots: number[] }
+  /** Store a run from an export file in a slot, replacing what is there (answered with `imported`). */
+  | { type: 'importRun'; slot: number; run: SlotBody }
   /** Another tab took over: pause and stop saving, so this tab never overwrites its saves. */
   | { type: 'detach' }
   | { type: 'play' }
@@ -163,6 +167,8 @@ export type WorkerEvent =
   | { type: 'slots'; headers: (SlotHeader | null)[] }
   /** Everything asked for so far is written. */
   | { type: 'flushed' }
+  | { type: 'exported'; runs: SlotBody[] }
+  | { type: 'imported'; slot: number }
   | { type: 'account'; account: AccountView }
   | {
       type: 'history';

@@ -18,7 +18,7 @@ import type {
   Upcoming,
   WorkerEvent,
 } from '../engine/protocol';
-import { freeSlot } from '../storage/slots';
+import { freeSlot, type SlotBody } from '../storage/slots';
 
 export interface Notice {
   id: number;
@@ -278,6 +278,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       if (e.headers.some(Boolean)) askToPersist();
       return { ...state, slots: e.headers };
     case 'flushed':
+    case 'exported':
+    case 'imported':
       return state;
     case 'error':
       return { ...state, error: e.message, starting: false };
@@ -349,6 +351,44 @@ export function useMarket() {
     [send],
   );
   const deleteSlot = useCallback((slot: number) => send({ type: 'deleteSlot', slot }), [send]);
+  /** Send a command and wait for the event that answers it (or an error). */
+  const ask = useCallback(
+    <T extends WorkerEvent['type']>(cmd: Command, answer: T, timeoutMs = 30_000) =>
+      new Promise<Extract<WorkerEvent, { type: T }>>((resolve, reject) => {
+        const w = worker.current;
+        if (!w) return reject(new Error('The engine is not running.'));
+        const stop = () => {
+          clearTimeout(timer);
+          listeners.current.delete(onEvent);
+        };
+        const onEvent = (e: WorkerEvent) => {
+          if (e.type === answer) {
+            stop();
+            resolve(e as Extract<WorkerEvent, { type: T }>);
+          } else if (e.type === 'error') {
+            stop();
+            reject(new Error(e.message));
+          }
+        };
+        const timer = setTimeout(() => {
+          stop();
+          reject(new Error('The engine took too long to answer.'));
+        }, timeoutMs);
+        listeners.current.add(onEvent);
+        w.postMessage(cmd);
+      }),
+    [],
+  );
+  const exportSlots = useCallback(
+    async (slots: number[]) => (await ask({ type: 'exportSlots', slots }, 'exported')).runs,
+    [ask],
+  );
+  const importRun = useCallback(
+    async (slot: number, run: SlotBody) => {
+      await ask({ type: 'importRun', slot, run }, 'imported');
+    },
+    [ask],
+  );
   /** Pause and save now; resolves once written (or after a second at most). */
   const saveNow = useCallback(
     () =>
@@ -403,6 +443,8 @@ export function useMarket() {
     loadSlot,
     deleteSlot,
     saveNow,
+    exportSlots,
+    importRun,
     replayFrom,
     dismissNotice,
     dismissSummary,
