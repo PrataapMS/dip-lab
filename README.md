@@ -12,6 +12,7 @@
 ![PWA](https://img.shields.io/badge/PWA-offline%20%2B%20installable-5A0FC8?logo=pwa&logoColor=white&labelColor=0b0d14)
 ![No sign-up](https://img.shields.io/badge/accounts-none%20needed-c6ff3d?labelColor=0b0d14)
 ![No tracking](https://img.shields.io/badge/tracking-none-c6ff3d?labelColor=0b0d14)
+[![License: GPL v3+](https://img.shields.io/badge/license-GPL--3.0--or--later-blue?labelColor=0b0d14)](LICENSE)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Preact](https://img.shields.io/badge/Preact-673AB8?logo=preact&logoColor=white)
@@ -25,7 +26,8 @@
 [Install](#install-it-like-an-app) ·
 [FAQ](#faq) ·
 [Develop](#run-it-locally) ·
-[Roadmap](docs/ROADMAP.md)
+[Roadmap](docs/ROADMAP.md) ·
+[License](#license)
 
 </div>
 
@@ -263,6 +265,25 @@ src/
 
 Details in [docs/ROADMAP.md](docs/ROADMAP.md). Ideas and bug reports are welcome in
 [Issues](https://github.com/PrataapMS/dip-lab/issues).
+
+## License
+
+Dip Lab is free software: you can redistribute it and/or modify it under the terms of the
+[GNU General Public License](LICENSE) as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version.
+
+It is distributed in the hope that it will be useful, but **without any warranty**; without
+even the implied warranty of merchantability or fitness for a particular purpose. See the
+[LICENSE](LICENSE) file for details.
+
+Copyright © 2026 [PrataapMS](https://github.com/PrataapMS).
+
+### Third-party components
+
+| Component | License |
+| --- | --- |
+| [Preact](https://github.com/preactjs/preact) | MIT |
+| [Space Grotesk](https://github.com/floriankarsten/space-grotesk), [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono), [Silkscreen](https://github.com/googlefonts/silkscreen) (via Fontsource) | SIL Open Font License 1.1 |
 
 <div align="center">
 <sub>Prices are simulated. Nothing here is investment advice.</sub>
