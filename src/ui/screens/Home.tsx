@@ -8,6 +8,7 @@ import { BadgeIcon, FlameIcon, GROUP_COLOR, LockIcon } from '../BadgeIcon';
 import { money, signedPct, upDown } from '../format';
 import { GearIcon, PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
+import { InstallCard } from '../InstallCard';
 import { SavedRuns } from '../Slots';
 import { UpdateAlertsOptIn } from '../UpdateBanner';
 import type { Market } from '../useMarket';
@@ -254,6 +255,7 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
         </a>
       )}
 
+      <InstallCard />
       <SavedRuns market={market} />
       <Quests />
       <BadgeShelf />

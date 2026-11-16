@@ -25,6 +25,7 @@ import {
   slotToReplace,
 } from '../../storage/slots';
 import { deliverFile } from '../files';
+import { InstallRow } from '../InstallCard';
 import { play, setSoundEnabled, startAudio } from '../sound';
 import { navigate } from '../router';
 import { BackIcon } from '../icons';
@@ -513,6 +514,7 @@ export function Settings({ market }: { market: Market }) {
           // ABOUT
         </h2>
         <span class="mono small">Dip Lab v{version}</span>
+        <InstallRow />
         <p class="small dim">Prices are simulated. Nothing here is investment advice.</p>
         <p class="tiny dim">
           Works offline; no accounts, nothing leaves this device. App licensed GPL-3.0 or later;
