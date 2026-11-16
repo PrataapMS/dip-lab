@@ -371,6 +371,21 @@ function emitUpdates(changed: Order[]): void {
 }
 
 function loop(): void {
+  try {
+    loopOnce();
+  } catch (err) {
+    // A half-finished step can leave the run inconsistent: stop without saving it.
+    stopLoop();
+    generation++;
+    slot = null;
+    post({
+      type: 'crash',
+      message: err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err),
+    });
+  }
+}
+
+function loopOnce(): void {
   if (!run) {
     stopLoop();
     return;

@@ -208,6 +208,8 @@ export type WorkerEvent =
   | { type: 'orderUpdates'; orders: Order[] }
   /** Where "Next event" would stop now (null: nothing within its reach). */
   | { type: 'nextEvent'; next: NextEvent | null }
+  /** The engine failed while running; the UI shows its error screen. */
+  | { type: 'crash'; message: string }
   /** A one-off message for the notice stack. */
   | { type: 'notice'; ok: boolean; message: string }
   | { type: 'error'; message: string };

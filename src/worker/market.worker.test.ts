@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Command, WorkerEvent } from '../engine/protocol';
+import { Run } from '../engine/run';
 
 const events: WorkerEvent[] = [];
 const scope: {
@@ -347,6 +348,18 @@ describe('market worker', () => {
     // The next one is further on.
     expect(last('nextEvent').next?.stopDay).toBeGreaterThan(next?.stopDay ?? 0);
     expect(events.filter((e) => e.type === 'dayEnd')).toHaveLength(1);
+  });
+
+  it('stops and reports a crash when the engine fails while playing', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 3 });
+    const fail = vi.spyOn(Run.prototype, 'advance').mockImplementation(() => {
+      throw new Error('engine broke');
+    });
+    send({ type: 'play' });
+    vi.advanceTimersByTime(200);
+    fail.mockRestore();
+    expect(last('crash').message).toMatch(/engine broke/);
+    expect(events.filter((e) => e.type === 'crash')).toHaveLength(1);
   });
 
   it('reports errors instead of throwing', () => {

@@ -7,6 +7,13 @@ import '@fontsource/silkscreen/400.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import { App } from './app';
+import { CrashGuard } from './ui/ErrorScreen';
 
 const root = document.getElementById('app');
-if (root) render(<App />, root);
+if (root)
+  render(
+    <CrashGuard>
+      <App />
+    </CrashGuard>,
+    root,
+  );

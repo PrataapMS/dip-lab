@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { latestUnfinished } from './storage/slots';
 import { DEFAULT_ACCOUNT_SETTINGS } from './engine/account';
 import { Coach } from './ui/Coach';
+import { ErrorScreen } from './ui/ErrorScreen';
 import { HOME, type Route, useRoute } from './ui/router';
 import { navigate } from './ui/router';
 import { Badges } from './ui/screens/Badges';
@@ -125,6 +126,7 @@ export function App() {
     if (view.debrief) navigate({ name: 'debrief' });
   }, [view.debrief]);
 
+  if (view.crash) return <ErrorScreen error={view.crash} engine />;
   if (lock === 'elsewhere') return <OpenElsewhere takeOver={takeOver} />;
   if (lock === 'checking') return null;
 

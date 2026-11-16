@@ -20,6 +20,7 @@ import type {
   WorkerEvent,
 } from '../engine/protocol';
 import { freeSlot, type SlotBody } from '../storage/slots';
+import { setCrashFlush } from './ErrorScreen';
 
 export interface Notice {
   id: number;
@@ -105,6 +106,8 @@ export interface MarketView {
   slotPick: RunConfig | null;
   /** Where "Next event" would stop now. */
   next: NextEvent | null;
+  /** The engine failed; the app shows the error screen. */
+  crash: string | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -147,6 +150,7 @@ export const initialView: MarketView = {
   slots: null,
   slotPick: null,
   next: null,
+  crash: null,
 };
 
 /** News lines kept for the feed. */
@@ -291,6 +295,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'exported':
     case 'imported':
       return state;
+    case 'crash':
+      return { ...state, crash: e.message, playing: false };
     case 'nextEvent':
       return { ...state, next: e.next };
     case 'notice':
@@ -323,7 +329,13 @@ export function useMarket() {
       setView((s) => reduce(s, e.data));
       for (const fn of listeners.current) fn(e.data);
     };
+    // The engine itself failed (not a command it refused): show the error screen.
+    w.onerror = (e) => {
+      e.preventDefault();
+      setView((s) => ({ ...s, crash: e.message || 'The market engine stopped.' }));
+    };
     worker.current = w;
+    setCrashFlush(() => w.postMessage({ type: 'flush' } satisfies Command));
     w.postMessage({ type: 'listSlots' } satisfies Command);
     // Save when the page is hidden: on phones that may be the last chance before it is killed.
     const flush = () => {
@@ -336,6 +348,7 @@ export function useMarket() {
       window.removeEventListener('pagehide', flush);
       w.terminate();
       worker.current = null;
+      setCrashFlush(null);
     };
   }, []);
   const viewRef = useRef(view);

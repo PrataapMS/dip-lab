@@ -1997,3 +1997,10 @@ button:disabled {
   padding: 2px 0;
   text-align: right;
 }
+
+.crash-details pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
