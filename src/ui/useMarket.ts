@@ -39,6 +39,8 @@ export interface RunConfig {
   settings?: AccountSettings;
   targetReturn?: number;
   custom?: CustomOptions;
+  /** Set when the run is a challenge from the Learn tab. */
+  challenge?: string;
 }
 
 export interface MarketView {
@@ -256,7 +258,8 @@ export function useMarket() {
   const startRun = useCallback(
     (config: RunConfig) => {
       setView((s) => ({ ...s, ready: false, starting: true, error: null, config }));
-      send({ type: 'newRun', ...config });
+      const { challenge: _challenge, ...run } = config;
+      send({ type: 'newRun', ...run });
     },
     [send],
   );

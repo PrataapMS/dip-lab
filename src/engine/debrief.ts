@@ -94,6 +94,8 @@ export interface Debrief {
   branchOf: BranchOf | null;
   /** Losing sales near a low that then rebounded. */
   panicSells: number;
+  /** Positions still held at the end. */
+  endHoldings: number;
   /** Good calls worth a badge: the ticker, or null. */
   highlights: Highlights;
 }
@@ -585,6 +587,7 @@ export function debrief(run: Run): Debrief {
     grade,
     branchOf: run.branchOf,
     panicSells,
+    endHoldings: Object.values(a.positions).filter((p) => p.shares !== 0).length,
     highlights: highlights(run),
   };
 }

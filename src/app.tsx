@@ -27,7 +27,7 @@ function Screen({ route, market }: { route: Route; market: Market }) {
     case 'home':
       return <Home market={market} />;
     case 'learn':
-      return <Learn />;
+      return <Learn key={route.lesson ?? ''} market={market} lesson={route.lesson} />;
     case 'debrief':
       return <Debrief market={market} />;
     case 'badges':

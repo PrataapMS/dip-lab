@@ -1699,3 +1699,101 @@ button:disabled {
   font-size: 14px;
   font-weight: 700;
 }
+
+/* ---------- Learn ---------- */
+.lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.lesson-row.done {
+  opacity: 0.8;
+}
+
+.lesson-row.done .quest-check {
+  border: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.lesson-steps {
+  display: flex;
+  gap: 4px;
+}
+
+.lesson-steps span {
+  flex: 1;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.lesson-steps span.on {
+  background: var(--accent);
+}
+
+.lesson-card {
+  gap: 14px;
+}
+
+.lesson-card > p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 25px;
+}
+
+.answer {
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 12px;
+  justify-content: flex-start;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.answer.right {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.answer.wrong {
+  border-color: var(--down);
+  color: var(--down);
+}
+
+.challenge {
+  gap: 8px;
+}
+
+.challenge p {
+  margin: 0;
+}
+
+.challenge.locked {
+  border-style: dashed;
+  background: transparent;
+}
+
+.challenge-result {
+  gap: 4px;
+  border-color: var(--warn);
+}
+
+.challenge-result.passed {
+  border-color: var(--accent);
+}
+
+.challenge-result p {
+  margin: 0;
+}

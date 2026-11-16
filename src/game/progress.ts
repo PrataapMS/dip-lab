@@ -175,3 +175,26 @@ export function applyActivity(p: Progress, a: Activity, date: string, ctx: Badge
   }
   return { progress: grant(next, rewards), rewards };
 }
+
+/** A lesson's question answered right: XP the first time, plus quest and streak credit. */
+export function completeLesson(p: Progress, lesson: { id: string; title: string }, date: string, ctx: BadgeCtx = NO_LESSONS): { progress: Progress; rewards: Reward[] } {
+  const first = !p.lessons[lesson.id];
+  let next: Progress = first ? { ...p, lessons: { ...p.lessons, [lesson.id]: true } } : p;
+  const rewards: Reward[] = first ? [{ source: 'lesson', label: `Lesson: ${lesson.title}`, xp: XP.lesson, id: lesson.id }] : [];
+  next = grant(next, rewards);
+  const r = applyActivity(next, { kind: 'lessonDone', lesson: lesson.id }, date, ctx);
+  return { progress: r.progress, rewards: [...rewards, ...r.rewards] };
+}
+
+/** A challenge run finished: XP the first time its goal is met; the best grade is kept. */
+export function finishChallenge(
+  p: Progress,
+  c: { id: string; title: string; xp: number },
+  result: { passed: boolean; letter: string; score: number },
+): { progress: Progress; rewards: Reward[] } {
+  if (!result.passed) return { progress: p, rewards: [] };
+  const prev = p.challenges[c.id];
+  const rewards: Reward[] = prev ? [] : [{ source: 'challenge', label: `Challenge: ${c.title}`, xp: c.xp, id: c.id }];
+  const best = !prev || result.score > prev.score ? { letter: result.letter, score: result.score } : prev;
+  return { progress: grant({ ...p, challenges: { ...p.challenges, [c.id]: best } }, rewards), rewards };
+}

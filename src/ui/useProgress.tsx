@@ -3,11 +3,14 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'p
 import type { Activity, WorkerEvent } from '../engine/protocol';
 import { SCENARIOS } from '../engine/scenarios';
 import { levelFor } from '../game/levels';
-import { applyActivity, finishRun, migrate, type Progress, type Reward, type RunResult } from '../game/progress';
+import { applyActivity, completeLesson, finishChallenge, finishRun, migrate, type Progress, type Reward, type RunResult } from '../game/progress';
+import { challengeById } from '../learn/challenges';
+import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from './storage';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
+const BADGE_CTX = { lessonCount: LESSONS.length };
 /** Custom runs are difficulty 2, like the Custom card. */
 const CUSTOM_DIFFICULTY = 2;
 
@@ -42,6 +45,8 @@ export interface ProgressApi {
   update: (fn: (p: Progress) => { progress: Progress; rewards?: Reward[] }) => void;
   /** Record something the player did (glossary, lessons…) for quests and streaks. */
   record: (a: Activity) => void;
+  /** A lesson's question was answered right. */
+  finishLesson: (lesson: Lesson) => void;
 }
 
 const Ctx = createContext<ProgressApi | null>(null);
@@ -93,7 +98,8 @@ export function ProgressProvider({ market, children }: { market: Market; childre
     [notify],
   );
 
-  const record = useCallback((a: Activity) => update((p) => applyActivity(p, a, today())), [update]);
+  const record = useCallback((a: Activity) => update((p) => applyActivity(p, a, today(), BADGE_CTX)), [update]);
+  const finishLesson = useCallback((lesson: Lesson) => update((p) => completeLesson(p, lesson, today(), BADGE_CTX)), [update]);
 
   const { subscribe } = market;
   useEffect(
@@ -121,12 +127,20 @@ export function ProgressProvider({ market, children }: { market: Market; childre
           };
           update((p) => finishRun(p, result));
           record({ kind: 'runEnd', debrief: d, difficulty: result.difficulty, complete: result.complete, margin: !!v.settings?.margin });
+          const challenge = v.config?.challenge ? challengeById(v.config.challenge) : undefined;
+          if (challenge && challenge.scenarioId === d.scenarioId && v.seed === challenge.seed) {
+            const passed = result.complete && challenge.passed(d);
+            update((p) => finishChallenge(p, challenge, { passed, letter: d.grade.letter, score: d.grade.score }));
+          }
         }
       }),
     [subscribe, update, record],
   );
 
-  const api = useMemo(() => (progress ? { progress, run, update, record } : null), [progress, run, update, record]);
+  const api = useMemo(
+    () => (progress ? { progress, run, update, record, finishLesson } : null),
+    [progress, run, update, record, finishLesson],
+  );
   if (!api) return null;
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

@@ -4,6 +4,7 @@ import { endText } from '../DayCard';
 import { money, MINUS, signedPct } from '../format';
 import { PlusIcon, ReplayIcon } from '../icons';
 import { navigate } from '../router';
+import { challengeById } from '../../learn/challenges';
 import { RunRewards } from '../RunRewards';
 import { Term } from '../Term';
 import type { Market } from '../useMarket';
@@ -66,6 +67,8 @@ export function Debrief({ market }: { market: Market }) {
     navigate({ name: 'market' });
   };
   const branch = d.branchOf;
+  const challenge = view.config?.challenge ? challengeById(view.config.challenge) : undefined;
+  const challengePassed = !!challenge && (d.reason === 'lastDay' || d.reason === 'target') && challenge.passed(d);
 
   return (
     <>
@@ -83,6 +86,16 @@ export function Debrief({ market }: { market: Market }) {
       </header>
 
       {d.reason !== 'lastDay' && <p class="small dim">{endText(d.reason)}</p>}
+
+      {challenge && (
+        <section class={`panel challenge-result ${challengePassed ? 'passed' : ''}`}>
+          <span class={`mono tiny ${challengePassed ? 'accent' : 'warn'}`}>
+            // CHALLENGE · {challenge.title.toUpperCase()} · {challengePassed ? 'PASSED' : 'NOT YET'}
+          </span>
+          <p class="small">{challenge.goal}</p>
+          {!challengePassed && d.reason !== 'lastDay' && d.reason !== 'target' && <p class="tiny dim">Challenges count only when played to the last day.</p>}
+        </section>
+      )}
 
       {branch && (
         <section class="panel branch-compare">
