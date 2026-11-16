@@ -2,17 +2,24 @@ import { version } from '../../../package.json';
 import { money, signedPct, upDown } from '../format';
 import { PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
+import { levelFor } from '../../game/levels';
 import type { Market } from '../useMarket';
+import { useProgress } from '../useProgress';
 
 export function Home({ market }: { market: Market }) {
   const { view } = market;
   const hasRun = view.ready && !!view.scenario;
   const run = runChange(view);
+  const { progress } = useProgress();
+  const lv = levelFor(progress.xp);
   return (
     <>
       <header class="home-head">
         <h1 class="logo">DIP_LAB</h1>
         <span class="mono small dim">v{version.split('.').slice(0, 2).join('.')}</span>
+        <span class="lv-chip" title={`${lv.into} / ${lv.need} XP`}>
+          LV {lv.level} · {lv.rank}
+        </span>
       </header>
 
       {hasRun && (

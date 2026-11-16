@@ -10,6 +10,7 @@ import { Scenarios } from './ui/screens/Scenarios';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { type Market, useMarket } from './ui/useMarket';
+import { ProgressProvider } from './ui/useProgress';
 
 /** Screens that only make sense with a run loaded. */
 function needsRun(r: Route): boolean {
@@ -56,13 +57,15 @@ export function App() {
   }, [view.debrief]);
 
   return (
-    <div class="app">
-      {needsRun(route) && view.ready && <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>}
-      <main class="screen">
-        <Screen route={route} market={market} />
-      </main>
-      <Notices market={market} />
-      <TabBar route={route} hasRun={view.ready} />
-    </div>
+    <ProgressProvider market={market}>
+      <div class="app">
+        {needsRun(route) && view.ready && <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>}
+        <main class="screen">
+          <Screen route={route} market={market} />
+        </main>
+        <Notices market={market} />
+        <TabBar route={route} hasRun={view.ready} />
+      </div>
+    </ProgressProvider>
   );
 }

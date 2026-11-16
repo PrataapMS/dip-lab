@@ -1302,3 +1302,13 @@ button:disabled {
 .branch-compare {
   gap: 4px;
 }
+
+.lv-chip {
+  margin-left: auto;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--xp);
+  color: var(--bg);
+}

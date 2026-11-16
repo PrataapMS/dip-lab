@@ -235,10 +235,14 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
 export function useMarket() {
   const worker = useRef<Worker | null>(null);
   const [view, setView] = useState<MarketView>(initialView);
+  const listeners = useRef(new Set<(e: WorkerEvent) => void>());
 
   useEffect(() => {
     const w = new Worker(new URL('../worker/market.worker.ts', import.meta.url), { type: 'module' });
-    w.onmessage = (e: MessageEvent<WorkerEvent>) => setView((s) => reduce(s, e.data));
+    w.onmessage = (e: MessageEvent<WorkerEvent>) => {
+      setView((s) => reduce(s, e.data));
+      for (const fn of listeners.current) fn(e.data);
+    };
     worker.current = w;
     return () => {
       w.terminate();
@@ -263,7 +267,16 @@ export function useMarket() {
   );
   const dismissSummary = useCallback(() => setView((s) => ({ ...s, daySummary: null })), []);
   const dismissNotice = useCallback((id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })), []);
-  return { view, send, startRun, replayFrom, dismissNotice, dismissSummary };
+  /** Hear every worker event (after it is applied to the view). Returns an unsubscribe. */
+  const subscribe = useCallback((fn: (e: WorkerEvent) => void) => {
+    listeners.current.add(fn);
+    return () => {
+      listeners.current.delete(fn);
+    };
+  }, []);
+  /** Show a message in the notice stack. */
+  const notify = useCallback((ok: boolean, message: string) => setView((s) => ({ ...s, notices: addNotices(s, [{ ok, message }]) })), []);
+  return { view, send, startRun, replayFrom, dismissNotice, dismissSummary, subscribe, notify };
 }
 
 export type Market = ReturnType<typeof useMarket>;
