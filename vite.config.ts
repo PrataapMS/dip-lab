@@ -40,6 +40,8 @@ export default defineConfig({
         importScripts: ['sw-update.js'],
         // Control the first visit right away so it works offline without a reload.
         clientsClaim: true,
+        // The landing page (dist/welcome/, added by scripts/build-site.mjs) is a separate site.
+        navigateFallbackDenylist: [/\/welcome(\/|$)/],
       },
     }),
   ],
