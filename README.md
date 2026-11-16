@@ -55,14 +55,19 @@ same prices, same headlines, same earnings surprises. The only thing that change
 
 <table>
   <tr>
+    <td align="center" width="33%"><img src="docs/assets/home.png" alt="Home: level and XP, the run in progress with a Resume button, daily quests and badges" width="260"><br><b>Home</b><br><sub>Your run, quests, streak and badges</sub></td>
     <td align="center" width="33%"><img src="docs/assets/pick-run.png" alt="Pick your run: scenario cards with difficulty and boss runs" width="260"><br><b>Pick your run</b><br><sub>Nine scenarios plus a custom market</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/market.png" alt="Market screen with speed controls, index tiles, sector chips and watchlist" width="260"><br><b>Market</b><br><sub>Live clock, indexes, search, movers</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/stock.png" alt="Stock screen for AAPL with intraday chart, upcoming earnings and dividend tags" width="260"><br><b>Stock</b><br><sub>Intraday chart, events, quick facts</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/market.png" alt="Market screen with speed controls, the next event, index tiles, sector chips and an editable watchlist" width="260"><br><b>Market</b><br><sub>Live clock, next event, indexes, watchlist</sub></td>
   </tr>
   <tr>
+    <td align="center"><img src="docs/assets/stock.png" alt="Stock screen for AAPL with a watchlist star, intraday chart, upcoming earnings and dividend tags" width="260"><br><b>Stock</b><br><sub>Intraday chart, events, quick facts</sub></td>
     <td align="center"><img src="docs/assets/order.png" alt="Order sheet: buy $500 of AAPL with preview and risk check" width="260"><br><b>Order sheet</b><br><sub>Plain-English preview and risk check</sub></td>
     <td align="center"><img src="docs/assets/portfolio.png" alt="Portfolio: account value, return, dividends and a you-vs-SPY chart" width="260"><br><b>Portfolio</b><br><sub>Your equity curve vs the index</sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="docs/assets/debrief.png" alt="Run complete: grade A, +54.2% vs +12.4% for buy and hold SPY" width="260"><br><b>Debrief</b><br><sub>Grade, stats and replay</sub></td>
+    <td align="center"><img src="docs/assets/settings.png" alt="Settings: player name, day length, pause at each close and sound" width="260"><br><b>Settings</b><br><sub>Clock, sound, saves and backups</sub></td>
+    <td></td>
   </tr>
 </table>
 
@@ -79,36 +84,31 @@ flowchart LR
 ```
 
 1. **Pick your run.** Choose a scenario, starting cash ($1k to $1M) and fees, or build a custom market.
-2. **Trade.** Market hours tick by in 5-minute bars. Play, pause, skip to the close, or change speed (1x to 8x).
+2. **Trade.** Market hours tick by in 5-minute bars. Play, pause, skip to the close, jump to the next event, or change speed (1x to 8x, or as slow as real time).
 3. **React.** Earnings beats and misses, company news and scenario headlines move prices; dividends land in your cash.
 4. **Get graded.** See your return next to buy-and-hold SPY (with dividends), your worst drop, costs and the moments worth learning from.
 5. **Replay.** Same seed, same market. Try the plan you wish you'd had.
 
 ## Features
 
-### Available now
-
 | Area | What you get |
 | --- | --- |
-| **Stocks** | ~550 S&P 500 and popular Nasdaq names, plus index and sector ETFs (SPY, QQQ, DIA, IWM, ...). Search, sector filter, watchlist, top movers. |
+| **Stocks** | ~550 S&P 500 and popular Nasdaq names, plus index and sector ETFs (SPY, QQQ, DIA, IWM, ...). Search, sector filter, top movers, and a watchlist you edit (star any stock). |
 | **Orders** | Market, limit and stop orders. Buy by dollars or shares, fractional shares, day or until-cancelled. "Explain like I'm new" on every order type. |
 | **Realistic fills** | Bid/ask spread, optional commission ($0, $1 or $5 a trade), overnight gaps, stops that slip through gaps. |
 | **Risk check** | Every order shows how much of your account it puts at risk before you confirm. |
-| **Clock** | Real NYSE calendar with weekends and holidays skipped. Play, pause, skip to the close, 1x / 2x / 4x / 8x speed. |
+| **Clock** | Real NYSE calendar with weekends and holidays skipped. Play, pause, skip to the close, 1x to 8x, 5 minutes a day or real time. **Next event** plays ahead to the close before the next earnings report, ex-dividend date or headline for what you hold or watch. |
 | **Events** | Quarterly earnings with beats and misses, company news, scenario headlines, quarterly dividends with ex-dates. |
+| **Margin and shorts** | Borrow up to 2x with interest and margin calls, and sell short with borrow fees (unlocked as you level up). |
 | **Day summary** | At each close: you vs SPY, best and worst holding, the day's headline. |
 | **Portfolio** | Account value, cash, profit and loss, dividends received, and your equity curve against SPY. |
-| **Debrief** | A to F grade, return vs SPY, worst drawdown, win rate, costs paid, best and worst positions, and flagged moments. |
-| **Replay** | Rerun any market with the same seed. Share a seed and a friend gets the same market. |
+| **Debrief** | A to F grade, return vs SPY, worst drawdown, win rate, costs paid, best and worst positions, flagged moments, and the XP and badges the run earned. |
+| **Replay** | Rerun any market with the same seed, or jump back to the close before a flagged moment and try again. |
+| **Learn** | A guided first trade, glossary cards on every term, 12 short lessons and 8 fixed-market challenges. |
+| **Rewards** | XP, levels and ranks, daily quests, streaks and 24 badges. XP rewards good process, not lucky bets. |
+| **Saves** | Runs save themselves in 3 slots and reopen where you left off. Export a run, or back up everything to a file and import it on another device. |
+| **Settings** | Player name, default speed, pause at each close, sound, storage used, reset progress. |
 | **Offline app** | Installable PWA. Fonts and data ship inside the app; no network calls at runtime. |
-
-### Coming next
-
-- **Learn:** guided first trade, glossary tooltips, short lessons and challenges.
-- **Rewards:** XP, levels and ranks, daily quests, streaks and badges, unlockable scenarios.
-- **Replay a moment:** jump straight back to the day of a mistake and try again.
-- **More tools:** margin with margin calls, short selling.
-- **Polish:** autosave and save slots, export and import, settings, slower clock speeds.
 
 See the full [roadmap](docs/ROADMAP.md).
 
@@ -179,8 +179,9 @@ including all stock data, is cached on your device.
 <details>
 <summary><b>Where is my data stored?</b></summary>
 
-On your device only. Nothing is sent anywhere. Runs currently live in memory for the session;
-autosave and save slots are on the roadmap.
+On your device only (in the browser's storage). Nothing is sent anywhere. Runs save themselves
+into 3 slots as you play; Settings can export a run or back up everything to a file, which you
+can import on another device.
 </details>
 
 <details>
@@ -195,8 +196,10 @@ friend and race them on the same market.
 <summary><b>Are the companies and tickers real?</b></summary>
 
 The list of ~550 companies is based on well-known US stocks and ETFs, with approximate sectors,
-volatility and dividend yields. A few tickers may be out of date, and the Meme squeeze scenario
-adds a fictional company.
+volatility and dividend yields, and was last checked in November 2026. A few companies that were
+bought out since then (such as Electronic Arts) stay in, because every scenario ends before they
+left the market. Each company only appears in scenarios that start after it listed. The Meme
+squeeze scenario adds a fictional company.
 </details>
 
 ## Run it locally
@@ -242,8 +245,11 @@ flowchart LR
 
 ```
 src/
-├── engine/    market simulation, calendar, orders, account, events, debrief
-├── worker/    Web Worker that hosts the engine
+├── engine/    market simulation, calendar, orders, account, events, debrief, saves
+├── worker/    Web Worker that hosts the engine and writes saves
+├── game/      XP, levels, quests, badges, settings, watchlist
+├── learn/     glossary, lessons, challenges
+├── storage/   IndexedDB, save slots, export files
 ├── ui/        screens, charts, order sheet, formatting helpers
 ├── data/      stock and ETF universe
 └── styles/    design tokens and global styles
@@ -266,8 +272,9 @@ src/
 | 1 | Market engine: moods, sectors, intraday prices, trading calendar, stock list | ✅ |
 | 2 | Trading screens: market, stock, order sheet, portfolio | ✅ |
 | 3 | All scenarios, news and events, dividends, debrief and grades | ✅ |
-| 4 | Tutorial, glossary, lessons, challenges, XP and badges, margin and shorts | 🚧 |
-| 5 | Saves, settings, install prompt, offline polish, performance | ⏳ |
+| 4 | Tutorial, glossary, lessons, challenges, XP and badges, margin and shorts | ✅ |
+| 5 | Saves, settings, install prompt, offline polish, performance | ✅ |
+| 6 | Release 1.0: editable watchlist, next event, error screen, accessibility | 🚧 |
 
 Details in [docs/ROADMAP.md](docs/ROADMAP.md). Ideas and bug reports are welcome in
 [Issues](https://github.com/PrataapMS/dip-lab/issues).

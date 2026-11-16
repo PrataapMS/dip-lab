@@ -14,14 +14,14 @@ Prices are simulated. Nothing here is investment advice.
 - Covers bull runs, crashes, rebounds, bubbles, rate shocks, sideways markets and earnings surprises.
 - Honest feedback: every run is scored against buy-and-hold.
 
-## Features (first release)
+## Features (1.0)
 
 | Area | What you get |
 | --- | --- |
-| Stocks | ~550 well-known US stocks plus major index and sector ETFs; search, sector filter, top movers, watchlist |
+| Stocks | ~550 well-known US stocks plus major index and sector ETFs; search, sector filter, top movers, a watchlist you edit |
 | Orders | Market, limit and stop-loss; buy by shares or dollars; fractional shares; plain-English preview |
 | Account | Starting cash from $1k to $1M; optional fees, spreads, dividends, margin and short selling |
-| Clock | Market hours with weekends and holidays skipped; play, pause, step a day, adjustable speed |
+| Clock | Market hours with weekends and holidays skipped; play, pause, step a day, jump to the next event, adjustable speed |
 | News | Scenario headlines, quarterly earnings beats and misses, company news |
 | Portfolio | Cash, holdings, profit and loss, sector mix, your equity curve vs the index |
 | Learning | Guided first trade, glossary, end-of-day summary, debrief with lessons, challenges |
@@ -64,8 +64,9 @@ real price data.
 | 3 | All scenarios, news and events, dividends, end-of-run debrief | Done |
 | 4 | Guided first trade, glossary, lessons, challenges, XP, quests and badges, replay a moment, margin and shorts | Done |
 | 5 | Offline polish, install prompt, saves, settings, performance | Done |
+| 6 | Release 1.0: editable watchlist, next event, refreshed stock list, error screen, accessibility | In progress |
 
 ## Later ideas
 
-Companies that failed, an auto-invest mode, basic options, stock splits and IPOs, strategy bots
-to race against.
+An Android app (including F-Droid), companies that failed, an auto-invest mode, basic options,
+stock splits and IPOs, strategy bots to race against.
