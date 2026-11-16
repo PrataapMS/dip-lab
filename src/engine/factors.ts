@@ -62,7 +62,7 @@ export interface StockParams {
   sectorLoading?: number;
   /** Override stock-specific volatility (ETFs use a tiny value). */
   idioVol?: number;
-  /** Expected news jumps per year. Default 3. */
+  /** Expected company-news jumps per year (earnings come on top). Default 1.5. */
   jumpsPerYear?: number;
 }
 
@@ -82,9 +82,20 @@ export function jumpSize(vol: number): number {
 export interface StockPath {
   /** Start price, then one close per day (days + 1 values). */
   closes: Float64Array;
-  /** Log news jump on each day, 0 when there was none. Jumps land overnight as gaps. */
+  /** Total log jump on each day (news plus scheduled), 0 for none. Jumps land overnight as gaps. */
   jumps: Float64Array;
+  /** The random company-news part of `jumps`. */
+  news: Float64Array;
 }
+
+export interface PathExtras {
+  /** Log jumps known in advance (earnings, ex-dividend drops), one per day. */
+  scheduled?: ArrayLike<number>;
+  /** Multiplies the company-news rate (0 turns news off). Default 1. */
+  newsScale?: number;
+}
+
+export const DEFAULT_NEWS_PER_YEAR = 1.5;
 
 /**
  * Daily closes for one stock:
@@ -97,15 +108,17 @@ export function generateStockPath(
   startPrice: number,
   market: MarketFactor,
   sectorReturns: readonly number[] | null,
+  extras: PathExtras = {},
 ): StockPath {
   const days = market.returns.length;
   const rand = createRng(childSeed(seed, `stock:${p.ticker}`));
   const loading = p.sector && sectorReturns ? (p.sectorLoading ?? 1) : 0;
   const idio = idioVolFor(p);
-  const jumpProb = (p.jumpsPerYear ?? 3) * DT;
+  const jumpProb = (p.jumpsPerYear ?? DEFAULT_NEWS_PER_YEAR) * (extras.newsScale ?? 1) * DT;
   const jumpSd = jumpSize(p.vol);
   const closes = new Float64Array(days + 1);
   const jumps = new Float64Array(days);
+  const news = new Float64Array(days);
   let logPrice = Math.log(startPrice);
   closes[0] = startPrice;
   for (let t = 0; t < days; t++) {
@@ -114,10 +127,11 @@ export function generateStockPath(
     // Always draw both jump numbers so every stream advances the same way each day.
     const hit = rand() < jumpProb;
     const size = normal(rand) * jumpSd;
-    const jump = hit ? size : 0;
+    news[t] = hit ? size : 0;
+    const jump = (news[t] ?? 0) + (extras.scheduled?.[t] ?? 0);
     jumps[t] = jump;
     logPrice += p.beta * (market.returns[t] ?? 0) + loading * (sectorReturns?.[t] ?? 0) + own + jump;
     closes[t + 1] = Math.exp(logPrice);
   }
-  return { closes, jumps };
+  return { closes, jumps, news };
 }

@@ -37,6 +37,21 @@ export interface SpecialStock {
   path: { date: IsoDate; ret: number }[];
 }
 
+/** A generic news line for a key day of the scenario (no real names or events). */
+export interface ScenarioHeadline {
+  /** Snaps to the last trading day on or before it. */
+  date: IsoDate;
+  text: string;
+  tone: 'up' | 'down' | 'flat';
+  /** Shown before the open (the intro) or at the close (default: the day's story). */
+  at?: 'open' | 'close';
+  /** Set when the headline is about one stock. */
+  ticker?: string;
+}
+
+/** How much company news a run has: none (no earnings either), normal or twice as much. */
+export type NewsLevel = 'off' | 'normal' | 'busy';
+
 export interface ScenarioDef {
   id: string;
   name: string;
@@ -55,6 +70,11 @@ export interface ScenarioDef {
   volScale?: number;
   /** Starting mood for a free-running market. */
   startRegime?: Regime;
+  headlines?: ScenarioHeadline[];
+  /** Default 'normal'. */
+  news?: NewsLevel;
+  /** Multiplies the size of earnings moves. Default 1. */
+  earningsScale?: number;
 }
 
 const DT = 1 / TRADING_DAYS_PER_YEAR;
@@ -70,6 +90,10 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: true,
     start: '2024-01-02',
     end: '2024-03-28',
+    headlines: [
+      { date: '2024-01-02', text: 'New year, calm markets: stocks drift quietly', tone: 'flat', at: 'open' },
+      { date: '2024-03-28', text: 'Steady quarter ends with stocks modestly higher', tone: 'up' },
+    ],
     market: [{ date: '2024-03-28', ret: 0.04, regime: 'calm' }],
   },
   {
@@ -80,6 +104,24 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: false,
     start: '2010-01-04',
     end: '2019-12-31',
+    headlines: [
+      { date: '2010-01-04', text: 'Recovery year begins: investors cautiously return to stocks', tone: 'flat', at: 'open' },
+      { date: '2010-04-23', text: 'Stocks extend their rally as the recovery takes hold', tone: 'up' },
+      { date: '2010-07-02', text: 'Debt worries abroad send stocks sharply lower', tone: 'down' },
+      { date: '2011-04-29', text: 'Stocks hit post-crisis highs as profits recover', tone: 'up' },
+      { date: '2011-10-03', text: 'Government credit worries trigger a sharp slide', tone: 'down' },
+      { date: '2012-12-31', text: 'Stocks end the year higher despite a budget standoff', tone: 'up' },
+      { date: '2013-12-31', text: 'Best year for stocks in more than a decade', tone: 'up' },
+      { date: '2014-12-31', text: 'Bull market rolls on as record highs keep coming', tone: 'up' },
+      { date: '2015-05-21', text: 'Stocks edge to new records as growth holds up', tone: 'up' },
+      { date: '2016-02-11', text: 'Oil slump and growth fears drag stocks into a correction', tone: 'down' },
+      { date: '2016-12-30', text: 'Stocks rally to records after a surprise election result', tone: 'up' },
+      { date: '2018-01-26', text: 'Euphoria: stocks post their longest winning streak in years', tone: 'up' },
+      { date: '2018-02-08', text: 'Volatility spike: stocks drop 10% in two weeks', tone: 'down' },
+      { date: '2018-09-20', text: 'Calm returns and stocks set new highs', tone: 'up' },
+      { date: '2018-12-24', text: 'Rate fears and trade tensions: worst December in decades', tone: 'down' },
+      { date: '2019-12-31', text: 'Decade ends with stocks near record highs', tone: 'up' },
+    ],
     market: [
       { date: '2010-04-23', ret: 0.09 },
       { date: '2010-07-02', ret: -0.08 },
@@ -106,6 +148,18 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: false,
     start: '1998-01-02',
     end: '2002-10-09',
+    headlines: [
+      { date: '1998-01-02', text: 'Internet stocks are the talk of the town', tone: 'flat', at: 'open' },
+      { date: '1998-07-17', text: 'Stocks hit records as tech shares soar', tone: 'up' },
+      { date: '1998-10-08', text: 'A hedge fund collapse and a currency crisis abroad spark a selloff', tone: 'down' },
+      { date: '1999-12-31', text: 'Tech mania: dot-com shares end the decade at dizzying highs', tone: 'up' },
+      { date: '2000-03-24', text: 'Market peaks as tech valuations reach record levels', tone: 'up' },
+      { date: '2001-04-04', text: 'Dot-com bust: tech stocks have lost more than half their value', tone: 'down' },
+      { date: '2001-05-21', text: 'Rate cuts spark a powerful bear-market rally', tone: 'up' },
+      { date: '2001-09-21', text: 'Shock events and recession fears send stocks tumbling', tone: 'down' },
+      { date: '2002-01-04', text: 'Stocks rebound as the worst seems over', tone: 'up' },
+      { date: '2002-10-09', text: 'Accounting scandals deepen the bear market; tech nearly 80% off its peak', tone: 'down' },
+    ],
     market: [
       { date: '1998-07-17', ret: 0.22 },
       { date: '1998-10-08', ret: -0.01 },
@@ -139,6 +193,20 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: false,
     start: '2007-10-10',
     end: '2009-03-09',
+    headlines: [
+      { date: '2007-10-10', text: 'Stocks near record highs, but cracks are showing in housing', tone: 'flat', at: 'open' },
+      { date: '2007-11-26', text: 'Mortgage losses spread as banks write down billions', tone: 'down' },
+      { date: '2007-12-10', text: 'Central bank rate cut sparks a relief rally', tone: 'up' },
+      { date: '2008-03-10', text: 'Credit fears deepen as a big investment bank wobbles', tone: 'down' },
+      { date: '2008-05-19', text: 'Rescue deal calms markets and stocks bounce', tone: 'up' },
+      { date: '2008-07-15', text: 'Mortgage lenders under pressure; bank stocks slide', tone: 'down' },
+      { date: '2008-08-28', text: 'Oil prices ease and stocks steady', tone: 'up' },
+      { date: '2008-10-10', text: 'Panic week: a major bank fails and stocks crash', tone: 'down' },
+      { date: '2008-11-04', text: 'Government bailouts spark a violent rally', tone: 'up' },
+      { date: '2008-11-20', text: 'Stocks hit new lows as the recession deepens', tone: 'down' },
+      { date: '2009-01-06', text: 'Stimulus hopes lift stocks off the lows', tone: 'up' },
+      { date: '2009-03-09', text: 'Stocks down more than half from the peak. Is this the bottom?', tone: 'down' },
+    ],
     market: [
       { date: '2007-11-26', ret: -0.1 },
       { date: '2007-12-10', ret: -0.03 },
@@ -172,6 +240,21 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: false,
     start: '2020-02-20',
     end: '2020-12-31',
+    headlines: [
+      { date: '2020-02-20', text: 'Stocks at record highs as a new virus spreads abroad', tone: 'flat', at: 'open' },
+      { date: '2020-03-23', text: 'Pandemic panic: the fastest crash on record', tone: 'down' },
+      { date: '2020-03-26', text: 'Huge stimulus package sparks a record rally', tone: 'up' },
+      { date: '2020-04-01', text: 'Lockdowns spread and stocks slip again', tone: 'down' },
+      { date: '2020-04-29', text: 'Rebound continues as the central bank vows unlimited support', tone: 'up' },
+      { date: '2020-05-13', text: 'Warnings of a long recovery weigh on stocks', tone: 'down' },
+      { date: '2020-06-08', text: 'Reopening hopes: stocks erase most of the crash', tone: 'up' },
+      { date: '2020-06-11', text: 'Second-wave fears trigger a sharp one-day drop', tone: 'down' },
+      { date: '2020-09-02', text: 'Tech-led rally pushes stocks to new records', tone: 'up' },
+      { date: '2020-09-23', text: 'Tech stocks stumble and the market slips into a correction', tone: 'down' },
+      { date: '2020-10-12', text: 'Stimulus talks lift stocks again', tone: 'up' },
+      { date: '2020-10-30', text: 'Cases surge and stocks have their worst week in months', tone: 'down' },
+      { date: '2020-12-31', text: 'Vaccine news caps a remarkable comeback year', tone: 'up' },
+    ],
     market: [
       { date: '2020-03-23', ret: -0.34, regime: 'crash' },
       { date: '2020-03-26', ret: -0.22 },
@@ -203,6 +286,20 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: false,
     start: '2022-01-03',
     end: '2022-12-30',
+    headlines: [
+      { date: '2022-01-03', text: 'Inflation at multi-decade highs; markets expect rate hikes', tone: 'flat', at: 'open' },
+      { date: '2022-01-27', text: 'Rate-hike fears hit growth stocks hard', tone: 'down' },
+      { date: '2022-02-02', text: 'Bargain hunters lift stocks off the lows', tone: 'up' },
+      { date: '2022-03-08', text: 'Conflict abroad sends oil soaring and stocks lower', tone: 'down' },
+      { date: '2022-03-29', text: 'First rate hike done: stocks stage a relief rally', tone: 'up' },
+      { date: '2022-05-20', text: 'Stocks flirt with a bear market as inflation stays hot', tone: 'down' },
+      { date: '2022-05-31', text: 'Short-lived bounce as investors hunt for a bottom', tone: 'up' },
+      { date: '2022-06-16', text: 'Biggest rate hike in decades; stocks hit new lows', tone: 'down' },
+      { date: '2022-08-16', text: 'Bear-market rally: hopes of slower hikes lift stocks', tone: 'up' },
+      { date: '2022-10-12', text: 'Inflation surprise sends stocks to the low of the year', tone: 'down' },
+      { date: '2022-11-30', text: 'Cooler inflation data sparks a big rally', tone: 'up' },
+      { date: '2022-12-30', text: 'Worst year for stocks since the financial crisis', tone: 'down' },
+    ],
     market: [
       { date: '2022-01-27', ret: -0.09 },
       { date: '2022-02-02', ret: -0.04 },
@@ -235,6 +332,16 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: true,
     start: '2023-01-03',
     end: '2023-02-14',
+    headlines: [
+      { date: '2023-01-03', text: 'Quiet start to the year; one beaten-down retailer has a cult following', tone: 'flat', at: 'open' },
+      { date: '2023-01-17', text: 'Online forums pile into MOONR; heavily shorted shares jump', tone: 'up', ticker: 'MOONR' },
+      { date: '2023-01-24', text: 'MOONR short squeeze: shares more than triple', tone: 'up', ticker: 'MOONR' },
+      { date: '2023-01-27', text: 'MOONR mania: shares up over 1,000% in weeks', tone: 'up', ticker: 'MOONR' },
+      { date: '2023-01-31', text: 'Brokers limit MOONR trading; shares crash from the peak', tone: 'down', ticker: 'MOONR' },
+      { date: '2023-02-06', text: 'MOONR keeps sliding as the hype fades', tone: 'down', ticker: 'MOONR' },
+      { date: '2023-02-14', text: 'MOONR settles far below its peak, still above where it started', tone: 'down', ticker: 'MOONR' },
+      { date: '2023-02-14', text: 'The broader market barely noticed the frenzy', tone: 'up' },
+    ],
     market: [{ date: '2023-02-14', ret: 0.01, regime: 'calm' }],
     special: [
       {
@@ -262,6 +369,13 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: true,
     start: '2015-01-02',
     end: '2015-12-31',
+    headlines: [
+      { date: '2015-01-02', text: 'Strategists expect a flat year as stocks go nowhere fast', tone: 'flat', at: 'open' },
+      { date: '2015-03-27', text: 'Stocks grind higher in a choppy quarter', tone: 'up' },
+      { date: '2015-07-08', text: 'Growth worries erase the gains of the year', tone: 'down' },
+      { date: '2015-10-02', text: 'Sharp swings, little progress: stocks rebound again', tone: 'up' },
+      { date: '2015-12-31', text: 'The year ends almost exactly where it started', tone: 'down' },
+    ],
     volScale: 1.4,
     market: [
       { date: '2015-03-27', ret: 0.05, regime: 'calm' },
@@ -278,6 +392,11 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     fictional: true,
     start: '2024-04-01',
     end: '2024-06-28',
+    headlines: [
+      { date: '2024-04-01', text: 'Earnings season begins: hundreds of companies report in the coming weeks', tone: 'flat', at: 'open' },
+      { date: '2024-06-28', text: 'Quarter ends with stocks modestly higher after a busy earnings season', tone: 'up' },
+    ],
+    earningsScale: 1.5,
     market: [{ date: '2024-06-28', ret: 0.03, regime: 'calm' }],
   },
 ];
