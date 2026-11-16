@@ -5,6 +5,7 @@
 ### Learn how the stock market works by living through its best and worst days.
 
 [![Play now](https://img.shields.io/badge/%E2%96%B6%20play%20now-prataapms.github.io%2Fdip--lab-c6ff3d?style=for-the-badge&labelColor=0b0d14)](https://prataapms.github.io/dip-lab/)
+[![Take the tour](https://img.shields.io/badge/%E2%9C%A8%20take%20the%20tour-landing%20page-a08bff?style=for-the-badge&labelColor=0b0d14)](https://prataapms.github.io/dip-lab/welcome/)
 
 [![CI](https://github.com/PrataapMS/dip-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/PrataapMS/dip-lab/actions/workflows/ci.yml)
 [![Pages](https://github.com/PrataapMS/dip-lab/actions/workflows/deploy.yml/badge.svg)](https://github.com/PrataapMS/dip-lab/actions/workflows/deploy.yml)
@@ -20,6 +21,7 @@
 ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white)
 
 [Play](https://prataapms.github.io/dip-lab/) ·
+[Tour](https://prataapms.github.io/dip-lab/welcome/) ·
 [Screens](#screens) ·
 [Features](#features) ·
 [Scenarios](#scenarios) ·
@@ -45,6 +47,9 @@ ETFs on a clock you can speed up or pause.
 When the run ends you get an honest debrief: **did you beat simply buying the index and doing
 nothing?** Then comes the twist. Hit **Replay** and you get *exactly the same market* again,
 same prices, same headlines, same earnings surprises. The only thing that changes is you.
+
+New here? The [**landing page**](https://prataapms.github.io/dip-lab/welcome/) has a playable
+30-second demo and a step-by-step guide to your first trade.
 
 - **No sign-up, no ads, no tracking.** Everything runs in your browser.
 - **Works offline.** After the first visit it needs no network at all.
@@ -219,6 +224,7 @@ npm run dev        # http://localhost:5173
 | `npm test` | Run the Vitest suite once (`npm run test:watch` to watch) |
 | `npm run typecheck` | Type-check with `tsc --noEmit` |
 | `npm run build` | Production build into `dist/`, including the service worker |
+| `npm run build:site` | Add the landing page (`site/`) to the build at `dist/welcome/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint and check formatting with [Biome](https://biomejs.dev) (`npm run format` fixes formatting) |
 | `npm run test:coverage` | Run the tests with a coverage report |
@@ -257,7 +263,8 @@ src/
 
 ### Releases
 
-- **GitHub Pages:** deploys automatically when the major version in `package.json` goes up on
+- **GitHub Pages:** serves the app at `/dip-lab/` and the landing page at `/dip-lab/welcome/`;
+  deploys automatically when the major version in `package.json` goes up on
   `main` (for example `0.x` to `1.0.0`) and CI has passed, or manually from the Actions tab.
   Each deploy is tagged `vX.Y.Z` with a GitHub Release.
 - **Netlify:** manual only. Run **Deploy to Netlify** from the Actions tab and pick `preview`
