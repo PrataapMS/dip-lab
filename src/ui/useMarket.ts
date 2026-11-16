@@ -18,6 +18,8 @@ export interface History {
 
 export interface MarketView {
   ready: boolean;
+  /** A new run was asked for and the worker is building it. */
+  starting: boolean;
   error: string | null;
   scenario: ScenarioInfo | null;
   seed: number;
@@ -52,6 +54,7 @@ const MAX_NOTICES = 4;
 
 export const initialView: MarketView = {
   ready: false,
+  starting: false,
   error: null,
   scenario: null,
   seed: 0,
@@ -161,7 +164,7 @@ export function useMarket() {
   const send = useCallback((cmd: Command) => worker.current?.postMessage(cmd), []);
   const startRun = useCallback(
     (scenarioId: string, seed: number, settings?: AccountSettings) => {
-      setView((s) => ({ ...s, ready: false, error: null }));
+      setView((s) => ({ ...s, ready: false, starting: true, error: null }));
       send({ type: 'newRun', scenarioId, seed, settings });
     },
     [send],
@@ -169,3 +172,5 @@ export function useMarket() {
   const dismissNotice = useCallback((id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })), []);
   return { view, send, startRun, dismissNotice };
 }
+
+export type Market = ReturnType<typeof useMarket>;

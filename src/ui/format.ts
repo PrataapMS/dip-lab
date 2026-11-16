@@ -25,3 +25,32 @@ export function longDate(iso: string): string {
 export function upDown(fraction: number): 'up' | 'down' {
   return fraction >= 0 ? 'up' : 'down';
 }
+
+function isZero(formatted: string): boolean {
+  return Number(formatted.replace(/[$,]/g, '')) === 0;
+}
+
+/** "$10,482" (whole dollars) or "$812.40" with `cents`. */
+export function money(value: number, cents = false): string {
+  const digits = cents ? 2 : 0;
+  const s = `$${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  return value < 0 && !isZero(s) ? `${MINUS}${s}` : s;
+}
+
+/** "+$482" or "−$12.40": signed like percentages. */
+export function signedMoney(value: number, cents = false): string {
+  const s = money(Math.abs(value), cents);
+  return `${value < 0 && !isZero(s) ? MINUS : '+'}${s}`;
+}
+
+/** Shares with up to 4 decimals and no trailing zeros: "10.3712", "3". */
+export function shares(value: number): string {
+  return value.toLocaleString('en-US', { maximumFractionDigits: 4 });
+}
+
+/** Lower-case three-letter weekday, e.g. "tue". */
+export function weekdayShort(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? '';
+}
