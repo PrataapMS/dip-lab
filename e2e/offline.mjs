@@ -47,7 +47,10 @@ let requestsOffline = 0;
 page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && problems.push(`console error: ${m.text()}`));
 context.on('requestfailed', (r) => {
-  if (offline) problems.push(`request failed offline: ${r.url()} (${r.failure()?.errorText})`);
+  const error = r.failure()?.errorText;
+  // ERR_ABORTED is a request cancelled by the next navigation (e.g. the favicon), not a miss.
+  if (offline && error !== 'net::ERR_ABORTED')
+    problems.push(`request failed offline: ${r.url()} (${error})`);
 });
 context.on('response', (r) => {
   if (!offline) return;
