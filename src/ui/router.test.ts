@@ -12,6 +12,7 @@ describe('router', () => {
       { name: 'debrief' },
       { name: 'badges' },
       { name: 'new' },
+      { name: 'settings' },
       { name: 'stock', ticker: 'BRK.B' },
     ];
     for (const r of routes) expect(parseRoute(formatRoute(r))).toEqual(r);

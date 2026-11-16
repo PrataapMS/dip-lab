@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { DEFAULT_ACCOUNT_SETTINGS } from '../../engine/account';
-import { DEFAULT_SPEED, type Speed, SPEEDS } from '../../engine/clock';
+import { DAY_LENGTHS } from '../../game/settings';
 import type { Regime } from '../../engine/regimes';
 import { CUSTOM_LIMITS, type NewsLevel, SCENARIOS, type ScenarioDef } from '../../engine/scenarios';
 import { isUnlocked, levelFor, UNLOCKS } from '../../game/levels';
@@ -32,7 +32,7 @@ function Pips({ level, boss }: { level: number; boss: boolean }) {
 }
 
 /** One-tap choice from a short list. */
-function Choice<T extends string | number>({
+export function Choice<T extends string | number>({
   label,
   value,
   options,
@@ -73,10 +73,17 @@ const MARGIN: { value: 'off' | '2x'; label: string }[] = [
   { value: 'off', label: 'Off' },
   { value: '2x', label: '2x' },
 ];
-const SPEED_OPTIONS = (Object.keys(SPEEDS) as Speed[]).map((s) => ({
-  value: s,
-  label: `${s} · ${SPEEDS[s] / 1000}s/day`,
-}));
+/** The speed chips, plus the Settings day length when it is a slow one. */
+function speedOptions(settingsMs: number): { value: number; label: string }[] {
+  return DAY_LENGTHS.filter((d) => d.chip || d.ms === settingsMs).map((d) => ({
+    value: d.ms,
+    label: d.label,
+  }));
+}
+
+function dayLengthText(ms: number): string {
+  return ms < 60_000 ? `${ms / 1000}s/day` : ms < 3_600_000 ? `${ms / 60_000}min/day` : 'real-time';
+}
 const LENGTHS = [
   { value: 21, label: '1 month' },
   { value: 63, label: '3 months' },
@@ -163,8 +170,8 @@ function ScenarioCard({ def, selected, inProgress, lockedUntil, best, onPick }: 
 }
 
 export function Scenarios({ market }: { market: Market }) {
-  const { view, send, startRun } = market;
-  const { progress } = useProgress();
+  const { view, startRun } = market;
+  const { progress, settings } = useProgress();
   const level = levelFor(progress.xp).level;
   const can = (what: keyof typeof UNLOCKS) => isUnlocked(what, level, progress.unlockAll);
   const lockedUntil = (id: string) =>
@@ -175,7 +182,7 @@ export function Scenarios({ market }: { market: Market }) {
   const [fee, setFee] = useState(DEFAULT_ACCOUNT_SETTINGS.commission);
   const [margin, setMargin] = useState<'off' | '2x'>('off');
   const [shorts, setShorts] = useState<'off' | 'on'>('off');
-  const [speed, setSpeed] = useState<Speed>(DEFAULT_SPEED);
+  const [speed, setSpeed] = useState(settings.dayLengthMs);
   const [start, setStart] = useState('2015-01-02');
   const [days, setDays] = useState(63);
   const [mood, setMood] = useState<Regime>('calm');
@@ -199,6 +206,7 @@ export function Scenarios({ market }: { market: Market }) {
     const config: RunConfig = {
       scenarioId: picked,
       seed: custom ? seed : newSeed(),
+      dayLengthMs: speed,
       settings: {
         ...DEFAULT_ACCOUNT_SETTINGS,
         startingCash: cash,
@@ -215,7 +223,6 @@ export function Scenarios({ market }: { market: Market }) {
           }
         : {}),
     };
-    send({ type: 'speed', dayLengthMs: SPEEDS[speed] });
     startRun(config);
     navigate({ name: 'market' });
   };
@@ -337,13 +344,18 @@ export function Scenarios({ market }: { market: Market }) {
                 <LockIcon size={16} /> Short selling unlocks at Lv {UNLOCKS.shorts.level}
               </p>
             ))}
-          <Choice label="Speed" value={speed} options={SPEED_OPTIONS} onChange={setSpeed} />
+          <Choice
+            label="Speed"
+            value={speed}
+            options={speedOptions(settings.dayLengthMs)}
+            onChange={setSpeed}
+          />
         </section>
       )}
 
       <div class="picker-footer">
         <span class="mono tiny dim">
-          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin=
+          cash={money(cash)} speed={dayLengthText(speed)} margin=
           {can('margin') ? margin : 'off'}
           {can('margin') && can('shorts') && margin === '2x' && shorts === 'on' ? ' shorts=on' : ''}{' '}
           fees=${fee}

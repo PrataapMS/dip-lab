@@ -11,6 +11,7 @@ import { Learn } from './ui/screens/Learn';
 import { Market as MarketScreen } from './ui/screens/Market';
 import { Portfolio } from './ui/screens/Portfolio';
 import { newSeed, Scenarios } from './ui/screens/Scenarios';
+import { Settings } from './ui/screens/Settings';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { SlotPicker } from './ui/Slots';
@@ -50,6 +51,8 @@ function Screen({
       return <Badges />;
     case 'new':
       return <Scenarios market={market} />;
+    case 'settings':
+      return <Settings market={market} />;
     case 'market':
       return <MarketScreen market={market} />;
     case 'portfolio':

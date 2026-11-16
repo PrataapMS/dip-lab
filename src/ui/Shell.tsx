@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { dayLengthOf } from '../game/settings';
 import { useEffect } from 'preact/hooks';
 import { type Speed, SPEEDS, speedOf } from '../engine/clock';
 import { BARS_PER_DAY, barTime } from '../engine/intraday';
@@ -85,9 +86,12 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
 export function RunControls({ market }: { market: Market }) {
   const { view, send } = market;
   const speed = speedOf(view.dayLengthMs);
+  const slow = speed ? null : dayLengthOf(view.dayLengthMs);
   const note = speed
     ? `${speed} = 1 trading day every ${view.dayLengthMs / 1000} s`
-    : `1 trading day every ${Math.round(view.dayLengthMs / 60_000)} min`;
+    : view.dayLengthMs >= 3_600_000
+      ? 'Real time: a trading day takes 6.5 hours (only while the app is open)'
+      : `1 trading day every ${Math.round(view.dayLengthMs / 60_000)} min`;
   return (
     <>
       <div class="controls">
@@ -111,6 +115,11 @@ export function RunControls({ market }: { market: Market }) {
               {s}
             </button>
           ))}
+          {slow && (
+            <button type="button" aria-pressed="true" title="Set in Settings">
+              {slow.id}
+            </button>
+          )}
         </div>
         <button
           type="button"

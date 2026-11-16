@@ -35,7 +35,11 @@ export type Command =
       challenge?: string;
       /** Save slot the run autosaves into; without one it lives in memory only. */
       slot?: number;
+      /** Real time per trading day; the Settings default when left out. */
+      dayLengthMs?: number;
     }
+  /** Settings for runs started from now on. */
+  | { type: 'defaults'; dayLengthMs: number; pauseAtClose: boolean | null }
   /** Read the save slots (answered with `slots`). */
   | { type: 'listSlots' }
   /** Open the run saved in a slot, paused where it was. */

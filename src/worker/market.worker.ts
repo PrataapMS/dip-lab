@@ -36,7 +36,10 @@ const TICK_MS = 40;
 const MAX_ELAPSED_MS = 1000;
 
 let run: Run | null = null;
+/** Day length for new runs (Settings). */
 let dayLengthMs = DEFAULT_DAY_LENGTH_MS;
+/** Pause at each close for new runs: null leaves it to the run's length. */
+let pauseDefault: boolean | null = null;
 let postedDay = -1;
 let watched: string[] = [];
 let inspected: string | null = null;
@@ -407,7 +410,6 @@ async function openSlot(s: number): Promise<void> {
   config = body.header.config;
   savedCloses = body.save.snapshots.length;
   clearChunks = false;
-  dayLengthMs = r.clock.dayLengthMs;
   load(r, r.market.seed, true);
 }
 
@@ -451,16 +453,23 @@ function handle(cmd: Command): void {
   switch (cmd.type) {
     case 'newRun': {
       stopLoop();
-      const { type: _type, slot: s, ...c } = cmd;
+      const { type: _type, slot: s, dayLengthMs: ms, ...c } = cmd;
       const market = buildFor(c);
       useSlot(s, c);
       load(
-        new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn }),
+        new Run(market, cmd.settings, ms ?? dayLengthMs, {
+          targetReturn: cmd.targetReturn,
+          ...(pauseDefault !== null ? { pauseAtClose: pauseDefault } : {}),
+        }),
         cmd.seed,
       );
       autosave();
       return;
     }
+    case 'defaults':
+      dayLengthMs = cmd.dayLengthMs;
+      pauseDefault = cmd.pauseAtClose;
+      return;
     case 'flush':
       autosave();
       void saver.idle().then(() => post({ type: 'flushed' }));
@@ -498,7 +507,6 @@ function handle(cmd: Command): void {
       autosave();
       return;
     case 'speed':
-      dayLengthMs = cmd.dayLengthMs;
       run?.setDayLength(cmd.dayLengthMs);
       if (run) emitTick();
       autosave();

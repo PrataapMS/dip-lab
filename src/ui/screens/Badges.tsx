@@ -12,7 +12,7 @@ const GROUPS: { id: BadgeGroup; label: string }[] = [
 ];
 
 export function Badges() {
-  const { progress, update } = useProgress();
+  const { progress } = useProgress();
   const earned = BADGES.filter((b) => progress.badges[b.id]).length;
   return (
     <>
@@ -60,18 +60,6 @@ export function Badges() {
           </div>
         </section>
       ))}
-
-      <label class="testing-switch tiny dim">
-        <input
-          type="checkbox"
-          checked={progress.unlockAll}
-          onChange={(e) => {
-            const on = (e.target as HTMLInputElement).checked;
-            update((p) => ({ progress: { ...p, unlockAll: on } }));
-          }}
-        />
-        Testing: unlock every scenario and tool, whatever your level
-      </label>
     </>
   );
 }

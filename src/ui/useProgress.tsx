@@ -13,12 +13,14 @@ import {
   type Reward,
   type RunResult,
 } from '../game/progress';
+import { migrateSettings, pauseAtCloseFor, type Settings } from '../game/settings';
 import { challengeById } from '../learn/challenges';
 import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from '../storage/db';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
+const SETTINGS_KEY = 'settings';
 const BADGE_CTX = { lessonCount: LESSONS.length };
 /** Custom runs are difficulty 2, like the Custom card. */
 const CUSTOM_DIFFICULTY = 2;
@@ -56,6 +58,8 @@ export interface ProgressApi {
   record: (a: Activity) => void;
   /** A lesson's question was answered right. */
   finishLesson: (lesson: Lesson) => void;
+  settings: Settings;
+  updateSettings: (patch: Partial<Settings>) => void;
 }
 
 const Ctx = createContext<ProgressApi | null>(null);
@@ -75,6 +79,7 @@ export function ProgressProvider({
   children: ComponentChildren;
 }) {
   const [progress, setProgress] = useState<Progress | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [run, setRun] = useState<RunRewards>({ levelBefore: 1, rewards: [] });
   const viewRef = useRef(market.view);
   viewRef.current = market.view;
@@ -86,12 +91,30 @@ export function ProgressProvider({
     load('progress', KEY).then((saved) => {
       if (live) setProgress(migrate(saved));
     });
+    load('progress', SETTINGS_KEY).then((saved) => {
+      if (live) setSettings(migrateSettings(saved));
+    });
     return () => {
       live = false;
     };
   }, []);
 
-  const { notify } = market;
+  const { notify, send } = market;
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    setSettings((s) => {
+      if (!s) return s;
+      const next = { ...s, ...patch };
+      void save('progress', SETTINGS_KEY, next);
+      return next;
+    });
+  }, []);
+  // The worker starts new runs with these.
+  const dayLengthMs = settings?.dayLengthMs;
+  const pauseRule = settings?.pauseAtClose;
+  useEffect(() => {
+    if (dayLengthMs === undefined || pauseRule === undefined) return;
+    send({ type: 'defaults', dayLengthMs, pauseAtClose: pauseAtCloseFor(pauseRule) ?? null });
+  }, [send, dayLengthMs, pauseRule]);
   const update = useCallback(
     (fn: (p: Progress) => { progress: Progress; rewards?: Reward[] }) => {
       const current = progressRef.current;
@@ -172,8 +195,11 @@ export function ProgressProvider({
   );
 
   const api = useMemo(
-    () => (progress ? { progress, run, update, record, finishLesson } : null),
-    [progress, run, update, record, finishLesson],
+    () =>
+      progress && settings
+        ? { progress, run, update, record, finishLesson, settings, updateSettings }
+        : null,
+    [progress, run, update, record, finishLesson, settings, updateSettings],
   );
   if (!api) return null;
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

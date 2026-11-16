@@ -6,7 +6,7 @@ import { msToMidnight, questsFor } from '../../game/quests';
 import { currentStreak } from '../../game/streak';
 import { BadgeIcon, FlameIcon, GROUP_COLOR, LockIcon } from '../BadgeIcon';
 import { money, signedPct, upDown } from '../format';
-import { PlayIcon, PlusIcon } from '../icons';
+import { GearIcon, PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
 import { SavedRuns } from '../Slots';
 import { UpdateAlertsOptIn } from '../UpdateBanner';
@@ -198,6 +198,9 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
         >
           <FlameIcon /> {streak} day streak
         </span>
+        <a class="icon-button settings-link" href="#/settings" aria-label="Settings">
+          <GearIcon />
+        </a>
       </header>
 
       {newcomer && (

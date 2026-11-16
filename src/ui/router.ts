@@ -11,6 +11,7 @@ export type Route =
   | { name: 'badges' }
   /** Pick your run. */
   | { name: 'new' }
+  | { name: 'settings' }
   | { name: 'stock'; ticker: string };
 
 export const HOME: Route = { name: 'home' };
@@ -27,10 +28,11 @@ export function parseRoute(hash: string): Route {
     case 'debrief':
     case 'badges':
     case 'new':
+    case 'settings':
       return { name: parts[0] };
     case 'stock': {
       const ticker = decodeURIComponent(parts[1] ?? '').toUpperCase();
-      return /^[A-Z.\-]{1,8}$/.test(ticker) ? { name: 'stock', ticker } : HOME;
+      return /^[A-Z.-]{1,8}$/.test(ticker) ? { name: 'stock', ticker } : HOME;
     }
     default:
       return HOME;

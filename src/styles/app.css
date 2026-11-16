@@ -1907,6 +1907,16 @@ button:disabled {
   margin: 0;
 }
 
+/* Settings */
+.home-head .settings-link {
+  align-self: center;
+}
+
+.primary.danger-fill {
+  background: var(--down);
+  border-color: var(--down);
+}
+
 /* Save slots */
 .slot-row + .slot-row {
   border-top: 1px solid var(--line);

@@ -45,6 +45,8 @@ export interface RunConfig {
   challenge?: string;
   /** Save slot; chosen automatically (or by asking) when left out. */
   slot?: number;
+  /** Real time per trading day; the Settings default when left out. */
+  dayLengthMs?: number;
 }
 
 export interface MarketView {
@@ -273,12 +275,22 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'ended':
       return { ...state, endReason: e.reason, debrief: e.debrief, finished: true, playing: false };
     case 'slots':
+      if (e.headers.some(Boolean)) askToPersist();
       return { ...state, slots: e.headers };
     case 'flushed':
       return state;
     case 'error':
       return { ...state, error: e.message, starting: false };
   }
+}
+
+let persistAsked = false;
+
+/** Once there is a save, ask the browser to keep the app's data under storage pressure. */
+function askToPersist(): void {
+  if (persistAsked || typeof navigator === 'undefined') return;
+  persistAsked = true;
+  void navigator.storage?.persist?.().catch(() => false);
 }
 
 /** Starts the engine worker and exposes its live state plus the commands it accepts. */
