@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { BARS_PER_DAY, barTime } from '../../engine/intraday';
 import type { InstrumentInfo } from '../../engine/protocol';
+import { moveWatch, toggleWatch, WATCHLIST_MAX, watchlistFor } from '../../game/watchlist';
 import { price, signedPct, upDown } from '../format';
+import { CloseIcon, DownIcon, UpIcon } from '../icons';
 import {
   dayChange,
-  defaultWatchlist,
   INDEX_TILES,
   inSector,
   searchInstruments,
@@ -17,6 +18,7 @@ import { formatRoute } from '../router';
 import { MarginBanner } from '../Shell';
 import { Sparkline } from '../Sparkline';
 import type { Market as MarketApi, MarketView } from '../useMarket';
+import { useProgress } from '../useProgress';
 
 /** Rows shown for a sector chip; a sector can hold 70+ stocks. */
 const SECTOR_LIMIT = 40;
@@ -74,8 +76,74 @@ function statusLine(view: MarketView): string {
 
 type ListMode = 'watchlist' | 'movers';
 
+/** The player's whole watchlist with buttons to reorder and remove names. */
+function WatchEdit({
+  list,
+  byTicker,
+  hidden,
+  onChange,
+}: {
+  list: string[];
+  byTicker: Map<string, InstrumentInfo>;
+  hidden: string[];
+  onChange: (list: string[]) => void;
+}) {
+  if (!list.length)
+    return <p class="small dim">Your watchlist is empty. Tap the star on any stock to add it.</p>;
+  return (
+    <>
+      <ul class="watch-edit">
+        {list.map((t, i) => (
+          <li key={t}>
+            <span class="stack who">
+              <span class="ticker">{t}</span>
+              <span class="tiny dim ellipsis">
+                {hidden.includes(t)
+                  ? 'not listed yet in this market'
+                  : (byTicker.get(t)?.name ?? '')}
+              </span>
+            </span>
+            <button
+              type="button"
+              class="icon-button"
+              aria-label={`Move ${t} up`}
+              disabled={i === 0}
+              onClick={() => onChange(moveWatch(list, t, -1))}
+            >
+              <UpIcon />
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              aria-label={`Move ${t} down`}
+              disabled={i === list.length - 1}
+              onClick={() => onChange(moveWatch(list, t, 1))}
+            >
+              <DownIcon />
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              aria-label={`Remove ${t}`}
+              onClick={() => onChange(toggleWatch(list, t))}
+            >
+              <CloseIcon />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p class="tiny dim">
+        Add names with the star on a stock's page (up to {WATCHLIST_MAX}). The same list is used in
+        every run.
+      </p>
+    </>
+  );
+}
+
 export function Market({ market }: { market: MarketApi }) {
   const { view, send } = market;
+  const { settings, updateSettings } = useProgress();
+  const [editing, setEditing] = useState(false);
   const [query, setQuery] = useState('');
   const [sector, setSector] = useState<string | null>(null);
   const [mode, setMode] = useState<ListMode>('watchlist');
@@ -84,7 +152,15 @@ export function Market({ market }: { market: MarketApi }) {
     () => new Map(view.instruments.map((i) => [i.ticker, i])),
     [view.instruments],
   );
-  const watchlist = useMemo(() => defaultWatchlist(view.instruments), [view.instruments]);
+  const listed = useMemo(
+    () => new Set(view.instruments.filter((i) => i.kind === 'stock').map((i) => i.ticker)),
+    [view.instruments],
+  );
+  const watch = useMemo(
+    () => watchlistFor(settings.watchlist, listed),
+    [settings.watchlist, listed],
+  );
+  const watchlist = useMemo(() => [...watch.shown, ...watch.standIns], [watch]);
   const movers = useMemo(
     () => (mode === 'movers' ? topMovers(view.instruments, view.prices, view.prevCloses) : null),
     [mode, view.instruments, view.prices, view.prevCloses],
@@ -194,6 +270,11 @@ export function Market({ market }: { market: MarketApi }) {
               </button>
             </div>
           )}
+          {!heading && mode === 'watchlist' && (
+            <button type="button" class="link" onClick={() => setEditing((e) => !e)}>
+              {editing ? 'done' : 'edit'}
+            </button>
+          )}
           {(query || sector) && (
             <button
               type="button"
@@ -207,7 +288,16 @@ export function Market({ market }: { market: MarketApi }) {
             </button>
           )}
         </div>
-        {rows.length ? (
+        {editing && !heading && mode === 'watchlist' ? (
+          <WatchEdit
+            list={settings.watchlist}
+            byTicker={byTicker}
+            hidden={watch.hidden}
+            onChange={(watchlist) => updateSettings({ watchlist })}
+          />
+        ) : !heading && mode === 'watchlist' && !watchlist.length ? (
+          <p class="small dim">Your watchlist is empty. Tap the star on any stock to add it.</p>
+        ) : rows.length ? (
           <ul class="quotes">
             {rows.map((inst) => (
               <QuoteRow key={inst.ticker} inst={inst} view={view} />

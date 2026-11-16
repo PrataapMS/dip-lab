@@ -1953,3 +1953,37 @@ button:disabled {
     transition: none;
   }
 }
+
+/* Watchlist: star on the Stock screen, edit mode on Market. */
+.watch-star {
+  margin-left: auto;
+  color: var(--text-dim);
+}
+
+.watch-star.on {
+  color: var(--accent);
+}
+
+.watch-edit {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watch-edit li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  border-top: 1px solid var(--panel-2);
+}
+
+.watch-edit .who {
+  flex: 1;
+  min-width: 0;
+}
+
+.watch-edit .icon-button {
+  width: 40px;
+  min-height: 40px;
+}

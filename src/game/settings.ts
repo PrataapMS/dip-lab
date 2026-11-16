@@ -1,4 +1,5 @@
 import { SLOW_DAY_LENGTHS, SPEEDS } from '../engine/clock';
+import { cleanWatchlist, DEFAULT_WATCHLIST } from './watchlist';
 
 /**
  * Device settings: one small record next to progress (store `progress`, key `settings`), so
@@ -18,6 +19,8 @@ export interface Settings {
   sound: boolean;
   /** The install card on Home was closed; from then on install lives in Settings only. */
   installDismissed: boolean;
+  /** The player's watchlist, the same in every run. */
+  watchlist: string[];
 }
 
 export interface DayLength {
@@ -48,6 +51,7 @@ export function defaultSettings(): Settings {
     pauseAtClose: 'auto',
     sound: true,
     installDismissed: false,
+    watchlist: [...DEFAULT_WATCHLIST],
   };
 }
 
@@ -68,6 +72,7 @@ export function migrateSettings(saved: unknown): Settings {
         : base.pauseAtClose,
     sound: typeof s.sound === 'boolean' ? s.sound : base.sound,
     installDismissed: s.installDismissed === true,
+    watchlist: cleanWatchlist(s.watchlist) ?? base.watchlist,
   };
 }
 

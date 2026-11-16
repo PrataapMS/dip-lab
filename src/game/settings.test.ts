@@ -28,6 +28,10 @@ describe('settings', () => {
     expect(
       migrateSettings({ dayLengthMs: SLOW_DAY_LENGTHS.real, pauseAtClose: 'never', sound: false }),
     ).toMatchObject({ dayLengthMs: SLOW_DAY_LENGTHS.real, pauseAtClose: 'never', sound: false });
+    // Records from before the watchlist was editable get the default list.
+    expect(migrateSettings({ sound: true }).watchlist).toEqual(defaultSettings().watchlist);
+    expect(migrateSettings({ watchlist: ['KO', 'KO', 'nope'] }).watchlist).toEqual(['KO']);
+    expect(migrateSettings({ watchlist: [] }).watchlist).toEqual([]);
   });
 
   it('offers every speed chip plus 5 min and real time', () => {

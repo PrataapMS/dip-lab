@@ -3,7 +3,7 @@ import type { Route } from './router';
 import type { Market } from './useMarket';
 import { useProgress } from './useProgress';
 
-/** The stock the guided first trade uses: first on the default watchlist. */
+/** The stock the guided first trade uses (on the default watchlist; search finds it too). */
 export const TUTORIAL_TICKER = 'AAPL';
 
 type Step = 'market' | 'stock' | 'sheet' | 'done';
@@ -100,7 +100,11 @@ export function Coach({
             </button>
           )}
         </div>
-        <p class="small">{TEXT[step]}</p>
+        <p class="small">
+          {step === 'market' && !box
+            ? `Type ${TUTORIAL_TICKER} in the search box, then tap it.`
+            : TEXT[step]}
+        </p>
         {step === 'done' && (
           <button type="button" class="primary" onClick={finish}>
             Got it

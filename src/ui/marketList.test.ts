@@ -3,27 +3,25 @@ import { UNIVERSE } from '../data/universe';
 import { instrumentsFor } from '../engine/market';
 import type { InstrumentInfo } from '../engine/protocol';
 import { getScenario } from '../engine/scenarios';
-import { defaultWatchlist, inSector, searchInstruments, topMovers } from './marketList';
+import { DEFAULT_WATCHLIST, watchlistFor } from '../game/watchlist';
+import { inSector, searchInstruments, topMovers } from './marketList';
 
 const info = (id: string): InstrumentInfo[] => instrumentsFor(getScenario(id), UNIVERSE);
 
 describe('market lists', () => {
-  it('uses the default watchlist and tops it up in older scenarios', () => {
-    expect(defaultWatchlist(info('covid-2020'))).toEqual([
-      'AAPL',
-      'MSFT',
-      'NVDA',
-      'AMZN',
-      'GOOGL',
-      'TSLA',
-      'JPM',
-      'KO',
+  it('shows the default watchlist, with stand-ins in older scenarios', () => {
+    const stocks = (id: string) =>
+      new Set(
+        info(id)
+          .filter((i) => i.kind === 'stock')
+          .map((i) => i.ticker),
+      );
+    expect(watchlistFor(DEFAULT_WATCHLIST, stocks('covid-2020')).shown).toEqual([
+      ...DEFAULT_WATCHLIST,
     ]);
-    const dotCom = defaultWatchlist(info('dot-com'));
-    expect(dotCom).toHaveLength(8);
-    expect(dotCom).not.toContain('GOOGL');
-    expect(dotCom).not.toContain('TSLA');
-    expect(dotCom.slice(-2)).toEqual(['JNJ', 'WMT']);
+    const dotCom = watchlistFor(DEFAULT_WATCHLIST, stocks('dot-com'));
+    expect(dotCom.hidden).toEqual(['NVDA', 'GOOGL', 'TSLA']);
+    expect(dotCom.standIns).toEqual(['XOM', 'JNJ', 'WMT']);
   });
 
   it('searches tickers first, then names', () => {

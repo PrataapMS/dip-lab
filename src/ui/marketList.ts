@@ -1,26 +1,5 @@
 import type { InstrumentInfo } from '../engine/protocol';
 
-export const DEFAULT_WATCHLIST = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'TSLA', 'JPM', 'KO'];
-/** Long-standing large companies, used to top the watchlist up in older scenarios. */
-const LARGE_NAMES = [
-  'XOM',
-  'JNJ',
-  'WMT',
-  'PG',
-  'GE',
-  'IBM',
-  'INTC',
-  'CSCO',
-  'ORCL',
-  'PFE',
-  'BAC',
-  'HD',
-  'MRK',
-  'PEP',
-  'DIS',
-  'MCD',
-  'CVX',
-];
 export const INDEX_TILES: { ticker: string; label: string }[] = [
   { ticker: 'SPY', label: 'S&P 500' },
   { ticker: 'QQQ', label: 'NASDAQ' },
@@ -43,23 +22,6 @@ export const SECTOR_CHIPS: { label: string; sector: string }[] = [
   { label: 'materials', sector: 'Materials' },
   { label: 'funds', sector: 'etf' },
 ];
-
-/**
- * The default watchlist, keeping only names listed in this scenario's year and topping it
- * back up from other large companies.
- */
-export function defaultWatchlist(
-  instruments: readonly InstrumentInfo[],
-  size = DEFAULT_WATCHLIST.length,
-): string[] {
-  const listed = new Set(instruments.filter((i) => i.kind === 'stock').map((i) => i.ticker));
-  const out: string[] = [];
-  for (const t of [...DEFAULT_WATCHLIST, ...LARGE_NAMES, ...listed]) {
-    if (out.length >= size) break;
-    if (listed.has(t) && !out.includes(t)) out.push(t);
-  }
-  return out;
-}
 
 /** Ticker prefix matches first, then name matches (word starts), up to `limit`. */
 export function searchInstruments(

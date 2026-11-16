@@ -3,7 +3,8 @@ import type { Side } from '../../engine/account';
 import { POINTS_PER_DAY } from '../../engine/intraday';
 import { describeOrder } from '../../engine/orders';
 import { money, price as fmtPrice, shares, signedMoney, signedPct, upDown } from '../format';
-import { BackIcon } from '../icons';
+import { isWatched, toggleWatch, WATCHLIST_MAX } from '../../game/watchlist';
+import { BackIcon, StarIcon } from '../icons';
 import { LineChart } from '../LineChart';
 import { NewsList } from '../NewsList';
 import { dayChange } from '../marketList';
@@ -11,10 +12,31 @@ import { OrderSheet } from '../OrderSheet';
 import { navigate } from '../router';
 import type { Market } from '../useMarket';
 import { Term } from '../Term';
+import { useProgress } from '../useProgress';
 
 function goBack(): void {
   if (history.length > 1) history.back();
   else navigate({ name: 'market' });
+}
+
+/** Adds the stock to the player's watchlist, or takes it off. */
+function WatchStar({ ticker }: { ticker: string }) {
+  const { settings, updateSettings } = useProgress();
+  const on = isWatched(settings.watchlist, ticker);
+  const full = !on && settings.watchlist.length >= WATCHLIST_MAX;
+  return (
+    <button
+      type="button"
+      class={`icon-button watch-star ${on ? 'on' : ''}`}
+      aria-pressed={on}
+      aria-label={on ? `Remove ${ticker} from watchlist` : `Add ${ticker} to watchlist`}
+      title={full ? `The watchlist holds up to ${WATCHLIST_MAX} names` : undefined}
+      disabled={full}
+      onClick={() => updateSettings({ watchlist: toggleWatch(settings.watchlist, ticker) })}
+    >
+      <StarIcon filled={on} />
+    </button>
+  );
 }
 
 export function Stock({ market, ticker }: { market: Market; ticker: string }) {
@@ -79,6 +101,7 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
             {inst.name} · {inst.kind === 'etf' ? 'fund' : (inst.sector ?? 'stock')}
           </span>
         </div>
+        <WatchStar ticker={ticker} />
       </div>
 
       <div class="price-line">
