@@ -9,6 +9,9 @@ import { readFileSync } from 'node:fs';
 
 const TELEGRAM_LIMIT = 4096;
 const MAX_BULLETS = 8;
+const ATTEMPTS = 4;
+const RETRY_DELAY_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 const env = (name, fallback = '') => process.env[name] || fallback;
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
@@ -89,7 +92,7 @@ async function send(text) {
     body = body.slice(0, TELEGRAM_LIMIT - 20);
     body = `${body.slice(0, body.lastIndexOf('\n'))}\n…`;
   }
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const request = {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -98,11 +101,34 @@ async function send(text) {
       parse_mode: 'HTML',
       link_preview_options: { is_disabled: true },
     }),
-  });
-  if (!response.ok) {
-    throw new Error(`Telegram sendMessage failed: ${response.status} ${await response.text()}`);
+    signal: undefined,
+  };
+  // Telegram sometimes answers 429 or 5xx (e.g. 504 Gateway Timeout); those are worth retrying.
+  for (let attempt = 1; ; attempt++) {
+    let failure;
+    let retryable = true;
+    let waitMs = RETRY_DELAY_MS * attempt;
+    try {
+      request.signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, request);
+      if (response.ok) {
+        console.info('Sent to Telegram.');
+        return;
+      }
+      const text = await response.text();
+      failure = `${response.status} ${text}`;
+      retryable = response.status === 429 || response.status >= 500;
+      const retryAfter = Number(/"retry_after":\s*(\d+)/.exec(text)?.[1]);
+      if (retryAfter > 0) waitMs = retryAfter * 1000;
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error);
+    }
+    if (!retryable || attempt >= ATTEMPTS) {
+      throw new Error(`Telegram sendMessage failed: ${failure}`);
+    }
+    console.warn(`Telegram attempt ${attempt} failed (${failure}); retrying.`);
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
-  console.info('Sent to Telegram.');
 }
 
 await send(message());
