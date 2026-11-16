@@ -103,7 +103,7 @@ export interface BranchOf {
  * dividends, closes, calls) or, for orders, only change while open, so a count and the
  * orders open at that close are enough to rebuild it from the final account.
  */
-interface CloseSnapshot {
+export interface CloseSnapshot {
   state: Omit<AccountState, 'fills' | 'dividends' | 'equityByDay' | 'orders' | 'marginCalls'>;
   fills: number;
   dividends: number;
@@ -158,7 +158,8 @@ export class Run {
   readonly alerts: RunAlert[] = [];
   /** Set when this run replays a moment of an earlier one. */
   branchOf: BranchOf | null = null;
-  private readonly snapshots: CloseSnapshot[] = [];
+  /** The account at each close so far (see `CloseSnapshot`); saves read and restore it. */
+  readonly snapshots: CloseSnapshot[] = [];
   private bars: DayBars;
   private barsDay: number;
   private readonly tickerIndex: Map<string, number>;
