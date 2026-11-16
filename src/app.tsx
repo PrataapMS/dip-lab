@@ -2,8 +2,9 @@ import { useEffect } from 'preact/hooks';
 import { HOME, type Route, useRoute } from './ui/router';
 import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
+import { Market as MarketScreen } from './ui/screens/Market';
 import { Placeholder } from './ui/screens/Placeholder';
-import { Notices, TabBar, TopBar } from './ui/Shell';
+import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { type Market, useMarket } from './ui/useMarket';
 
 /** Screens that only make sense with a run loaded. */
@@ -22,7 +23,7 @@ function Screen({ route, market }: { route: Route; market: Market }) {
     case 'learn':
       return <Learn />;
     case 'market':
-      return <Placeholder title="Market" />;
+      return <MarketScreen market={market} />;
     case 'portfolio':
       return <Placeholder title="Portfolio" />;
     case 'stock':
@@ -43,7 +44,7 @@ export function App() {
 
   return (
     <div class="app">
-      {needsRun(route) && view.ready && <TopBar view={view} />}
+      {needsRun(route) && view.ready && <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>}
       <main class="screen">
         <Screen route={route} market={market} />
       </main>

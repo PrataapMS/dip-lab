@@ -1,8 +1,9 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
+import { type Speed, SPEEDS, speedOf } from '../engine/clock';
 import { BARS_PER_DAY, barTime } from '../engine/intraday';
 import { money, signedMoney, signedPct, upDown, weekdayShort } from './format';
-import { HomeIcon, LearnIcon, MarketIcon, PortfolioIcon } from './icons';
+import { HomeIcon, LearnIcon, MarketIcon, PauseIcon, PlayIcon, PortfolioIcon, SkipIcon } from './icons';
 import { formatRoute, type Route } from './router';
 import type { Market, MarketView } from './useMarket';
 
@@ -64,7 +65,53 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
   );
 }
 
-const TABS: { route: Route; label: string; icon: () => preact.JSX.Element }[] = [
+/** Play/pause, speed chips and skip-to-close. */
+export function RunControls({ market }: { market: Market }) {
+  const { view, send } = market;
+  const speed = speedOf(view.dayLengthMs);
+  const note = speed
+    ? `${speed} = 1 trading day every ${view.dayLengthMs / 1000} s`
+    : `1 trading day every ${Math.round(view.dayLengthMs / 60_000)} min`;
+  return (
+    <>
+      <div class="controls">
+        <button
+          type="button"
+          class="primary play"
+          aria-label={view.playing ? 'Pause' : 'Play'}
+          disabled={view.finished}
+          onClick={() => send({ type: view.playing ? 'pause' : 'play' })}
+        >
+          {view.playing ? <PauseIcon /> : <PlayIcon />}
+        </button>
+        <div class="segmented speeds" role="group" aria-label="Game speed">
+          {(Object.keys(SPEEDS) as Speed[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={speed === s}
+              onClick={() => send({ type: 'speed', dayLengthMs: SPEEDS[s] })}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          class="ghost skip"
+          disabled={view.finished}
+          aria-label={view.bar >= BARS_PER_DAY ? 'Skip to the next close' : 'Skip to the close'}
+          onClick={() => send({ type: 'stepDay' })}
+        >
+          <SkipIcon /> skip
+        </button>
+      </div>
+      <span class="mono tiny dim">{note}</span>
+    </>
+  );
+}
+
+const TABS:{ route: Route; label: string; icon: () => preact.JSX.Element }[] = [
   { route: { name: 'home' }, label: 'home', icon: HomeIcon },
   { route: { name: 'market' }, label: 'market', icon: MarketIcon },
   { route: { name: 'portfolio' }, label: 'portfolio', icon: PortfolioIcon },
