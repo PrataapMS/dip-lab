@@ -103,7 +103,7 @@ export const QUESTS: readonly QuestDef[] = [
     goal: 1,
     xp: 100,
     mode: 'add',
-    measure: (a) => (a.kind === 'runEnd' && a.days >= 10 && a.score >= 75 ? 1 : 0),
+    measure: (a) => (a.kind === 'runEnd' && a.debrief.days >= 10 && a.debrief.grade.score >= 75 ? 1 : 0),
   },
   { id: 'replay', tier: 'stretch', text: 'Replay a moment', goal: 1, xp: 60, mode: 'add', measure: (a) => (a.kind === 'replay' ? 1 : 0) },
   { id: 'diversify-5', tier: 'stretch', text: 'Own 5 sectors at a close', goal: 5, xp: 80, mode: 'max', measure: sectors },

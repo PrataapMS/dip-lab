@@ -1,8 +1,9 @@
 import type { Activity } from '../engine/activity';
 import { levelFor } from './levels';
+import { type BadgeCtx, newBadges } from './badges';
 import { advanceQuests, type QuestState } from './quests';
 import { markPlayed, type Streak } from './streak';
-import { FIRST_FINISH_XP, replayAward, runXp } from './xp';
+import { FIRST_FINISH_XP, replayAward, runXp, XP } from './xp';
 
 /**
  * The player's progress: XP, badges, lessons, streak, today's quests. One plain record,
@@ -35,6 +36,8 @@ export interface Progress {
   counters: Record<string, number>;
   /** Glossary terms opened at least once. */
   glossarySeen: string[];
+  /** Companies that have paid you a dividend. */
+  dividendTickers: string[];
   tutorialDone: boolean;
   /** Testing switch: everything unlocked whatever the level. */
   unlockAll: boolean;
@@ -55,6 +58,7 @@ export function emptyProgress(): Progress {
     quests: null,
     counters: {},
     glossarySeen: [],
+    dividendTickers: [],
     tutorialDone: false,
     unlockAll: false,
   };
@@ -80,6 +84,7 @@ export function migrate(saved: unknown): Progress {
     quests: s.quests && typeof s.quests === 'object' ? s.quests : null,
     counters: obj(s.counters, base.counters),
     glossarySeen: Array.isArray(s.glossarySeen) ? s.glossarySeen.filter((x) => typeof x === 'string') : [],
+    dividendTickers: Array.isArray(s.dividendTickers) ? s.dividendTickers.filter((x) => typeof x === 'string') : [],
     tutorialDone: s.tutorialDone === true,
     unlockAll: s.unlockAll === true,
     version: PROGRESS_VERSION,
@@ -141,8 +146,10 @@ export function finishRun(p: Progress, r: RunResult): { progress: Progress; rewa
   return { progress: next, rewards };
 }
 
-/** Apply one activity on a local date: quests, streak and running totals. */
-export function applyActivity(p: Progress, a: Activity, date: string): { progress: Progress; rewards: Reward[] } {
+const NO_LESSONS: BadgeCtx = { lessonCount: 0 };
+
+/** Apply one activity on a local date: running totals, streak, quests, then badges. */
+export function applyActivity(p: Progress, a: Activity, date: string, ctx: BadgeCtx = NO_LESSONS): { progress: Progress; rewards: Reward[] } {
   const rewards: Reward[] = [];
   const q = advanceQuests(p.quests, date, a);
   let next: Progress = q.state === p.quests ? p : { ...p, quests: q.state };
@@ -155,5 +162,14 @@ export function applyActivity(p: Progress, a: Activity, date: string): { progres
     if (streak !== next.streak) next = { ...next, streak };
   }
   if (a.kind === 'glossaryRead' && !next.glossarySeen.includes(a.term)) next = { ...next, glossarySeen: [...next.glossarySeen, a.term] };
+  if (a.kind === 'fill' && a.orderType === 'limit' && !a.forced) next = bump(next, 'limitFills');
+  if (a.kind === 'close') {
+    const fresh = a.dividendTickers.filter((t) => !next.dividendTickers.includes(t));
+    if (fresh.length) next = { ...next, dividendTickers: [...next.dividendTickers, ...fresh] };
+  }
+  for (const b of newBadges(a, next, ctx)) {
+    next = { ...next, badges: { ...next.badges, [b.id]: date } };
+    rewards.push({ source: 'badge', label: `Badge: ${b.name}`, xp: XP.badge });
+  }
   return { progress: grant(next, rewards), rewards };
 }

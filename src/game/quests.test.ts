@@ -18,6 +18,7 @@ const close = (over: Partial<Extract<Activity, { kind: 'close' }>> = {}): Activi
   spyPct: 0.005,
   holdings: [],
   dividends: 0,
+  dividendTickers: [],
   earningsHeld: [],
   ...over,
 });

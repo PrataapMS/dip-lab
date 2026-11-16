@@ -92,6 +92,80 @@ export interface Debrief {
   grade: Grade;
   /** Set when this run replayed a moment of an earlier one. */
   branchOf: BranchOf | null;
+  /** Losing sales near a low that then rebounded. */
+  panicSells: number;
+  /** Good calls worth a badge: the ticker, or null. */
+  highlights: Highlights;
+}
+
+export interface Highlights {
+  /** Bought within 3% of the 30-day low, and it rose 8%+ in the next 15 days. */
+  boughtDip: string | null;
+  /** Held through a 20%+ fall below cost and still came out ahead. */
+  diamondHands: string | null;
+  /** A stop-loss sold, and the stock fell 10%+ more within 15 days. */
+  stopSaved: string | null;
+}
+
+/** Good calls in a run, for badges. Pure: same run, same answer. */
+export function highlights(run: Run): Highlights {
+  const m = run.market;
+  const fills = run.account.fills;
+  const lastDay = m.dates.length - 1;
+  const closesOf = (t: string) => {
+    const i = run.indexOf(t);
+    return i === undefined ? undefined : m.closes[i];
+  };
+  const out: Highlights = { boughtDip: null, diamondHands: null, stopSaved: null };
+  const byId = new Map(run.account.orders.map((o) => [o.id, o]));
+  for (const f of fills) {
+    const c = closesOf(f.ticker);
+    if (!c || f.short || f.forced) continue;
+    const d = f.at.day;
+    if (f.side === 'buy' && !out.boughtDip && d + RULES.lowWindow <= lastDay) {
+      let low = Infinity;
+      for (let k = Math.max(0, d - 30); k <= d; k++) low = Math.min(low, c[k + 1] ?? Infinity);
+      if (f.mid <= low * (1 + RULES.nearLow) && (c[d + RULES.lowWindow + 1] ?? 0) >= f.mid * (1 + RULES.reboundAfter)) out.boughtDip = f.ticker;
+    }
+    const o = f.orderId === null ? undefined : byId.get(f.orderId);
+    if (f.side === 'sell' && o?.type === 'stop' && !out.stopSaved) {
+      let low = Infinity;
+      for (let k = d; k <= Math.min(lastDay, d + RULES.lowWindow); k++) low = Math.min(low, c[k + 1] ?? Infinity);
+      if (low <= f.price * 0.9) out.stopSaved = f.ticker;
+    }
+  }
+  // Diamond hands: follow each long position from open to close (or the end).
+  const book = new Map<string, { shares: number; cost: number; from: number; worst: number }>();
+  const worstSince = (t: string, from: number, to: number, avg: number) => {
+    const c = closesOf(t);
+    let worst = Infinity;
+    for (let k = from; k <= to; k++) worst = Math.min(worst, (c?.[k + 1] ?? Infinity) / avg);
+    return worst;
+  };
+  for (const f of fills) {
+    if (f.short) continue;
+    const b = book.get(f.ticker) ?? { shares: 0, cost: 0, from: f.at.day, worst: Infinity };
+    if (f.side === 'buy') {
+      book.set(f.ticker, { ...b, shares: b.shares + f.shares, cost: b.cost + f.shares * f.price + f.commission, from: b.shares > 0 ? b.from : f.at.day });
+      continue;
+    }
+    if (b.shares <= 0) continue;
+    const avg = b.cost / b.shares;
+    const worst = Math.min(b.worst, worstSince(f.ticker, b.from, f.at.day, avg));
+    const part = f.shares / b.shares;
+    if (f.realised > 0 && worst <= 0.8 && !out.diamondHands) out.diamondHands = f.ticker;
+    const left = b.shares - f.shares;
+    book.set(f.ticker, left > 1e-9 ? { shares: left, cost: b.cost * (1 - part), from: b.from, worst } : { shares: 0, cost: 0, from: f.at.day, worst: Infinity });
+  }
+  const end = run.clock.day;
+  for (const [t, b] of book) {
+    if (b.shares <= 0 || out.diamondHands) continue;
+    const i = run.indexOf(t);
+    const price = i === undefined ? 0 : run.mid(i);
+    const worst = Math.min(b.worst, worstSince(t, b.from, end, b.cost / b.shares));
+    if (worst <= 0.8 && b.shares * price > b.cost) out.diamondHands = t;
+  }
+  return out;
 }
 
 /** Thresholds for the flagged moments and the grade. */
@@ -510,5 +584,7 @@ export function debrief(run: Run): Debrief {
     moments: moments.slice(0, 3),
     grade,
     branchOf: run.branchOf,
+    panicSells,
+    highlights: highlights(run),
   };
 }

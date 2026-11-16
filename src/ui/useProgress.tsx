@@ -120,16 +120,7 @@ export function ProgressProvider({ market, children }: { market: Market; childre
             complete: e.reason === 'lastDay' || e.reason === 'target',
           };
           update((p) => finishRun(p, result));
-          record({
-            kind: 'runEnd',
-            scenarioId: d.scenarioId,
-            letter: d.grade.letter,
-            score: d.grade.score,
-            days: d.days,
-            complete: result.complete,
-            excessPts: d.excessPts,
-            branch: !!d.branchOf,
-          });
+          record({ kind: 'runEnd', debrief: d, difficulty: result.difficulty, complete: result.complete, margin: !!v.settings?.margin });
         }
       }),
     [subscribe, update, record],

@@ -1,4 +1,5 @@
 import type { Fill } from './account';
+import type { Debrief } from './debrief';
 import { eventsOn } from './market';
 import type { Order, OrderType } from './orders';
 import type { Run } from './run';
@@ -32,13 +33,15 @@ export type Activity =
       dayPct: number;
       spyPct: number;
       holdings: HoldingFact[];
-      /** Dividend cash received today (owed on shorts not counted). */
+      /** Dividend cash received today (owed on shorts not counted), and from which tickers. */
       dividends: number;
+      dividendTickers: string[];
       /** Held tickers that reported earnings today. */
       earningsHeld: string[];
     }
   | { kind: 'marginCall'; day: number }
-  | { kind: 'runEnd'; scenarioId: string; letter: string; score: number; days: number; complete: boolean; excessPts: number; branch: boolean }
+  /** A run finished: its debrief, how hard it was, and whether it was played to the end. */
+  | { kind: 'runEnd'; debrief: Debrief; difficulty: number; complete: boolean; margin: boolean }
   /** UI-side facts. */
   | { kind: 'glossaryRead'; term: string }
   | { kind: 'lessonDone'; lesson: string }
@@ -107,7 +110,8 @@ export function closeActivity(run: Run): Activity {
   const earningsHeld = eventsOn(run.market, day)
     .filter((e) => e.kind === 'earnings' && e.ticker && held.has(e.ticker))
     .map((e) => e.ticker as string);
-  const dividends = a.dividends.filter((d) => d.at.day === day && d.amount > 0).reduce((s, d) => s + d.amount, 0);
+  const paidToday = a.dividends.filter((d) => d.at.day === day && d.amount > 0);
+  const dividends = paidToday.reduce((s, d) => s + d.amount, 0);
   return {
     kind: 'close',
     day,
@@ -117,6 +121,7 @@ export function closeActivity(run: Run): Activity {
     spyPct: spyBefore > 0 ? spyNow / spyBefore - 1 : 0,
     holdings,
     dividends,
+    dividendTickers: [...new Set(paidToday.map((d) => d.ticker))],
     earningsHeld: [...new Set(earningsHeld)],
   };
 }
