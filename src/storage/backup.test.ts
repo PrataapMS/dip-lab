@@ -80,6 +80,19 @@ describe('export files', () => {
     expect(backupFileName(back, '2026-11-16')).toBe('dip-lab-backup-2026-11-16.json');
   });
 
+  it('keeps a challenge only on its own market', () => {
+    const withChallenge = (challenge: string, seed: number): SlotBody => ({
+      ...body,
+      header: { ...body.header, config: { scenarioId: 'first-steps', seed, challenge } },
+    });
+    const parse = (r: SlotBody) =>
+      parseBackup(JSON.stringify(makeBackup({ app: '0.5.0', exportedAt: 'now', runs: [r] })))
+        .runs[0]?.header.config;
+    expect(parse(withChallenge('first-ahead', 1001))?.challenge).toBe('first-ahead');
+    expect(parse(withChallenge('first-ahead', 4))).toEqual({ scenarioId: 'first-steps', seed: 4 });
+    expect(parse(withChallenge('no-such-challenge', 4))?.challenge).toBeUndefined();
+  });
+
   it('names and describes a single run', () => {
     const file = makeBackup({ app: '0.5.0', exportedAt: 'now', runs: [body] });
     expect(describeBackup(file)).toBe('First steps, day 6 of 61');

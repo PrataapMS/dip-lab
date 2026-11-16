@@ -1,3 +1,4 @@
+import { challengeById } from '../learn/challenges';
 import type { SlotBody } from './slots';
 
 /**
@@ -52,7 +53,21 @@ function checkRun(r: unknown, i: number): SlotBody {
   )
     throw bad();
   if (typeof r.header.scenarioName !== 'string') throw bad();
-  return r as unknown as SlotBody;
+  const body = r as unknown as SlotBody;
+  return challengeFits(body) ? body : withoutChallenge(body);
+}
+
+/** A run counts as a challenge only if it is one, on that challenge's own market. */
+function challengeFits(r: SlotBody): boolean {
+  const c = r.header.config;
+  if (c.challenge === undefined) return true;
+  const ch = challengeById(c.challenge);
+  return !!ch && ch.scenarioId === c.scenarioId && ch.seed === c.seed && !c.custom;
+}
+
+function withoutChallenge(r: SlotBody): SlotBody {
+  const { challenge: _drop, ...config } = r.header.config;
+  return { ...r, header: { ...r.header, config } };
 }
 
 /** Reads an export file. Throws `BackupError` with a plain reason. */

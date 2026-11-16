@@ -13,15 +13,24 @@ import {
   type Reward,
   type RunResult,
 } from '../game/progress';
+import {
+  cleanSlotRewards,
+  keepFilled,
+  type RunRewards,
+  type SlotRewards,
+  setSlotRewards,
+} from '../game/runRewards';
 import { migrateSettings, pauseAtCloseFor, type Settings } from '../game/settings';
 import { challengeById } from '../learn/challenges';
 import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from '../storage/db';
+import { SLOTS } from '../storage/slots';
 import { cueFor, play, setSoundEnabled } from './sound';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
 const SETTINGS_KEY = 'settings';
+const RUN_REWARDS_KEY = 'runRewards';
 const BADGE_CTX = { lessonCount: LESSONS.length };
 /** Custom runs are difficulty 2, like the Custom card. */
 const CUSTOM_DIFFICULTY = 2;
@@ -43,11 +52,7 @@ export function difficultyOf(scenarioId: string): number {
   return SCENARIOS.find((s) => s.id === scenarioId)?.difficulty ?? CUSTOM_DIFFICULTY;
 }
 
-/** What one run earned, for the debrief. */
-export interface RunRewards {
-  levelBefore: number;
-  rewards: Reward[];
-}
+export type { RunRewards };
 
 export interface ProgressApi {
   progress: Progress;
@@ -87,8 +92,24 @@ export function ProgressProvider({
   const progressRef = useRef<Progress | null>(null);
   progressRef.current = progress;
 
+  // Each slot's rewards so far, so a reloaded run's debrief still lists them.
+  const slotRewards = useRef<SlotRewards>(Array(SLOTS).fill(null));
+  const slotRewardsRead = useRef<Promise<void>>(Promise.resolve());
+  /** The slot `run` belongs to, once it is known. */
+  const runSlot = useRef<number | null>(null);
+  const storeSlotRewards = useCallback((slot: number, value: RunRewards | null) => {
+    slotRewards.current = setSlotRewards(slotRewards.current, slot, value);
+    void save('progress', RUN_REWARDS_KEY, slotRewards.current);
+  }, []);
+  useEffect(() => {
+    if (runSlot.current !== null) storeSlotRewards(runSlot.current, run);
+  }, [run, storeSlotRewards]);
+
   useEffect(() => {
     let live = true;
+    slotRewardsRead.current = load('progress', RUN_REWARDS_KEY).then((saved) => {
+      if (live) slotRewards.current = cleanSlotRewards(saved, SLOTS);
+    });
     load('progress', KEY).then((saved) => {
       if (live) setProgress(migrate(saved));
     });
@@ -170,8 +191,31 @@ export function ProgressProvider({
       subscribe((e: WorkerEvent) => {
         const p = progressRef.current;
         if (e.type === 'loaded') {
-          setRun({ levelBefore: levelFor(p?.xp ?? 0).level, rewards: [] });
+          const fresh = { levelBefore: levelFor(p?.xp ?? 0).level, rewards: [] };
+          runSlot.current = null;
+          if (e.restored && e.slot !== null) {
+            const slot = e.slot;
+            void slotRewardsRead.current.then(() => {
+              runSlot.current = slot;
+              setRun(slotRewards.current[slot] ?? fresh);
+            });
+          } else {
+            runSlot.current = e.slot;
+            setRun(fresh);
+          }
           if (e.branchOf && !e.restored) record({ kind: 'replay', day: e.branchOf.day });
+        }
+        if (e.type === 'imported') {
+          // The run open in that slot (if any) was replaced and is no longer saved.
+          if (runSlot.current === e.slot) runSlot.current = null;
+          storeSlotRewards(e.slot, null);
+        }
+        if (e.type === 'slots') {
+          const kept = keepFilled(slotRewards.current, e.headers);
+          if (kept !== slotRewards.current) {
+            slotRewards.current = kept;
+            void save('progress', RUN_REWARDS_KEY, kept);
+          }
         }
         if (e.type === 'activity') for (const a of e.items) record(a);
         // A run opened already finished was rewarded when it ended (or was imported).
@@ -210,7 +254,7 @@ export function ProgressProvider({
           }
         }
       }),
-    [subscribe, update, record],
+    [subscribe, update, record, storeSlotRewards],
   );
 
   const api = useMemo(
