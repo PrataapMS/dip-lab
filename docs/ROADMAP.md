@@ -25,7 +25,8 @@ Prices are simulated. Nothing here is investment advice.
 | News | Scenario headlines, quarterly earnings beats and misses, company news |
 | Portfolio | Cash, holdings, profit and loss, sector mix, your equity curve vs the index |
 | Learning | Guided first trade, glossary, end-of-day summary, debrief with lessons, challenges |
-| Saves | Autosave, save slots, export and import, replay with the same market |
+| Saves | Autosave into 3 slots, resume after a reload, export and import (one run or a full backup), replay with the same market |
+| Settings | Player name, day length (from 7.5 seconds to real time), pause at each close, sound, reset progress |
 
 ## Game features
 
@@ -62,7 +63,7 @@ real price data.
 | 2 | Core trading screens: market, stock, order sheet, portfolio | Done |
 | 3 | All scenarios, news and events, dividends, end-of-run debrief | Done |
 | 4 | Guided first trade, glossary, lessons, challenges, XP, quests and badges, replay a moment, margin and shorts | Done |
-| 5 | Offline polish, install prompt, saves, settings, performance | Next |
+| 5 | Offline polish, install prompt, saves, settings, performance | Done |
 
 ## Later ideas
 
