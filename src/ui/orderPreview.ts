@@ -15,6 +15,8 @@ export interface PreviewInput {
   cash: number;
   heldShares: number;
   commission: number;
+  /** Set for a margin account: dollars of new holdings it can take on, borrowing included. */
+  buyingPower?: number;
 }
 
 export interface Preview {
@@ -22,6 +24,8 @@ export interface Preview {
   /** Expected price per share, spread included. */
   fillPrice: number;
   cashAfter: number;
+  /** Part of a buy paid with borrowed money (margin accounts). */
+  borrowed: number;
   /** True when the order would fill right now (market, or a limit/stop already crossed). */
   fillsNow: boolean;
   /** Plain-English problem that would get the order rejected, if any. */
@@ -61,10 +65,13 @@ export function previewOrder(p: PreviewInput): Preview {
   if (!(amount > 0)) problem = 'Enter an amount above zero.';
   else if (p.type === 'limit' && !(p.limitPrice && p.limitPrice > 0)) problem = 'Set a limit price above zero.';
   else if (p.type === 'stop' && !(p.stopPrice && p.stopPrice > 0)) problem = 'Set a stop price above zero.';
-  else if (p.side === 'buy' && cashAfter < -1e-9) problem = 'Not enough cash for this order.';
+  else if (p.side === 'buy' && p.buyingPower !== undefined && gross + p.commission > p.buyingPower + 1e-9)
+    problem = 'Not enough buying power for this order.';
+  else if (p.side === 'buy' && p.buyingPower === undefined && cashAfter < -1e-9) problem = 'Not enough cash for this order.';
   else if (p.side === 'sell' && p.heldShares <= 0) problem = "You don't own any of this stock.";
   else if (p.side === 'sell' && estShares > p.heldShares + 1e-6) problem = `You only own ${Number(p.heldShares.toFixed(4))} shares.`;
-  return { estShares, fillPrice: fill, cashAfter, fillsNow, problem };
+  const borrowed = p.side === 'buy' && p.buyingPower !== undefined ? Math.max(0, -cashAfter) - Math.max(0, -p.cash) : 0;
+  return { estShares, fillPrice: fill, cashAfter, borrowed: Math.max(0, borrowed), fillsNow, problem };
 }
 
 export interface RiskInput {

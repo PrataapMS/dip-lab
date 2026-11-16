@@ -41,12 +41,15 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const heldShares = held?.shares ?? 0;
   const settings = view.settings;
   const commission = settings?.commission ?? 0;
+  const margin = !!settings?.margin;
+  const power = margin ? (account?.buyingPower ?? 0) : cash;
+  const startAmount = () => String(Math.max(0, Math.min(1_000, Math.floor(power - commission))));
   const half = settings ? halfSpread(inst, view.marketVol, settings) : 0;
 
   const [side, setSide] = useState<Side>(initialSide);
   const [unit, setUnit] = useState<'dollars' | 'shares'>(initialSide === 'sell' ? 'shares' : 'dollars');
   const [amountText, setAmountText] = useState(() =>
-    initialSide === 'sell' ? String(Number(heldShares.toFixed(6))) : String(Math.min(1_000, Math.floor(cash - commission))),
+    initialSide === 'sell' ? String(Number(heldShares.toFixed(6))) : startAmount(),
   );
   const [type, setType] = useState<OrderType>('market');
   const [tif, setTif] = useState<TimeInForce>('day');
@@ -86,14 +89,27 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
       setAmountText(String(Number(heldShares.toFixed(6))));
     } else {
       setUnit('dollars');
-      setAmountText(String(Math.min(1_000, Math.floor(cash - commission))));
+      setAmountText(startAmount());
     }
   };
 
   const amount = parseAmount(amountText);
   const limitPrice = type === 'limit' ? parseAmount(limitText) : undefined;
   const stopPrice = type === 'stop' ? parseAmount(stopText) : undefined;
-  const preview = previewOrder({ side, type, unit, amount, price, half, limitPrice, stopPrice, cash, heldShares, commission });
+  const preview = previewOrder({
+    side,
+    type,
+    unit,
+    amount,
+    price,
+    half,
+    limitPrice,
+    stopPrice,
+    cash,
+    heldShares,
+    commission,
+    ...(margin ? { buyingPower: power } : {}),
+  });
   const risk = riskCheck({
     side,
     ticker: inst.ticker,
@@ -121,7 +137,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const setMax = () => {
     if (side === 'buy') {
       setUnit('dollars');
-      setAmountText(String(Math.max(0, Math.floor((cash - commission) * 100) / 100)));
+      setAmountText(String(Math.max(0, Math.floor((power - commission) * 100) / 100)));
     } else {
       setUnit('shares');
       setAmountText(String(Number(heldShares.toFixed(6))));
@@ -263,6 +279,18 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
             <span class="dim">&gt; cash_after</span>
             <span>{money(preview.cashAfter, true)}</span>
           </div>
+          {margin && side === 'buy' && (
+            <div class="row">
+              <span class="dim">&gt; buying_power</span>
+              <span>{money(power, true)}</span>
+            </div>
+          )}
+          {preview.borrowed > 0 && (
+            <p class="tiny warn">
+              {money(preview.borrowed, true)} of this is borrowed at {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on
+              it are yours too.
+            </p>
+          )}
           {closed && <p class="tiny warn">Market closed: this fills at the next open, which can gap.</p>}
         </div>
 

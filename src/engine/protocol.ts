@@ -7,12 +7,12 @@ import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
 import type { CustomOptions } from './scenarios';
-import type { AccountView, EndReason } from './run';
+import type { AccountView, EndReason, RunAlert } from './run';
 import type { DaySummary } from './summary';
 
 export type { AccountView } from './run';
 export type { NewsItem, Upcoming } from './news';
-export type { EndReason } from './run';
+export type { EndReason, RunAlert } from './run';
 export type { CustomOptions } from './scenarios';
 export type { DaySummary } from './summary';
 export type { Debrief, Moment, TradeStat } from './debrief';
@@ -129,6 +129,8 @@ export type WorkerEvent =
   | { type: 'news'; items: NewsItem[] }
   /** Answer to placeOrder or cancelOrder. */
   | { type: 'orderResult'; ok: boolean; order: Order | null; message: string }
+  /** Margin calls and forced sales, oldest first. */
+  | { type: 'alerts'; alerts: RunAlert[] }
   /** Orders that filled, expired or were rejected while the clock ran. */
   | { type: 'orderUpdates'; orders: Order[] }
   | { type: 'error'; message: string };

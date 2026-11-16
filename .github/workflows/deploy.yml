@@ -1,11 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Deploys only when the major version in package.json goes up on main
-# (e.g. 0.x -> 1.0.0, 1.x -> 2.0.0), or when run manually.
+# Called by CI after verify passes on a major version bump on main, or run manually.
+# A manual run verifies the code itself before deploying.
 on:
-  push:
-    branches: [main]
-    paths: [package.json]
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -16,34 +14,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  version-check:
-    runs-on: ubuntu-latest
-    outputs:
-      deploy: ${{ steps.check.outputs.deploy }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - id: check
-        env:
-          EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-        run: |
-          if [ "$EVENT" = "workflow_dispatch" ]; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"; exit 0
-          fi
-          major() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).version.split(".")[0])}catch{console.log(0)}})'; }
-          new=$(major < package.json)
-          old=$(git show "$BEFORE:package.json" 2>/dev/null | major || echo 0)
-          echo "major: $old -> $new"
-          if [ "$new" -gt "$old" ]; then deploy=true; else deploy=false; fi
-          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
-
   build:
-    needs: version-check
-    if: needs.version-check.outputs.deploy == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -53,8 +26,12 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+
+      # When called from CI these already passed in the verify job.
+      - if: github.event_name == 'workflow_dispatch'
+        run: npm run typecheck
+      - if: github.event_name == 'workflow_dispatch'
+        run: npm test
 
       # Pages serves project sites from /<repo-name>/. For a custom domain or a
       # <user>.github.io repo, change this to '/'.
@@ -70,6 +47,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -79,3 +57,13 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Smoke test
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for path in "" sw.js manifest.webmanifest; do
+            curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "$URL$path" \
+              || { echo "::error::$URL$path not reachable"; exit 1; }
+          done
+          echo "### Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"

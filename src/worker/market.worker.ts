@@ -36,6 +36,8 @@ let dividendsSent = 0;
 /** Closes already summarised. */
 let closesSent = 0;
 let endSent = false;
+/** Run alerts already sent. */
+let alertsSent = 0;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
   scope.postMessage(event, transfer);
@@ -138,6 +140,8 @@ function emitTick(): void {
     [prices.buffer],
   );
   emitNews(r);
+  if (r.alerts.length > alertsSent) post({ type: 'alerts', alerts: r.alerts.slice(alertsSent) });
+  alertsSent = r.alerts.length;
   post({ type: 'account', account: r.view() });
   const closes = r.account.equityByDay.length;
   if (closes > closesSent && r.clock.bar === BARS_PER_DAY) post({ type: 'dayEnd', summary: daySummary(r) });
@@ -194,6 +198,7 @@ function handle(cmd: Command): void {
       dividendsSent = 0;
       closesSent = 0;
       endSent = false;
+      alertsSent = 0;
       post({
         type: 'loaded',
         scenario: { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional },

@@ -1,5 +1,7 @@
 name: CI
 
+# Every push and PR is verified. On main, a major version bump in package.json
+# deploys to GitHub Pages, but only after verify has passed.
 on:
   push:
     branches: ['**']
@@ -8,9 +10,15 @@ on:
 permissions:
   contents: read
 
+# Newer pushes cancel older runs on feature branches; main always runs to completion.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -24,9 +32,48 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      - name: Check PWA output
+        run: |
+          for f in dist/index.html dist/sw.js dist/manifest.webmanifest; do
+            [ -f "$f" ] || { echo "::error::missing $f"; exit 1; }
+          done
+          echo "### Build size: $(du -sh dist | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+
       # Built site for inspection. Netlify deploys are manual and need explicit sign-off.
       - uses: actions/upload-artifact@v4
         with:
           name: dip-lab-dist
           path: dist
           retention-days: 14
+
+  # Deploys only when the major version goes up (e.g. 0.x -> 1.0.0, 1.x -> 2.0.0).
+  release-check:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          major() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).version.split(".")[0])}catch{console.log(0)}})'; }
+          new=$(major < package.json)
+          old=$(git show "$BEFORE:package.json" 2>/dev/null | major || echo 0)
+          echo "major: $old -> $new"
+          if [ "$new" -gt "$old" ]; then deploy=true; else deploy=false; fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+  pages:
+    needs: [verify, release-check]
+    if: needs.release-check.outputs.deploy == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml

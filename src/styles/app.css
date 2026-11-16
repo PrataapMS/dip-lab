@@ -1293,3 +1293,8 @@ button:disabled {
 .primary.boss {
   background: var(--down);
 }
+
+.margin-banner {
+  border-color: var(--down);
+  gap: 4px;
+}

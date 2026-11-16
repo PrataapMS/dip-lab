@@ -168,3 +168,19 @@ export function Notices({ market }: { market: Market }) {
     </div>
   );
 }
+
+/** Stays on screen while a margin call is open. */
+export function MarginBanner({ market }: { market: Market }) {
+  const a = market.view.account;
+  if (!a?.marginCall) return null;
+  const ratio = a.marginRatio === null ? '' : `${Math.round(a.marginRatio * 100)}%`;
+  return (
+    <section class="panel margin-banner" role="alert">
+      <span class="mono tiny down">// MARGIN CALL</span>
+      <p class="small">
+        Your equity is {ratio} of what you hold; the minimum is 30%. Sell something before the close of day {a.marginCall.day + 2}, or
+        your broker sells for you at the next open.
+      </p>
+    </section>
+  );
+}

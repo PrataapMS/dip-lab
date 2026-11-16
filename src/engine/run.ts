@@ -2,7 +2,10 @@ import {
   type AccountMarks,
   type AccountSettings,
   type AccountState,
+  buyingPower,
+  chargeInterest,
   createAccount,
+  type MarginCall,
   type DividendPayment,
   DEFAULT_ACCOUNT_SETTINGS,
   type Fill,
@@ -25,6 +28,7 @@ import {
   stepDay,
 } from './clock';
 import { halfSpread } from './costs';
+import { checkMargin, forceSale, marginRatio } from './margin';
 import { BARS_PER_DAY, POINTS_PER_DAY } from './intraday';
 import { type Dividend, reinvestFactors } from './dividends';
 import { type BuiltMarket, type DayBars, dayBars } from './market';
@@ -52,6 +56,22 @@ export interface AccountView {
   /** Newest first. */
   recentFills: Fill[];
   equityByDay: number[];
+  interestPaid: number;
+  /** Dollars of new holdings the account can take on now (cash without margin). */
+  buyingPower: number;
+  /** Cash owed to the broker (0 without margin). */
+  borrowed: number;
+  /** Equity as a share of holdings; null when nothing is held. */
+  marginRatio: number | null;
+  marginCall: MarginCall | null;
+}
+
+/** Something the player must hear about now (shown as a notice). */
+export interface RunAlert {
+  kind: 'marginCall' | 'marginMet' | 'forcedSale';
+  day: number;
+  ok: boolean;
+  message: string;
 }
 
 const RECENT_FILLS = 20;
@@ -93,6 +113,8 @@ export class Run {
   pauseAtClose: boolean;
   readonly targetReturn?: number;
   endReason: EndReason | null = null;
+  /** Every alert so far, oldest first. */
+  readonly alerts: RunAlert[] = [];
   private bars: DayBars;
   private barsDay: number;
   private readonly tickerIndex: Map<string, number>;
@@ -194,6 +216,12 @@ export class Run {
     return halfSpread(inst, marketVol, this.account.settings);
   }
 
+  /** Current mid price of a ticker, if it trades here. */
+  readonly priceOf = (ticker: string): number | undefined => {
+    const i = this.tickerIndex.get(ticker);
+    return i === undefined ? undefined : this.mid(i);
+  };
+
   marks(): AccountMarks {
     return markToMarket(this.account, (ticker) => {
       const i = this.tickerIndex.get(ticker);
@@ -223,6 +251,11 @@ export class Run {
       openOrders: a.orders.filter((o) => o.status === 'open'),
       recentFills: a.fills.slice(-RECENT_FILLS).reverse(),
       equityByDay: [...a.equityByDay],
+      interestPaid: a.interestPaid,
+      buyingPower: buyingPower(a, this.priceOf),
+      borrowed: Math.max(0, -m.cash),
+      marginRatio: m.positions.length ? Math.min(99, marginRatio(a, this.priceOf)) : null,
+      marginCall: a.marginCall,
     };
   }
 
@@ -230,7 +263,7 @@ export class Run {
     if (this.endReason) throw new Error('This run is over. Start a new one to keep trading.');
     const i = this.tickerIndex.get(draft.ticker);
     const quote = i === undefined ? undefined : { mid: this.mid(i), half: this.halfSpreadOf(i) };
-    const r = placeOrder(this.account, draft, { at: this.at, quote });
+    const r = placeOrder(this.account, draft, { at: this.at, quote, prices: this.priceOf });
     this.account = r.state;
     return r.order;
   }
@@ -277,6 +310,7 @@ export class Run {
       // Overnight: holders at the close get any dividends, then the next day opens, possibly with a gap.
       this.account = payDividends(this.account, this.dividendsOn(at.day), at);
       const { points } = this.todayBars();
+      if (this.account.forcedSaleDue) this.forcedSale(at);
       quote = (ticker) => {
         const i = this.tickerIndex.get(ticker);
         if (i === undefined) return undefined;
@@ -292,15 +326,64 @@ export class Run {
     if (at.bar === BARS_PER_DAY) {
       const e = expireDayOrders(this.account, at.day);
       changed.push(...e.changed);
+      this.account = chargeInterest(e.state);
       const value = this.marks().value;
-      this.account = recordClose(e.state, value);
+      this.account = recordClose(this.account, value);
       const reason = endAtClose(value, this.account.settings.startingCash, this.targetReturn);
+      const called = reason ? false : this.checkMargin(at.day);
       if (reason) changed.push(...this.end(reason));
       else if (isFinished(this.clock)) this.endReason = 'lastDay';
-      else if (this.pauseAtClose) this.clock = { ...this.clock, playing: false, carry: 0 };
+      else if (this.pauseAtClose || called) this.clock = { ...this.clock, playing: false, carry: 0 };
     }
     if (this.finished) this.clock = { ...this.clock, playing: false, carry: 0 };
     return changed;
+  }
+
+  /** Margin check at a close. Returns true when a new call was made (the clock pauses). */
+  private checkMargin(day: number): boolean {
+    const r = checkMargin(this.account, this.priceOf, day);
+    this.account = r.state;
+    const pct = (x: number) => `${Math.round(x * 100)}%`;
+    switch (r.event?.kind) {
+      case 'call':
+        this.alerts.push({
+          kind: 'marginCall',
+          day,
+          ok: false,
+          message: `Margin call: your equity is ${pct(r.event.ratio)} of what you hold, under the 30% minimum. Sell by the next close, or your broker sells for you at the open after.`,
+        });
+        return true;
+      case 'met':
+        this.alerts.push({ kind: 'marginMet', day, ok: true, message: 'Margin call met: your equity is back above 30% of what you hold.' });
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /** The broker sells at this open because a margin call went unmet. */
+  private forcedSale(at: MarketTime): void {
+    const { points } = this.todayBars();
+    const r = forceSale(
+      this.account,
+      (ticker) => {
+        const i = this.tickerIndex.get(ticker);
+        if (i === undefined) return undefined;
+        return { mid: points[i * POINTS_PER_DAY] ?? 0, half: this.halfSpreadOf(i, at.day) };
+      },
+      at,
+    );
+    this.account = r.state;
+    if (r.fills.length) {
+      const sold = r.fills.reduce((sum, f) => sum + f.shares * f.price, 0);
+      const names = [...new Set(r.fills.map((f) => f.ticker))].join(', ');
+      this.alerts.push({
+        kind: 'forcedSale',
+        day: at.day,
+        ok: false,
+        message: `Forced sale: the margin call wasn't met, so your broker sold $${Math.round(sold).toLocaleString('en-US')} of ${names} at the open.`,
+      });
+    }
   }
 
   /** Play forward by real elapsed time, walking every due step. */

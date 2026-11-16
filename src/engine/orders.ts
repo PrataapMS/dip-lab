@@ -1,4 +1,4 @@
-import { type AccountState, type Amount, executeTrade, type MarketTime, type Side, usd } from './account';
+import { type AccountState, type Amount, executeTrade, type MarketTime, type PriceOf, type Side, usd } from './account';
 import { fillPrice } from './costs';
 import { BARS_PER_DAY } from './intraday';
 
@@ -103,7 +103,7 @@ function replaceOrder(state: AccountState, order: Order): AccountState {
 }
 
 /** Try to fill one open order in a segment. Returns the state unchanged if it does not trigger. */
-function tryFill(state: AccountState, order: Order, q: SegmentQuote, at: MarketTime): { state: AccountState; order: Order } {
+function tryFill(state: AccountState, order: Order, q: SegmentQuote, at: MarketTime, prices?: PriceOf): { state: AccountState; order: Order } {
   const hit = triggerPrice(order, q);
   if (!hit) return { state, order };
   const r = executeTrade(state, {
@@ -115,6 +115,7 @@ function tryFill(state: AccountState, order: Order, q: SegmentQuote, at: MarketT
     price: hit.price,
     at,
     orderId: order.id,
+    prices,
   });
   if (!r.ok) {
     const rejected: Order = { ...order, status: 'rejected', reason: r.reason };
@@ -134,6 +135,8 @@ export interface PlaceContext {
   at: MarketTime;
   /** Current price and spread for the order's ticker, if it trades in this scenario. */
   quote: { mid: number; half: number } | undefined;
+  /** Current prices of other holdings (for the margin check). */
+  prices?: PriceOf;
 }
 
 /**
@@ -156,7 +159,7 @@ export function placeOrder(state: AccountState, draft: OrderDraft, ctx: PlaceCon
   const placed: AccountState = { ...state, orders: [...state.orders, order], nextOrderId: order.id + 1 };
   if (!ctx.quote || ctx.at.bar >= BARS_PER_DAY) return { state: placed, order };
   const { mid, half } = ctx.quote;
-  return tryFill(placed, order, { open: mid, high: mid, low: mid, half }, ctx.at);
+  return tryFill(placed, order, { open: mid, high: mid, low: mid, half }, ctx.at, ctx.prices);
 }
 
 /**
@@ -166,13 +169,14 @@ export function placeOrder(state: AccountState, draft: OrderDraft, ctx: PlaceCon
 export function processOrders(state: AccountState, quote: QuoteFn, at: MarketTime): { state: AccountState; changed: Order[] } {
   const changed: Order[] = [];
   let s = state;
+  const prices: PriceOf = (t) => quote(t)?.open;
   for (const order of state.orders) {
     if (order.status !== 'open') continue;
     // An order placed after the close waits for its own session.
     if (sessionOf(order.placedAt) > at.day) continue;
     const q = quote(order.ticker);
     if (!q) continue;
-    const r = tryFill(s, order, q, at);
+    const r = tryFill(s, order, q, at, prices);
     if (r.order !== order) {
       s = r.state;
       changed.push(r.order);

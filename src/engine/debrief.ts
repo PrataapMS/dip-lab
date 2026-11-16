@@ -21,7 +21,7 @@ export interface TradeStat {
   day: number;
 }
 
-export type MomentKind = 'soldNearLow' | 'stopSlippage' | 'allIn' | 'overtrading' | 'satOut';
+export type MomentKind = 'soldNearLow' | 'stopSlippage' | 'allIn' | 'overtrading' | 'satOut' | 'marginCall' | 'forcedSale';
 
 export interface Moment {
   kind: MomentKind;
@@ -70,13 +70,20 @@ export interface Debrief {
   fees: number;
   spread: number;
   dividends: number;
+  /** Interest paid on borrowed cash. */
+  interest: number;
+  /** Margin calls received, and opens where the broker sold. */
+  marginCalls: number;
+  forcedSales: number;
+  /** Average of holdings ÷ equity at the closes (above 1 means borrowed money was used). */
+  avgLeverage: number;
   wins: number;
   closedTrades: number;
   best: TradeStat | null;
   worst: TradeStat | null;
   /** Largest single-stock share of the account at any close (funds don't count). */
   maxWeight: { ticker: string; weight: number; day: number } | null;
-  /** Average share of the account invested at the closes. */
+  /** Average share of the account invested at the closes (capped at 1). */
   avgInvested: number;
   moments: Moment[];
   grade: Grade;
@@ -101,6 +108,8 @@ export const RULES = {
   /** Grade caps for concentration. */
   capB: 0.5,
   capC: 0.8,
+  /** Average leverage above this costs discipline. */
+  leverage: 1.5,
 } as const;
 
 const LETTERS: [number, Letter][] = [
@@ -157,6 +166,10 @@ interface GradeInput {
   tradesPerDay: number;
   avgInvested: number;
   bust: boolean;
+  /** Defaults: no margin used. */
+  marginCalls?: number;
+  forcedSales?: number;
+  avgLeverage?: number;
 }
 
 /** Grade from return vs SPY (40), drawdown vs SPY's (30) and discipline (30), with caps. */
@@ -172,6 +185,8 @@ export function gradeRun(g: GradeInput): Grade {
   discipline -= clamp(g.panicSells * 5, 0, 10);
   discipline -= clamp((g.maxWeight - 0.25) * 40, 0, 10);
   if (g.tradesPerDay > RULES.tradesPerDay) discipline -= 5;
+  if ((g.avgLeverage ?? 0) > RULES.leverage) discipline -= 5;
+  discipline -= clamp((g.marginCalls ?? 0) * 5, 0, 10);
   discipline = Math.max(0, discipline);
   let score = performance + risk + discipline;
   let cap: string | null = null;
@@ -184,6 +199,7 @@ export function gradeRun(g: GradeInput): Grade {
   if (g.bust) capAt(0, 'The account went bust.');
   if (g.maxWeight >= RULES.capC) capAt(64.9, `One stock was ${Math.round(g.maxWeight * 100)}% of your account, so the best grade is C.`);
   else if (g.maxWeight >= RULES.capB) capAt(79.9, `One stock was ${Math.round(g.maxWeight * 100)}% of your account, so the best grade is B.`);
+  if ((g.forcedSales ?? 0) > 0) capAt(69.9, 'Your broker had to sell for you after a margin call, so the best grade is C+.');
   if (g.avgInvested < RULES.satOut) capAt(64.9, 'You were mostly in cash, so the best grade is C. Taking part is how you learn.');
   return { letter: letterFor(score), score, performance, risk, discipline, cap };
 }
@@ -238,6 +254,7 @@ export function debrief(run: Run): Debrief {
   let f = 0;
   let maxWeight: Debrief['maxWeight'] = null;
   let investedSum = 0;
+  let leverageSum = 0;
   for (let d = 0; d < a.equityByDay.length; d++) {
     while (f < fills.length && (fills[f]?.at.day ?? 0) <= d) {
       const x = fills[f];
@@ -248,17 +265,20 @@ export function debrief(run: Run): Debrief {
     if (equity <= 0) continue;
     let invested = 0;
     for (const [ticker, shares] of held) {
-      if (shares <= 1e-9) continue;
+      if (Math.abs(shares) <= 1e-9) continue;
       const i = run.indexOf(ticker);
-      const value = shares * (i === undefined ? 0 : (m.closes[i]?.[d + 1] ?? 0));
+      const value = Math.abs(shares) * (i === undefined ? 0 : (m.closes[i]?.[d + 1] ?? 0));
       invested += value;
       const w = value / equity;
       if (!isFund.has(ticker) && (!maxWeight || w > maxWeight.weight)) maxWeight = { ticker, weight: w, day: d };
     }
-    investedSum += invested / equity;
+    investedSum += Math.min(1, invested / equity);
+    leverageSum += invested / equity;
   }
   const closesSeen = a.equityByDay.length;
-  const avgInvested = closesSeen ? investedSum / closesSeen : run.marks().holdingsValue / Math.max(endValue, 1e-9);
+  const nowGross = run.marks().positions.reduce((s, p) => s + Math.abs(p.value), 0) / Math.max(endValue, 1e-9);
+  const avgInvested = closesSeen ? investedSum / closesSeen : Math.min(1, nowGross);
+  const avgLeverage = closesSeen ? leverageSum / closesSeen : nowGross;
 
   const finalPrice = (ticker: string) => {
     const i = run.indexOf(ticker);
@@ -336,14 +356,42 @@ export function debrief(run: Run): Debrief {
     });
   }
 
+  // Margin calls and forced sales.
+  const forcedDays = new Map<number, Fill[]>();
+  for (const x of fills) if (x.forced) forcedDays.set(x.at.day, [...(forcedDays.get(x.at.day) ?? []), x]);
+  for (const c of a.marginCalls) {
+    const forced = [...forcedDays.entries()].find(([day]) => day > c.day && day <= c.day + 2);
+    if (forced) {
+      const [day, list] = forced;
+      const sold = list.reduce((sum, x) => sum + x.shares * x.price, 0);
+      const lost = list.reduce((sum, x) => sum + Math.min(0, x.realised), 0);
+      moments.push({
+        kind: 'forcedSale',
+        title: 'Forced sale',
+        lesson: `Your margin call went unmet, so your broker sold ${usd(sold)} of ${[...new Set(list.map((x) => x.ticker))].join(', ')} at the open on day ${day + 1}${lost < 0 ? `, locking in ${usd(lost)} of losses` : ''}. Borrowing doubles the ride both ways.`,
+        day,
+        impact: Math.max(Math.abs(lost), sold * 0.1),
+      });
+    } else {
+      const equity = a.equityByDay[c.day] ?? start;
+      moments.push({
+        kind: 'marginCall',
+        title: 'Margin call',
+        lesson: `On day ${c.day + 1} your equity fell to ${Math.round(c.ratio * 100)}% of what you held, under the 30% minimum. With borrowed money, a fall hits you twice as hard.`,
+        day: c.day,
+        impact: equity * (RULES.leverage - 1),
+      });
+    }
+  }
+
   // Overtrading.
-  const costs = a.feesPaid + a.spreadPaid;
+  const costs = a.feesPaid + a.spreadPaid + a.interestPaid;
   const days = Math.max(1, closesSeen + (atClose ? 0 : 1));
   if (costs >= start * RULES.costShare || fills.length / days > RULES.tradesPerDay) {
     moments.push({
       kind: 'overtrading',
       title: 'Costs add up',
-      lesson: `You paid ${usd(costs)} in spreads and fees over ${fills.length} trades (${((costs / start) * 100).toFixed(1)}% of your starting cash). Every trade costs a little.`,
+      lesson: `You paid ${usd(costs)} in spreads, fees${a.interestPaid > 0 ? ' and interest' : ''} over ${fills.length} trades (${((costs / start) * 100).toFixed(1)}% of your starting cash). Every trade costs a little.`,
       day: fills[fills.length - 1]?.at.day ?? endDay,
       impact: costs,
     });
@@ -377,6 +425,9 @@ export function debrief(run: Run): Debrief {
     tradesPerDay: fills.length / days,
     avgInvested,
     bust: run.endReason === 'bust',
+    marginCalls: a.marginCalls.length,
+    forcedSales: forcedDays.size,
+    avgLeverage,
   });
 
   return {
@@ -399,6 +450,10 @@ export function debrief(run: Run): Debrief {
     fees: a.feesPaid,
     spread: a.spreadPaid,
     dividends: a.dividendsReceived,
+    interest: a.interestPaid,
+    marginCalls: a.marginCalls.length,
+    forcedSales: forcedDays.size,
+    avgLeverage,
     wins,
     closedTrades: stats.length,
     best,

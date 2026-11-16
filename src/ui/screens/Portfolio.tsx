@@ -2,7 +2,7 @@ import { describeOrder } from '../../engine/orders';
 import { CompareChart, rebased } from '../CompareChart';
 import { money, shares, signedMoney, signedPct, upDown } from '../format';
 import { formatRoute } from '../router';
-import { spyChange, spyNow } from '../Shell';
+import { MarginBanner, spyChange, spyNow } from '../Shell';
 import type { Market } from '../useMarket';
 
 /** Slices beyond this many sectors are merged into "Other". */
@@ -34,6 +34,7 @@ export function Portfolio({ market }: { market: Market }) {
   return (
     <>
       <h1 class="screen-title">Portfolio</h1>
+      <MarginBanner market={market} />
 
       <section class="panel">
         <div class="row end">
@@ -42,8 +43,8 @@ export function Portfolio({ market }: { market: Market }) {
             <span class="big">{money(a.value, true)}</span>
           </div>
           <div class="stack end mono">
-            <span class="tiny dim">cash</span>
-            <span class="value small-value">{money(a.cash, true)}</span>
+            <span class="tiny dim">{a.borrowed > 0 ? 'borrowed' : 'cash'}</span>
+            <span class={`value small-value ${a.borrowed > 0 ? 'down' : ''}`}>{money(a.borrowed > 0 ? a.borrowed : a.cash, true)}</span>
           </div>
         </div>
         <dl class="facts">
@@ -59,6 +60,22 @@ export function Portfolio({ market }: { market: Market }) {
             <>
               <dt>dividends</dt>
               <dd class="up">{signedMoney(a.dividendsReceived, true)}</dd>
+            </>
+          )}
+          {a.settings.margin && (
+            <>
+              <dt>buying power</dt>
+              <dd>{money(a.buyingPower, true)}</dd>
+              <dt>equity / holdings</dt>
+              <dd class={a.marginRatio !== null && a.marginRatio < 0.3 ? 'down' : ''}>
+                {a.marginRatio === null ? 'n/a' : `${Math.round(a.marginRatio * 100)}%`} <span class="dim">(min 30%)</span>
+              </dd>
+            </>
+          )}
+          {a.interestPaid > 0 && (
+            <>
+              <dt>margin interest</dt>
+              <dd class="down">{signedMoney(-a.interestPaid, true)}</dd>
             </>
           )}
           <dt>SPY same period</dt>

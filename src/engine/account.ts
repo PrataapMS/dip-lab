@@ -4,11 +4,25 @@ import type { Order } from './orders';
 /**
  * The player's account: cash, holdings at average cost, and every fill. Pure functions that
  * return a new state, so a run replays exactly from its seed and the player's orders.
- * No margin and no shorting yet: buys are limited by cash, sells by shares held.
+ * Without margin, buys are limited by cash. With margin, cash can go below zero (a loan) as
+ * long as equity stays at least `INITIAL_MARGIN` of everything held.
  */
 export interface AccountSettings extends CostModel {
   startingCash: number;
+  /** Borrow up to 2x (Reg T 50% initial margin). Off by default. */
+  margin?: boolean;
+  /** Yearly interest on borrowed cash. Default `DEFAULT_MARGIN_RATE`. */
+  marginRate?: number;
 }
+
+/** Equity must be at least this share of holdings after a buy on margin (so 2x at most). */
+export const INITIAL_MARGIN = 0.5;
+/** Below this share at a close the broker issues a margin call. */
+export const MAINTENANCE_MARGIN = 0.3;
+/** A forced sale sells until equity is back to this share of holdings. */
+export const FORCED_SALE_TARGET = 0.4;
+export const DEFAULT_MARGIN_RATE = 0.08;
+const DAYS_PER_YEAR = 252;
 
 export const DEFAULT_ACCOUNT_SETTINGS: AccountSettings = {
   startingCash: 10_000,
@@ -48,6 +62,15 @@ export interface Fill {
   /** Profit or loss locked in by a sell (0 for buys), net of costs. */
   realised: number;
   at: MarketTime;
+  /** Sold by the broker after a margin call went unmet. */
+  forced?: boolean;
+}
+
+/** A margin call: equity fell below `MAINTENANCE_MARGIN` of holdings at a close. */
+export interface MarginCall {
+  day: number;
+  /** Equity as a share of holdings when the call was made. */
+  ratio: number;
 }
 
 /** Cash paid on shares held at the close before an ex-dividend date. */
@@ -76,6 +99,14 @@ export interface AccountState {
   /** Every order placed, oldest first, whatever its status. */
   orders: Order[];
   nextOrderId: number;
+  /** Interest charged on borrowed cash. */
+  interestPaid: number;
+  /** The call that is open now, if any. */
+  marginCall: MarginCall | null;
+  /** Every call made, oldest first. */
+  marginCalls: MarginCall[];
+  /** The call went unmet: the broker sells at the next open. */
+  forcedSaleDue: boolean;
 }
 
 /** Fractional shares are kept to six decimal places. */
@@ -115,7 +146,40 @@ export function createAccount(settings: AccountSettings = DEFAULT_ACCOUNT_SETTIN
     equityByDay: [],
     orders: [],
     nextOrderId: 1,
+    interestPaid: 0,
+    marginCall: null,
+    marginCalls: [],
+    forcedSaleDue: false,
   };
+}
+
+/** Price per share used to value a holding: the quote if there is one, else its average cost. */
+export type PriceOf = (ticker: string) => number | undefined;
+
+export interface Exposure {
+  /** Cash plus holdings at current prices. */
+  equity: number;
+  /** Market value of everything held, ignoring sign. */
+  gross: number;
+}
+
+export function exposure(cash: number, positions: Record<string, Position>, priceOf?: PriceOf): Exposure {
+  let net = 0;
+  let gross = 0;
+  for (const [ticker, pos] of Object.entries(positions)) {
+    const avg = pos.shares !== 0 ? pos.costBasis / pos.shares : 0;
+    const value = pos.shares * (priceOf?.(ticker) ?? avg);
+    net += value;
+    gross += Math.abs(value);
+  }
+  return { equity: cash + net, gross };
+}
+
+/** Dollars of new holdings the account can take on right now. */
+export function buyingPower(state: AccountState, priceOf?: PriceOf): number {
+  if (!state.settings.margin) return Math.max(0, state.cash);
+  const { equity, gross } = exposure(state.cash, state.positions, priceOf);
+  return Math.max(0, (equity - INITIAL_MARGIN * gross) / INITIAL_MARGIN);
 }
 
 export interface TradeRequest {
@@ -130,6 +194,10 @@ export interface TradeRequest {
   price?: number;
   at: MarketTime;
   orderId?: number | null;
+  /** Prices of other holdings, for the margin check. */
+  prices?: PriceOf;
+  /** A broker's forced sale (skips the buying-power check). */
+  forced?: boolean;
 }
 
 export type TradeResult = { ok: true; state: AccountState; fill: Fill } | { ok: false; reason: string };
@@ -148,8 +216,18 @@ export function executeTrade(state: AccountState, req: TradeRequest): TradeResul
     shares = amount.kind === 'dollars' ? floorShares(amount.value / price) : roundShares(amount.value);
     if (shares <= 0) return { ok: false, reason: `That buys less than a millionth of a share of ${ticker}.` };
     const cost = shares * price + commission;
-    if (cost > state.cash + 1e-9) {
-      return { ok: false, reason: `Not enough cash: this needs ${usd(cost)} and you have ${usd(state.cash)}.` };
+    if (!state.settings.margin) {
+      if (cost > state.cash + 1e-9) {
+        return { ok: false, reason: `Not enough cash: this needs ${usd(cost)} and you have ${usd(state.cash)}.` };
+      }
+    } else if (!req.forced) {
+      const priceOf: PriceOf = (t) => (t === ticker ? req.mid : req.prices?.(t));
+      const after = { ...state.positions, [ticker]: { shares: (held?.shares ?? 0) + shares, costBasis: (held?.costBasis ?? 0) + cost } };
+      const e = exposure(state.cash - cost, after, priceOf);
+      if (e.equity < INITIAL_MARGIN * e.gross - 1e-9) {
+        const power = buyingPower(state, priceOf);
+        return { ok: false, reason: `Not enough buying power: this needs ${usd(cost)} and you can spend up to ${usd(power)}, borrowing included.` };
+      }
     }
   } else {
     if (!held || held.shares <= 0) return { ok: false, reason: `You don't own any ${ticker}.` };
@@ -195,6 +273,7 @@ export function executeTrade(state: AccountState, req: TradeRequest): TradeResul
     commission,
     realised,
     at: req.at,
+    ...(req.forced ? { forced: true } : {}),
   };
   return {
     ok: true,
@@ -299,4 +378,13 @@ export function payDividends(state: AccountState, due: readonly { ticker: string
 /** Record the account value at a day's close. */
 export function recordClose(state: AccountState, value: number): AccountState {
   return { ...state, equityByDay: [...state.equityByDay, value] };
+}
+
+/** Interest for one trading day on borrowed cash (negative cash), taken from cash. */
+export function chargeInterest(state: AccountState): AccountState {
+  if (state.cash >= 0) return state;
+  const rate = state.settings.marginRate ?? DEFAULT_MARGIN_RATE;
+  const amount = (-state.cash * rate) / DAYS_PER_YEAR;
+  if (!(amount > 0)) return state;
+  return { ...state, cash: state.cash - amount, interestPaid: state.interestPaid + amount };
 }

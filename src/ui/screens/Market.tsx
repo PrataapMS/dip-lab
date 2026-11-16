@@ -6,6 +6,7 @@ import { dayChange, defaultWatchlist, INDEX_TILES, inSector, searchInstruments, 
 import { DayCard, RunOverCard } from '../DayCard';
 import { NewsList } from '../NewsList';
 import { formatRoute } from '../router';
+import { MarginBanner } from '../Shell';
 import { Sparkline } from '../Sparkline';
 import type { Market as MarketApi, MarketView } from '../useMarket';
 
@@ -89,6 +90,7 @@ export function Market({ market }: { market: MarketApi }) {
     <>
       <RunOverCard market={market} />
       <DayCard market={market} />
+      <MarginBanner market={market} />
       <div class="index-tiles">
         {INDEX_TILES.map(({ ticker, label }) => {
           const i = view.tickerIndex.get(ticker);
