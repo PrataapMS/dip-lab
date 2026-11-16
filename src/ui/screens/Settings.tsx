@@ -26,6 +26,7 @@ import {
 } from '../../storage/slots';
 import { deliverFile } from '../files';
 import { InstallRow } from '../InstallCard';
+import { OFFLINE_TEXT, useOfflineStatus } from '../offline';
 import { play, setSoundEnabled, startAudio } from '../sound';
 import { navigate } from '../router';
 import { BackIcon } from '../icons';
@@ -421,6 +422,16 @@ function ResetProgress() {
   );
 }
 
+function OfflineLine() {
+  const status = useOfflineStatus();
+  return (
+    <p class={`small ${status === 'ready' ? 'up' : 'dim'}`} data-offline={status}>
+      {status === 'ready' ? '✓ ' : ''}
+      {OFFLINE_TEXT[status]}
+    </p>
+  );
+}
+
 export function Settings({ market }: { market: Market }) {
   const { view, send } = market;
   const { progress, update, settings, updateSettings } = useProgress();
@@ -514,6 +525,7 @@ export function Settings({ market }: { market: Market }) {
           // ABOUT
         </h2>
         <span class="mono small">Dip Lab v{version}</span>
+        <OfflineLine />
         <InstallRow />
         <p class="small dim">Prices are simulated. Nothing here is investment advice.</p>
         <p class="tiny dim">
