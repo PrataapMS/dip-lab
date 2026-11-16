@@ -1,9 +1,9 @@
 import { createContext, type ComponentChildren } from 'preact';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { WorkerEvent } from '../engine/protocol';
+import type { Activity, WorkerEvent } from '../engine/protocol';
 import { SCENARIOS } from '../engine/scenarios';
 import { levelFor } from '../game/levels';
-import { finishRun, migrate, type Progress, type Reward, type RunResult } from '../game/progress';
+import { applyActivity, finishRun, migrate, type Progress, type Reward, type RunResult } from '../game/progress';
 import { load, save } from './storage';
 import type { Market, MarketView } from './useMarket';
 
@@ -40,6 +40,8 @@ export interface ProgressApi {
   run: RunRewards;
   /** Change progress; returned rewards are added to the run's list and announced. */
   update: (fn: (p: Progress) => { progress: Progress; rewards?: Reward[] }) => void;
+  /** Record something the player did (glossary, lessons…) for quests and streaks. */
+  record: (a: Activity) => void;
 }
 
 const Ctx = createContext<ProgressApi | null>(null);
@@ -91,12 +93,18 @@ export function ProgressProvider({ market, children }: { market: Market; childre
     [notify],
   );
 
+  const record = useCallback((a: Activity) => update((p) => applyActivity(p, a, today())), [update]);
+
   const { subscribe } = market;
   useEffect(
     () =>
       subscribe((e: WorkerEvent) => {
         const p = progressRef.current;
-        if (e.type === 'loaded') setRun({ levelBefore: levelFor(p?.xp ?? 0).level, rewards: [] });
+        if (e.type === 'loaded') {
+          setRun({ levelBefore: levelFor(p?.xp ?? 0).level, rewards: [] });
+          if (e.branchOf) record({ kind: 'replay', day: e.branchOf.day });
+        }
+        if (e.type === 'activity') for (const a of e.items) record(a);
         if (e.type === 'ended') {
           const v = viewRef.current;
           const d = e.debrief;
@@ -112,12 +120,22 @@ export function ProgressProvider({ market, children }: { market: Market; childre
             complete: e.reason === 'lastDay' || e.reason === 'target',
           };
           update((p) => finishRun(p, result));
+          record({
+            kind: 'runEnd',
+            scenarioId: d.scenarioId,
+            letter: d.grade.letter,
+            score: d.grade.score,
+            days: d.days,
+            complete: result.complete,
+            excessPts: d.excessPts,
+            branch: !!d.branchOf,
+          });
         }
       }),
-    [subscribe, update],
+    [subscribe, update, record],
   );
 
-  const api = useMemo(() => (progress ? { progress, run, update } : null), [progress, run, update]);
+  const api = useMemo(() => (progress ? { progress, run, update, record } : null), [progress, run, update, record]);
   if (!api) return null;
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

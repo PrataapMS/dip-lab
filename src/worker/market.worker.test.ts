@@ -207,6 +207,18 @@ describe('market worker', () => {
     expect(last('ended').debrief.branchOf?.day).toBe(2);
   });
 
+  it('reports orders, fills and closes as activity', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } } });
+    send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'sell', type: 'stop', stopPrice: 1, amount: { kind: 'shares', value: 1 } } });
+    send({ type: 'stepDay' });
+    const items = events.flatMap((e) => (e.type === 'activity' ? e.items : []));
+    expect(items.map((a) => a.kind)).toEqual(['fill', 'order', 'order', 'close']);
+    expect(items[0]).toMatchObject({ kind: 'fill', ticker: 'SPY', etf: true, orderType: 'market' });
+    expect(items[2]).toMatchObject({ kind: 'order', type: 'stop', side: 'sell', short: false });
+    expect(items[3]).toMatchObject({ kind: 'close', day: 0 });
+  });
+
   it('starts a custom run from its options', () => {
     send({ type: 'newRun', scenarioId: 'custom', seed: 3, custom: { start: '2012-03-01', days: 63, startRegime: 'bull', news: 'off' } });
     const loaded = last('loaded');

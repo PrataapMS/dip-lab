@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { UNIVERSE } from '../data/universe';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
+import { type Activity, closeActivity, fillActivity, orderActivity } from '../engine/activity';
 import { debrief } from '../engine/debrief';
 import { BARS_PER_DAY } from '../engine/intraday';
 import { buildMarket } from '../engine/market';
@@ -40,6 +41,8 @@ let endSent = false;
 /** Run alerts already sent. */
 let alertsSent = 0;
 let scenarioInfo: ScenarioInfo | null = null;
+/** Fills already reported as activity. */
+let fillsSent = 0;
 let lastDebrief: ReturnType<typeof debrief> | null = null;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
@@ -118,6 +121,15 @@ function emitNews(r: Run): void {
   if (items.length) post({ type: 'news', items });
 }
 
+/** Report new fills (and anything else passed in) as activity. */
+function emitActivity(r: Run, extra: Activity[] = []): void {
+  const fills = r.account.fills;
+  const items = fills.slice(fillsSent).map((f) => fillActivity(r, f));
+  fillsSent = fills.length;
+  items.push(...extra);
+  if (items.length) post({ type: 'activity', items });
+}
+
 function emitTick(): void {
   if (!run) return;
   const r = run;
@@ -143,11 +155,17 @@ function emitTick(): void {
     [prices.buffer],
   );
   emitNews(r);
-  if (r.alerts.length > alertsSent) post({ type: 'alerts', alerts: r.alerts.slice(alertsSent) });
+  const newAlerts = r.alerts.slice(alertsSent);
+  if (newAlerts.length) post({ type: 'alerts', alerts: newAlerts });
   alertsSent = r.alerts.length;
+  const extra: Activity[] = newAlerts.filter((x) => x.kind === 'marginCall').map((x) => ({ kind: 'marginCall', day: x.day }));
   post({ type: 'account', account: r.view() });
   const closes = r.account.equityByDay.length;
-  if (closes > closesSent && r.clock.bar === BARS_PER_DAY) post({ type: 'dayEnd', summary: daySummary(r) });
+  if (closes > closesSent && r.clock.bar === BARS_PER_DAY) {
+    post({ type: 'dayEnd', summary: daySummary(r) });
+    extra.push(closeActivity(r));
+  }
+  emitActivity(r, extra);
   closesSent = closes;
   if (r.endReason && !endSent) {
     endSent = true;
@@ -205,6 +223,7 @@ function load(r: Run, seed: number): void {
   if (r.clock.day === 0 && r.clock.bar === 0) newsCursor = 0;
   dividendsSent = r.account.dividends.length;
   closesSent = r.account.equityByDay.length;
+  fillsSent = r.account.fills.length;
   endSent = false;
   alertsSent = 0;
   lastDebrief = null;
@@ -287,8 +306,11 @@ function handle(cmd: Command): void {
         post({ type: 'orderResult', ok: false, order: null, message: 'This run is over. Start a new one to keep trading.' });
         return;
       }
-      const order = requireRun().place(cmd.draft);
+      const r = requireRun();
+      const held = r.account.positions[cmd.draft.ticker]?.shares ?? 0;
+      const order = r.place(cmd.draft);
       post({ type: 'orderResult', ok: order.status !== 'rejected', order, message: orderMessage(order) });
+      emitActivity(r, order.status === 'rejected' ? [] : [orderActivity(order, held)]);
       post({ type: 'account', account: requireRun().view() });
       return;
     }

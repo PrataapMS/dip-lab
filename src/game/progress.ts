@@ -1,4 +1,7 @@
+import type { Activity } from '../engine/activity';
 import { levelFor } from './levels';
+import { advanceQuests, type QuestState } from './quests';
+import { markPlayed, type Streak } from './streak';
 import { FIRST_FINISH_XP, replayAward, runXp } from './xp';
 
 /**
@@ -25,9 +28,9 @@ export interface Progress {
   finished: Record<string, number>;
   /** Scenario id → best grade. */
   bestGrade: Record<string, { letter: string; score: number }>;
-  streak: { count: number; best: number; last: string | null };
+  streak: Streak;
   /** Today's quests: progress towards each, and whether it was claimed. */
-  quests: { date: string; progress: number[]; claimed: boolean[] } | null;
+  quests: QuestState | null;
   /** Running totals for badges and quests (limit fills, quests done, …). */
   counters: Record<string, number>;
   /** Glossary terms opened at least once. */
@@ -136,4 +139,21 @@ export function finishRun(p: Progress, r: RunResult): { progress: Progress; rewa
   };
   next = grant(next, rewards);
   return { progress: next, rewards };
+}
+
+/** Apply one activity on a local date: quests, streak and running totals. */
+export function applyActivity(p: Progress, a: Activity, date: string): { progress: Progress; rewards: Reward[] } {
+  const rewards: Reward[] = [];
+  const q = advanceQuests(p.quests, date, a);
+  let next: Progress = q.state === p.quests ? p : { ...p, quests: q.state };
+  for (const done of q.completed) {
+    rewards.push({ source: 'quest', label: `Quest: ${done.text}`, xp: done.xp });
+    next = bump(next, 'questsDone');
+  }
+  if (a.kind === 'close' || a.kind === 'lessonDone') {
+    const streak = markPlayed(next.streak, date);
+    if (streak !== next.streak) next = { ...next, streak };
+  }
+  if (a.kind === 'glossaryRead' && !next.glossarySeen.includes(a.term)) next = { ...next, glossarySeen: [...next.glossarySeen, a.term] };
+  return { progress: grant(next, rewards), rewards };
 }

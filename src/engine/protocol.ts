@@ -3,6 +3,7 @@
  * structured cloning: plain objects, arrays and typed arrays only.
  */
 import type { AccountSettings } from './account';
+import type { Activity } from './activity';
 import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
@@ -11,6 +12,7 @@ import type { AccountView, BranchOf, EndReason, RunAlert } from './run';
 import type { DaySummary } from './summary';
 
 export type { AccountView } from './run';
+export type { Activity, HoldingFact } from './activity';
 export type { NewsItem, Upcoming } from './news';
 export type { BranchOf, EndReason, RunAlert } from './run';
 export type { CustomOptions } from './scenarios';
@@ -136,6 +138,8 @@ export type WorkerEvent =
   | { type: 'news'; items: NewsItem[] }
   /** Answer to placeOrder or cancelOrder. */
   | { type: 'orderResult'; ok: boolean; order: Order | null; message: string }
+  /** What the player did, for quests, streaks and badges. */
+  | { type: 'activity'; items: Activity[] }
   /** Margin calls and forced sales, oldest first. */
   | { type: 'alerts'; alerts: RunAlert[] }
   /** Orders that filled, expired or were rejected while the clock ran. */

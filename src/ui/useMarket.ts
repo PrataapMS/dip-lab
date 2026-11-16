@@ -218,6 +218,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       };
     case 'orderResult':
       return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
+    case 'activity':
+      return state;
     case 'alerts':
       return { ...state, notices: addNotices(state, e.alerts.map((a) => ({ ok: a.ok, message: a.message }))) };
     case 'orderUpdates':
