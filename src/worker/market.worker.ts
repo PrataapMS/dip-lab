@@ -10,6 +10,7 @@ import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engi
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { customScenario, getScenario } from '../engine/scenarios';
+import type { ScenarioInfo } from '../engine/protocol';
 import { daySummary } from '../engine/summary';
 
 /**
@@ -38,6 +39,8 @@ let closesSent = 0;
 let endSent = false;
 /** Run alerts already sent. */
 let alertsSent = 0;
+let scenarioInfo: ScenarioInfo | null = null;
+let lastDebrief: ReturnType<typeof debrief> | null = null;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
   scope.postMessage(event, transfer);
@@ -148,7 +151,8 @@ function emitTick(): void {
   closesSent = closes;
   if (r.endReason && !endSent) {
     endSent = true;
-    post({ type: 'ended', reason: r.endReason, debrief: debrief(r) });
+    lastDebrief = debrief(r);
+    post({ type: 'ended', reason: r.endReason, debrief: lastDebrief });
   }
 }
 
@@ -186,37 +190,64 @@ function requireRun(): Run {
   return run;
 }
 
+/** Point the feeds at a run that was just built or branched, and tell the UI. */
+function load(r: Run, seed: number): void {
+  run = r;
+  postedDay = -1;
+  // A branch starts part-way: news, dividends and closes before it count as already sent.
+  newsCursor = 0;
+  const events = r.market.events;
+  while (newsCursor < events.length) {
+    const e = events[newsCursor];
+    if (!e || e.day > r.clock.day || (e.day === r.clock.day && e.bar > r.clock.bar)) break;
+    newsCursor++;
+  }
+  if (r.clock.day === 0 && r.clock.bar === 0) newsCursor = 0;
+  dividendsSent = r.account.dividends.length;
+  closesSent = r.account.equityByDay.length;
+  endSent = false;
+  alertsSent = 0;
+  lastDebrief = null;
+  const market = r.market;
+  post({
+    type: 'loaded',
+    scenario: scenarioInfo ?? { id: market.scenario.id, name: market.scenario.name, teaches: market.scenario.teaches, fictional: market.scenario.fictional },
+    seed,
+    settings: r.account.settings,
+    dates: market.dates,
+    instruments: market.instruments.map((i) => ({
+      ticker: i.ticker,
+      name: i.name,
+      sector: i.sector,
+      kind: i.kind,
+      beta: i.beta,
+      vol: i.vol,
+      divYield: i.divYield,
+    })),
+    indexInstrument: r.indexInstrument,
+    branchOf: r.branchOf,
+  });
+  emitTick();
+}
+
 function handle(cmd: Command): void {
   switch (cmd.type) {
     case 'newRun': {
       stopLoop();
       const def = cmd.scenarioId === 'custom' && cmd.custom ? customScenario(cmd.custom) : getScenario(cmd.scenarioId);
       const market = buildMarket(def, cmd.seed, UNIVERSE);
-      run = new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn });
-      postedDay = -1;
-      newsCursor = 0;
-      dividendsSent = 0;
-      closesSent = 0;
-      endSent = false;
-      alertsSent = 0;
-      post({
-        type: 'loaded',
-        scenario: { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional },
-        seed: cmd.seed,
-        settings: run.account.settings,
-        dates: market.dates,
-        instruments: market.instruments.map((i) => ({
-          ticker: i.ticker,
-          name: i.name,
-          sector: i.sector,
-          kind: i.kind,
-          beta: i.beta,
-          vol: i.vol,
-          divYield: i.divYield,
-        })),
-        indexInstrument: run.indexInstrument,
-      });
-      emitTick();
+      scenarioInfo = { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional };
+      load(new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn }), cmd.seed);
+      return;
+    }
+    case 'replayFrom': {
+      const r = requireRun();
+      if (!r.finished || !lastDebrief) throw new Error('Finish the run before replaying a moment.');
+      stopLoop();
+      const g = lastDebrief.grade;
+      // A branch of a branch still compares with the very first try.
+      const first = r.branchOf ?? { letter: g.letter, score: g.score };
+      load(r.branch(cmd.day, { letter: first.letter, score: first.score }), r.market.seed);
       return;
     }
     case 'play': {

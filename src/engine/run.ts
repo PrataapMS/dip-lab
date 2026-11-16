@@ -68,6 +68,8 @@ export interface AccountView {
   /** Equity as a share of holdings; null when nothing is held. */
   marginRatio: number | null;
   marginCall: MarginCall | null;
+  /** The call went unmet: the broker sells at the next open. */
+  forcedSaleDue: boolean;
 }
 
 /** Something the player must hear about now (shown as a notice). */
@@ -79,6 +81,28 @@ export interface RunAlert {
 }
 
 const RECENT_FILLS = 20;
+
+/** The first try a replayed run branched from. */
+export interface BranchOf {
+  /** The run restarts at the close before this day. */
+  day: number;
+  letter: string;
+  score: number;
+}
+
+/**
+ * The account at one close, kept small: the account's lists only ever grow (fills,
+ * dividends, closes, calls) or, for orders, only change while open, so a count and the
+ * orders open at that close are enough to rebuild it from the final account.
+ */
+interface CloseSnapshot {
+  state: Omit<AccountState, 'fills' | 'dividends' | 'equityByDay' | 'orders' | 'marginCalls'>;
+  fills: number;
+  dividends: number;
+  orders: number;
+  marginCalls: number;
+  openOrders: Order[];
+}
 
 /** Why a run ended: its last day, the player pressed End, the account went bust, or hit its target. */
 export type EndReason = 'lastDay' | 'ended' | 'bust' | 'target';
@@ -119,6 +143,9 @@ export class Run {
   endReason: EndReason | null = null;
   /** Every alert so far, oldest first. */
   readonly alerts: RunAlert[] = [];
+  /** Set when this run replays a moment of an earlier one. */
+  branchOf: BranchOf | null = null;
+  private readonly snapshots: CloseSnapshot[] = [];
   private bars: DayBars;
   private barsDay: number;
   private readonly tickerIndex: Map<string, number>;
@@ -262,6 +289,7 @@ export class Run {
       borrowed: Math.max(0, -m.cash),
       marginRatio: m.positions.length ? Math.min(99, marginRatio(a, this.priceOf)) : null,
       marginCall: a.marginCall,
+      forcedSaleDue: a.forcedSaleDue,
     };
   }
 
@@ -337,12 +365,59 @@ export class Run {
       this.account = recordClose(this.account, value);
       const reason = endAtClose(value, this.account.settings.startingCash, this.targetReturn);
       const called = reason ? false : this.checkMargin(at.day);
+      this.snapshot();
       if (reason) changed.push(...this.end(reason));
       else if (isFinished(this.clock)) this.endReason = 'lastDay';
       else if (this.pauseAtClose || called) this.clock = { ...this.clock, playing: false, carry: 0 };
     }
     if (this.finished) this.clock = { ...this.clock, playing: false, carry: 0 };
     return changed;
+  }
+
+  private snapshot(): void {
+    const { fills, dividends, equityByDay: _closes, orders, marginCalls, ...state } = this.account;
+    this.snapshots[this.clock.day] = {
+      state,
+      fills: fills.length,
+      dividends: dividends.length,
+      orders: orders.length,
+      marginCalls: marginCalls.length,
+      openOrders: orders.filter((o) => o.status === 'open'),
+    };
+  }
+
+  /** The account as it was at the close of `day` (before the first day: a fresh account). */
+  accountAtClose(day: number): AccountState {
+    if (day < 0) return createAccount(this.account.settings);
+    const s = this.snapshots[day];
+    if (!s) throw new Error(`No close recorded for day ${day + 1}`);
+    const a = this.account;
+    const open = new Map(s.openOrders.map((o) => [o.id, o]));
+    return {
+      ...s.state,
+      fills: a.fills.slice(0, s.fills),
+      dividends: a.dividends.slice(0, s.dividends),
+      equityByDay: a.equityByDay.slice(0, day + 1),
+      orders: a.orders.slice(0, s.orders).map((o) => open.get(o.id) ?? o),
+      marginCalls: a.marginCalls.slice(0, s.marginCalls),
+    };
+  }
+
+  /**
+   * A new run on the same market that starts paused at the close before `day`, with the
+   * account exactly as it was then. Nothing is rebuilt or re-run, so it is instant.
+   */
+  branch(day: number, of: Omit<BranchOf, 'day'>): Run {
+    const from = Math.max(0, Math.min(day, this.snapshots.length));
+    const r = new Run(this.market, this.account.settings, this.clock.dayLengthMs, {
+      pauseAtClose: this.pauseAtClose,
+      targetReturn: this.targetReturn,
+    });
+    r.account = this.accountAtClose(from - 1);
+    for (let d = 0; d < from; d++) r.snapshots[d] = this.snapshots[d] as CloseSnapshot;
+    if (from > 0) r.clock = { ...r.clock, day: from - 1, bar: BARS_PER_DAY, playing: false, carry: 0 };
+    r.branchOf = { day: from, ...of };
+    return r;
   }
 
   /** Margin check at a close. Returns true when a new call was made (the clock pauses). */

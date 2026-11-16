@@ -1,4 +1,4 @@
-import type { Debrief as Report, Moment, TradeStat } from '../../engine/protocol';
+import { type Debrief as Report, type Moment, REPLAYABLE_MOMENTS, type TradeStat } from '../../engine/protocol';
 import { CompareChart } from '../CompareChart';
 import { endText } from '../DayCard';
 import { money, MINUS, signedPct } from '../format';
@@ -37,7 +37,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'up
 }
 
 export function Debrief({ market }: { market: Market }) {
-  const { view, startRun } = market;
+  const { view, startRun, replayFrom } = market;
   const d = view.debrief;
   if (!d) {
     return (
@@ -59,6 +59,11 @@ export function Debrief({ market }: { market: Market }) {
     startRun(view.config);
     navigate({ name: 'market' });
   };
+  const replayMoment = (day: number) => {
+    replayFrom(day);
+    navigate({ name: 'market' });
+  };
+  const branch = d.branchOf;
 
   return (
     <>
@@ -74,6 +79,20 @@ export function Debrief({ market }: { market: Market }) {
       </header>
 
       {d.reason !== 'lastDay' && <p class="small dim">{endText(d.reason)}</p>}
+
+      {branch && (
+        <section class="panel branch-compare">
+          <span class="mono tiny accent">// REPLAYED FROM DAY {branch.day + 1}</span>
+          <p class="small">
+            First try: <strong class="mono">{branch.letter}</strong> · this try: <strong class="mono">{g.letter}</strong>.{' '}
+            {g.letter === branch.letter
+              ? `Same grade; your score went from ${Math.round(branch.score)} to ${Math.round(g.score)}.`
+              : g.score > branch.score
+                ? 'Better: the market was the same, so that was your decisions.'
+                : 'Worse this time. Same market, different choices: worth a look at what changed.'}
+          </p>
+        </section>
+      )}
 
       <div class="vs-tiles mono">
         <div class="vs-tile you">
@@ -147,7 +166,13 @@ export function Debrief({ market }: { market: Market }) {
                 <span class="moment-title">
                   #{k + 1} · {m.title}
                 </span>
-                {m.kind !== 'satOut' && m.kind !== 'overtrading' && <span class="mono tiny dim">day {m.day + 1}</span>}
+                {REPLAYABLE_MOMENTS.includes(m.kind) ? (
+                  <button type="button" class="link mono tiny" onClick={() => replayMoment(m.day)}>
+                    replay day {m.day + 1}
+                  </button>
+                ) : (
+                  m.kind !== 'satOut' && m.kind !== 'overtrading' && <span class="mono tiny dim">day {m.day + 1}</span>
+                )}
               </div>
               <span class="small moment-text">{m.lesson}</span>
             </div>
@@ -162,7 +187,10 @@ export function Debrief({ market }: { market: Market }) {
         <a class="button ghost" href="#/home">
           <PlusIcon /> New run
         </a>
-        <p class="tiny dim">Replay uses the same seed ({d.seed}), so prices and news repeat; only your decisions change.</p>
+        <p class="tiny dim">
+          Replay uses the same seed ({d.seed}), so prices and news repeat; only your decisions change. "Replay day N" starts at the close
+          before that day with your account as it was then.
+        </p>
       </div>
 
       <p class="tiny dim">Prices are simulated. Nothing here is investment advice.</p>

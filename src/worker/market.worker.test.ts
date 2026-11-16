@@ -185,6 +185,28 @@ describe('market worker', () => {
     expect(events.filter((e) => e.type === 'ended')).toHaveLength(1);
   });
 
+  it('replays a finished run from the close before a day', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'replayFrom', day: 2 });
+    expect(last('error').message).toMatch(/Finish the run/);
+    send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } } });
+    for (let d = 0; d < 4; d++) send({ type: 'stepDay' });
+    send({ type: 'end' });
+    const first = last('ended').debrief;
+    events.length = 0;
+    send({ type: 'replayFrom', day: 2 });
+    const loaded = last('loaded');
+    expect(loaded.branchOf).toEqual({ day: 2, letter: first.grade.letter, score: first.grade.score });
+    expect(loaded.scenario.id).toBe('first-steps');
+    expect(last('tick')).toMatchObject({ day: 1, bar: 78, playing: false, finished: false });
+    expect(last('account').account.equityByDay).toHaveLength(2);
+    expect(last('account').account.positions.map((p) => p.ticker)).toEqual(['SPY']);
+    // Nothing before the branch is re-sent as news or a day summary.
+    expect(events.some((e) => e.type === 'dayEnd')).toBe(false);
+    send({ type: 'end' });
+    expect(last('ended').debrief.branchOf?.day).toBe(2);
+  });
+
   it('starts a custom run from its options', () => {
     send({ type: 'newRun', scenarioId: 'custom', seed: 3, custom: { start: '2012-03-01', days: 63, startRegime: 'bull', news: 'off' } });
     const loaded = last('loaded');

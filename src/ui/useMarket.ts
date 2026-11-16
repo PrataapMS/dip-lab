@@ -5,6 +5,7 @@ import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import type { Order } from '../engine/orders';
 import type {
   AccountView,
+  BranchOf,
   Command,
   CustomOptions,
   DaySummary,
@@ -85,6 +86,8 @@ export interface MarketView {
   debrief: Debrief | null;
   /** How the current run was started, so it can be replayed. */
   config: RunConfig | null;
+  /** Set when this run replays a moment of an earlier one. */
+  branchOf: BranchOf | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -122,6 +125,7 @@ export const initialView: MarketView = {
   daySummary: null,
   debrief: null,
   config: null,
+  branchOf: null,
 };
 
 /** News lines kept for the feed. */
@@ -168,6 +172,15 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
         instruments: e.instruments,
         tickerIndex: new Map(e.instruments.map((inst, i) => [inst.ticker, i])),
         indexInstrument: e.indexInstrument,
+        branchOf: e.branchOf,
+        notices: e.branchOf
+          ? addNotices(initialView, [
+              {
+                ok: true,
+                message: `Replaying from the close before day ${e.branchOf.day + 1}: your account is as it was then. Press play when ready.`,
+              },
+            ])
+          : [],
         dayLengthMs: state.dayLengthMs,
         config: state.config,
       };
@@ -241,9 +254,16 @@ export function useMarket() {
     },
     [send],
   );
+  const replayFrom = useCallback(
+    (day: number) => {
+      setView((s) => ({ ...s, ready: false, starting: true, error: null }));
+      send({ type: 'replayFrom', day });
+    },
+    [send],
+  );
   const dismissSummary = useCallback(() => setView((s) => ({ ...s, daySummary: null })), []);
   const dismissNotice = useCallback((id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })), []);
-  return { view, send, startRun, dismissNotice, dismissSummary };
+  return { view, send, startRun, replayFrom, dismissNotice, dismissSummary };
 }
 
 export type Market = ReturnType<typeof useMarket>;

@@ -1298,3 +1298,7 @@ button:disabled {
   border-color: var(--down);
   gap: 4px;
 }
+
+.branch-compare {
+  gap: 4px;
+}

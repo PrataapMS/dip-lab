@@ -7,12 +7,12 @@ import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
 import type { CustomOptions } from './scenarios';
-import type { AccountView, EndReason, RunAlert } from './run';
+import type { AccountView, BranchOf, EndReason, RunAlert } from './run';
 import type { DaySummary } from './summary';
 
 export type { AccountView } from './run';
 export type { NewsItem, Upcoming } from './news';
-export type { EndReason, RunAlert } from './run';
+export type { BranchOf, EndReason, RunAlert } from './run';
 export type { CustomOptions } from './scenarios';
 export type { DaySummary } from './summary';
 export type { Debrief, Moment, TradeStat } from './debrief';
@@ -35,6 +35,8 @@ export type Command =
   /** Finish the run now and go to the debrief. */
   | { type: 'end' }
   | { type: 'pauseAtClose'; on: boolean }
+  /** After a run ends: go back to the close before `day` of the same market and play on from there. */
+  | { type: 'replayFrom'; day: number }
   | { type: 'placeOrder'; draft: OrderDraft }
   | { type: 'cancelOrder'; id: number }
   /** Tickers whose recent closes come with each `day` event (watchlist sparklines). */
@@ -65,6 +67,9 @@ export interface Series {
   values: number[];
 }
 
+/** Debrief moments tied to one day, so they can be replayed from the close before it. */
+export const REPLAYABLE_MOMENTS: readonly string[] = ['soldNearLow', 'stopSlippage', 'marginCall', 'forcedSale', 'shortSqueeze'];
+
 /** Closes kept for each watchlist sparkline. */
 export const SPARK_DAYS = 30;
 
@@ -78,6 +83,8 @@ export type WorkerEvent =
       instruments: InstrumentInfo[];
       /** Index of the instrument used as "the market" (SPY), -1 if absent. */
       indexInstrument: number;
+      /** Set when this run replays a moment of an earlier one. */
+      branchOf: BranchOf | null;
     }
   | {
       type: 'day';

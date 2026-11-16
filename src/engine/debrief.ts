@@ -2,7 +2,7 @@ import type { Fill } from './account';
 import { fillPrice } from './costs';
 import { BARS_PER_DAY, POINTS_PER_DAY } from './intraday';
 import { dayBars } from './market';
-import type { EndReason, Run } from './run';
+import type { BranchOf, EndReason, Run } from './run';
 import { TRADING_DAYS_PER_YEAR } from './synthetic';
 
 /**
@@ -90,6 +90,8 @@ export interface Debrief {
   avgInvested: number;
   moments: Moment[];
   grade: Grade;
+  /** Set when this run replayed a moment of an earlier one. */
+  branchOf: BranchOf | null;
 }
 
 /** Thresholds for the flagged moments and the grade. */
@@ -507,5 +509,6 @@ export function debrief(run: Run): Debrief {
     avgInvested,
     moments: moments.slice(0, 3),
     grade,
+    branchOf: run.branchOf,
   };
 }

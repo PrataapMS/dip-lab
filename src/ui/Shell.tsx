@@ -60,8 +60,8 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
           <span class="value" aria-label="Account value">
             {money(run.value)}
           </span>
-          <span class={`small ${upDown(run.dollars)}`}>
-            {signedMoney(run.dollars)} · {signedPct(run.pct, 1)} run
+          <span class={`small ${upDown(run.dollars)}`} title={signedMoney(run.dollars)}>
+            {signedPct(run.pct, 1)} run
           </span>
         </div>
       </div>
@@ -178,8 +178,10 @@ export function MarginBanner({ market }: { market: Market }) {
     <section class="panel margin-banner" role="alert">
       <span class="mono tiny down">// MARGIN CALL</span>
       <p class="small">
-        Your equity is {ratio} of what you hold; the minimum is 30%. Sell something before the close of day {a.marginCall.day + 2}, or
-        your broker sells for you at the next open.
+        Your equity is {ratio} of what you hold; the minimum is 30%.{' '}
+        {a.forcedSaleDue
+          ? 'The deadline has passed, so your broker sells for you at the next open.'
+          : `Sell something before the close of day ${a.marginCall.day + 2}, or your broker sells for you at the open after.`}
       </p>
     </section>
   );
