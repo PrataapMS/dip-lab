@@ -25,7 +25,15 @@ export function CompareChart({ you, spy, capacity, label, height = 140, markers 
   const line = (vals: readonly number[]) => vals.map((v, i) => `${x(i)},${y(v)}`).join(' ');
   const last = you[you.length - 1];
   return (
-    <svg class="chart" role="img" aria-label={label} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H}>
+    <svg
+      class="chart"
+      role="img"
+      aria-label={label}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      width="100%"
+      height={H}
+    >
       <line x1="0" x2={W} y1={y(100)} y2={y(100)} stroke="var(--line)" stroke-dasharray="2 4" />
       {spy.length > 1 && (
         <polyline
@@ -47,11 +55,21 @@ export function CompareChart({ you, spy, capacity, label, height = 140, markers 
           vector-effect="non-scaling-stroke"
         />
       )}
-      {last !== undefined && <circle cx={x(you.length - 1)} cy={y(last)} r="3" fill="var(--accent)" />}
+      {last !== undefined && (
+        <circle cx={x(you.length - 1)} cy={y(last)} r="3" fill="var(--accent)" />
+      )}
       {markers
         .filter((m) => m.index >= 0 && m.index < you.length)
         .map((m) => (
-          <circle key={m.index} cx={x(m.index)} cy={y(you[m.index] ?? 100)} r="5" fill="var(--bg)" stroke={m.color} stroke-width="2.5" />
+          <circle
+            key={m.index}
+            cx={x(m.index)}
+            cy={y(you[m.index] ?? 100)}
+            r="5"
+            fill="var(--bg)"
+            stroke={m.color}
+            stroke-width="2.5"
+          />
         ))}
     </svg>
   );

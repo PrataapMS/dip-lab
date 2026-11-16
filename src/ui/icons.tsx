@@ -1,7 +1,15 @@
 import type { ComponentChildren } from 'preact';
 
 /** Inline stroke icons (decorative: always paired with a text label or aria-label). */
-function Svg({ size = 22, fill = false, children }: { size?: number; fill?: boolean; children: ComponentChildren }) {
+function Svg({
+  size = 22,
+  fill = false,
+  children,
+}: {
+  size?: number;
+  fill?: boolean;
+  children: ComponentChildren;
+}) {
   return (
     <svg
       aria-hidden="true"

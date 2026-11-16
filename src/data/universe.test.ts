@@ -15,7 +15,8 @@ describe('universe', () => {
   });
 
   it('covers every sector', () => {
-    for (const s of SECTORS) expect(stocks.filter((x) => x.sector === s).length).toBeGreaterThan(10);
+    for (const s of SECTORS)
+      expect(stocks.filter((x) => x.sector === s).length).toBeGreaterThan(10);
   });
 
   it('has unique tickers and sane parameters', () => {
@@ -28,11 +29,24 @@ describe('universe', () => {
   });
 
   it('rejects bad rows', () => {
-    const row = { ticker: 'X', name: 'X', sector: 'Energy', beta: 1, vol: 0.3, divYield: 0, ipoYear: 2000 };
+    const row = {
+      ticker: 'X',
+      name: 'X',
+      sector: 'Energy',
+      beta: 1,
+      vol: 0.3,
+      divYield: 0,
+      ipoYear: 2000,
+    };
     expect(() => parseUniverse({ stocks: [row, row], etfs: [] })).toThrow(/duplicate/);
-    expect(() => parseUniverse({ stocks: [{ ...row, sector: 'Crypto' }], etfs: [] })).toThrow(/sector/);
-    expect(() => parseUniverse({ stocks: [], etfs: [{ ticker: 'Y', name: 'Y', tracks: 'moon', ipoYear: 2000 }] })).toThrow(
-      /tracks/,
+    expect(() => parseUniverse({ stocks: [{ ...row, sector: 'Crypto' }], etfs: [] })).toThrow(
+      /sector/,
     );
+    expect(() =>
+      parseUniverse({
+        stocks: [],
+        etfs: [{ ticker: 'Y', name: 'Y', tracks: 'moon', ipoYear: 2000 }],
+      }),
+    ).toThrow(/tracks/);
   });
 });

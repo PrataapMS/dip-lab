@@ -20,10 +20,20 @@ function needsRun(r: Route): boolean {
   return r.name === 'market' || r.name === 'portfolio' || r.name === 'stock';
 }
 
-function Screen({ route, market, startTutorial }: { route: Route; market: Market; startTutorial: () => void }) {
+function Screen({
+  route,
+  market,
+  startTutorial,
+}: {
+  route: Route;
+  market: Market;
+  startTutorial: () => void;
+}) {
   const { view } = market;
   if (needsRun(route) && !view.ready) {
-    return <p class="mono small dim">{view.error ? `> error: ${view.error}` : '> building market…'}</p>;
+    return (
+      <p class="mono small dim">{view.error ? `> error: ${view.error}` : '> building market…'}</p>
+    );
   }
   switch (route.name) {
     case 'home':
@@ -58,7 +68,11 @@ export function App() {
 
   const [coaching, setCoaching] = useState(false);
   const startTutorial = useCallback(() => {
-    market.startRun({ scenarioId: 'first-steps', seed: newSeed(), settings: DEFAULT_ACCOUNT_SETTINGS });
+    market.startRun({
+      scenarioId: 'first-steps',
+      seed: newSeed(),
+      settings: DEFAULT_ACCOUNT_SETTINGS,
+    });
     navigate({ name: 'market' });
     setCoaching(true);
   }, [market.startRun]);
@@ -71,12 +85,16 @@ export function App() {
   return (
     <ProgressProvider market={market}>
       <div class="app">
-        {needsRun(route) && view.ready && <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>}
+        {needsRun(route) && view.ready && (
+          <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>
+        )}
         <main class="screen">
           <Screen route={route} market={market} startTutorial={startTutorial} />
         </main>
         <Notices market={market} />
-        {coaching && view.ready && <Coach route={route} market={market} onClose={() => setCoaching(false)} />}
+        {coaching && view.ready && (
+          <Coach route={route} market={market} onClose={() => setCoaching(false)} />
+        )}
         <TabBar route={route} hasRun={view.ready} />
       </div>
     </ProgressProvider>

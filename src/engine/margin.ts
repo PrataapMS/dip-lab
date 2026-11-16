@@ -16,7 +16,10 @@ import { fillPrice } from './costs';
  * at the following open (gaps and all) until equity is back to `FORCED_SALE_TARGET`.
  */
 
-export type MarginEvent = { kind: 'call'; ratio: number } | { kind: 'met' } | { kind: 'due'; ratio: number };
+export type MarginEvent =
+  | { kind: 'call'; ratio: number }
+  | { kind: 'met' }
+  | { kind: 'due'; ratio: number };
 
 /** Equity as a share of everything held (1 or more with no borrowing; Infinity with nothing held). */
 export function marginRatio(state: AccountState, priceOf?: PriceOf): number {
@@ -25,7 +28,11 @@ export function marginRatio(state: AccountState, priceOf?: PriceOf): number {
 }
 
 /** Check the account at the close of `day`. */
-export function checkMargin(state: AccountState, priceOf: PriceOf, day: number): { state: AccountState; event: MarginEvent | null } {
+export function checkMargin(
+  state: AccountState,
+  priceOf: PriceOf,
+  day: number,
+): { state: AccountState; event: MarginEvent | null } {
   if (!state.settings.margin) return { state, event: null };
   const ratio = marginRatio(state, priceOf);
   if (ratio >= MAINTENANCE_MARGIN) {
@@ -34,9 +41,13 @@ export function checkMargin(state: AccountState, priceOf: PriceOf, day: number):
   }
   if (!state.marginCall) {
     const call = { day, ratio };
-    return { state: { ...state, marginCall: call, marginCalls: [...state.marginCalls, call] }, event: { kind: 'call', ratio } };
+    return {
+      state: { ...state, marginCall: call, marginCalls: [...state.marginCalls, call] },
+      event: { kind: 'call', ratio },
+    };
   }
-  if (day > state.marginCall.day && !state.forcedSaleDue) return { state: { ...state, forcedSaleDue: true }, event: { kind: 'due', ratio } };
+  if (day > state.marginCall.day && !state.forcedSaleDue)
+    return { state: { ...state, forcedSaleDue: true }, event: { kind: 'due', ratio } };
   return { state, event: null };
 }
 
@@ -49,7 +60,11 @@ export interface ForceQuote {
  * The broker sells: largest holdings first, at the open less the spread, until equity is
  * `FORCED_SALE_TARGET` of what is left (or nothing is left). Clears the call.
  */
-export function forceSale(state: AccountState, quote: (ticker: string) => ForceQuote | undefined, at: MarketTime): { state: AccountState; fills: Fill[] } {
+export function forceSale(
+  state: AccountState,
+  quote: (ticker: string) => ForceQuote | undefined,
+  at: MarketTime,
+): { state: AccountState; fills: Fill[] } {
   let s = state;
   const fills: Fill[] = [];
   const priceOf: PriceOf = (t) => quote(t)?.mid;

@@ -181,7 +181,11 @@ export interface Exposure {
   gross: number;
 }
 
-export function exposure(cash: number, positions: Record<string, Position>, priceOf?: PriceOf): Exposure {
+export function exposure(
+  cash: number,
+  positions: Record<string, Position>,
+  priceOf?: PriceOf,
+): Exposure {
   let net = 0;
   let gross = 0;
   for (const [ticker, pos] of Object.entries(positions)) {
@@ -218,7 +222,9 @@ export interface TradeRequest {
   forced?: boolean;
 }
 
-export type TradeResult = { ok: true; state: AccountState; fill: Fill } | { ok: false; reason: string };
+export type TradeResult =
+  | { ok: true; state: AccountState; fill: Fill }
+  | { ok: false; reason: string };
 
 /**
  * Fill a trade against the account at the given price, or explain in plain words why not.
@@ -227,7 +233,8 @@ export type TradeResult = { ok: true; state: AccountState; fill: Fill } | { ok: 
  */
 export function executeTrade(state: AccountState, req: TradeRequest): TradeResult {
   const { ticker, side, amount } = req;
-  if (!(amount.value > 0) || !Number.isFinite(amount.value)) return { ok: false, reason: 'Enter an amount above zero.' };
+  if (!(amount.value > 0) || !Number.isFinite(amount.value))
+    return { ok: false, reason: 'Enter an amount above zero.' };
   if (!(req.mid > 0)) return { ok: false, reason: `${ticker} has no price right now.` };
   const price = req.price ?? fillPrice(req.mid, side, req.halfSpread);
   const commission = state.settings.commission;
@@ -238,32 +245,47 @@ export function executeTrade(state: AccountState, req: TradeRequest): TradeResul
 
   let shares: number;
   if (side === 'buy') {
-    shares = amount.kind === 'dollars' ? floorShares(amount.value / price) : roundShares(amount.value);
-    if (shares <= 0) return { ok: false, reason: `That buys less than a millionth of a share of ${ticker}.` };
+    shares =
+      amount.kind === 'dollars' ? floorShares(amount.value / price) : roundShares(amount.value);
+    if (shares <= 0)
+      return { ok: false, reason: `That buys less than a millionth of a share of ${ticker}.` };
     if (covering) {
       if (shares > -heldShares + SHARE_STEP) {
-        return { ok: false, reason: `You're short ${sharesText(-heldShares)} of ${ticker}, so you can cover at most that. Cover first, then buy.` };
+        return {
+          ok: false,
+          reason: `You're short ${sharesText(-heldShares)} of ${ticker}, so you can cover at most that. Cover first, then buy.`,
+        };
       }
       shares = Math.min(shares, -heldShares);
     } else if (!state.settings.margin) {
       const cost = shares * price + commission;
       if (cost > state.cash + 1e-9) {
-        return { ok: false, reason: `Not enough cash: this needs ${usd(cost)} and you have ${usd(state.cash)}.` };
+        return {
+          ok: false,
+          reason: `Not enough cash: this needs ${usd(cost)} and you have ${usd(state.cash)}.`,
+        };
       }
     }
   } else if (shorting) {
-    if (!state.settings.shorts || !state.settings.margin) return { ok: false, reason: `You don't own any ${ticker}.` };
-    shares = amount.kind === 'dollars' ? floorShares(amount.value / price) : roundShares(amount.value);
-    if (shares <= 0) return { ok: false, reason: `That sells less than a millionth of a share of ${ticker}.` };
+    if (!state.settings.shorts || !state.settings.margin)
+      return { ok: false, reason: `You don't own any ${ticker}.` };
+    shares =
+      amount.kind === 'dollars' ? floorShares(amount.value / price) : roundShares(amount.value);
+    if (shares <= 0)
+      return { ok: false, reason: `That sells less than a millionth of a share of ${ticker}.` };
   } else {
     shares = roundShares(amount.kind === 'dollars' ? amount.value / price : amount.value);
     if (shares > heldShares + SHARE_STEP) {
       const more = state.settings.shorts ? ' Sell those first, then short.' : '';
-      return { ok: false, reason: `You own ${sharesText(heldShares)} of ${ticker}, so you can't sell ${sharesText(shares)}.${more}` };
+      return {
+        ok: false,
+        reason: `You own ${sharesText(heldShares)} of ${ticker}, so you can't sell ${sharesText(shares)}.${more}`,
+      };
     }
     // Rounding can leave a hair more than is held; sell exactly what is there.
     shares = Math.min(shares, heldShares);
-    if (shares <= 0) return { ok: false, reason: `That sells less than a millionth of a share of ${ticker}.` };
+    if (shares <= 0)
+      return { ok: false, reason: `That sells less than a millionth of a share of ${ticker}.` };
   }
   if (side === 'sell' && shares * price < commission) {
     return { ok: false, reason: `This sale is worth less than the ${usd(commission)} commission.` };
@@ -378,7 +400,10 @@ export interface AccountMarks {
 export const BROAD_MARKET = 'Broad market';
 
 /** Value everything at current mid prices. Positions are sorted by value, largest first. */
-export function markToMarket(state: AccountState, quote: (ticker: string) => Quote | undefined): AccountMarks {
+export function markToMarket(
+  state: AccountState,
+  quote: (ticker: string) => Quote | undefined,
+): AccountMarks {
   const positions: PositionMark[] = [];
   const bySector = new Map<string, number>();
   let holdingsValue = 0;
@@ -406,20 +431,40 @@ export function markToMarket(state: AccountState, quote: (ticker: string) => Quo
     const sector = q?.sector ?? BROAD_MARKET;
     bySector.set(sector, (bySector.get(sector) ?? 0) + Math.abs(value));
   }
-  positions.sort((a, b) => Math.abs(b.value) - Math.abs(a.value) || a.ticker.localeCompare(b.ticker));
+  positions.sort(
+    (a, b) => Math.abs(b.value) - Math.abs(a.value) || a.ticker.localeCompare(b.ticker),
+  );
   const sectorMix = [...bySector.entries()]
     .map(([sector, value]) => ({ sector, value, share: grossValue > 0 ? value / grossValue : 0 }))
     .sort((a, b) => b.value - a.value || a.sector.localeCompare(b.sector));
-  return { cash: state.cash, holdingsValue, value: state.cash + holdingsValue, unrealised, positions, sectorMix };
+  return {
+    cash: state.cash,
+    holdingsValue,
+    value: state.cash + holdingsValue,
+    unrealised,
+    positions,
+    sectorMix,
+  };
 }
 
 /** Pay dividends on shares held now (call at the ex-date open, before any trading). */
-export function payDividends(state: AccountState, due: readonly { ticker: string; perShare: number }[], at: MarketTime): AccountState {
+export function payDividends(
+  state: AccountState,
+  due: readonly { ticker: string; perShare: number }[],
+  at: MarketTime,
+): AccountState {
   // Short sellers owe the dividend to the lender: negative shares, negative amount.
   const paid: DividendPayment[] = [];
   for (const d of due) {
     const shares = state.positions[d.ticker]?.shares ?? 0;
-    if (shares !== 0 && d.perShare > 0) paid.push({ ticker: d.ticker, shares, perShare: d.perShare, amount: shares * d.perShare, at });
+    if (shares !== 0 && d.perShare > 0)
+      paid.push({
+        ticker: d.ticker,
+        shares,
+        perShare: d.perShare,
+        amount: shares * d.perShare,
+        at,
+      });
   }
   if (paid.length === 0) return state;
   const received = paid.reduce((s, p) => s + Math.max(0, p.amount), 0);

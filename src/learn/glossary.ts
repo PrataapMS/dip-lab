@@ -299,7 +299,8 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
   {
     id: 'margin-call',
     term: 'Margin call',
-    short: 'Your broker’s demand to add money or sell, when your equity falls under 30% of what you hold.',
+    short:
+      'Your broker’s demand to add money or sell, when your equity falls under 30% of what you hold.',
     why: 'If you don’t, the broker sells for you, usually at a bad price.',
     lesson: 'margin',
   },
@@ -346,7 +347,8 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
   {
     id: 'risk-check',
     term: 'Risk check',
-    short: 'A 5-step meter: how much of your account goes into this one name, weighted by how much it swings.',
+    short:
+      'A 5-step meter: how much of your account goes into this one name, weighted by how much it swings.',
     why: 'It teaches position size. Nothing stops you; it just tells you how big the bet is.',
     lesson: 'diversification',
   },
@@ -363,6 +365,8 @@ export function searchGlossary(q: string): GlossaryEntry[] {
   const s = q.trim().toLowerCase();
   if (!s) return [...GLOSSARY];
   const inTerm = GLOSSARY.filter((g) => g.term.toLowerCase().includes(s));
-  const inText = GLOSSARY.filter((g) => !inTerm.includes(g) && `${g.short} ${g.why}`.toLowerCase().includes(s));
+  const inText = GLOSSARY.filter(
+    (g) => !inTerm.includes(g) && `${g.short} ${g.why}`.toLowerCase().includes(s),
+  );
   return [...inTerm, ...inText];
 }

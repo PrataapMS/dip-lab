@@ -20,8 +20,23 @@ import { getScenario } from './scenarios';
 const AT = { day: 0, bar: 10 };
 const SHORTS = { ...DEFAULT_ACCOUNT_SETTINGS, spreadOn: false, margin: true, shorts: true };
 
-function trade(state: AccountState, side: Side, shares: number, mid: number, ticker = 'KO', prices?: (t: string) => number | undefined) {
-  return executeTrade(state, { ticker, side, amount: { kind: 'shares', value: shares }, mid, halfSpread: 0, at: AT, prices });
+function trade(
+  state: AccountState,
+  side: Side,
+  shares: number,
+  mid: number,
+  ticker = 'KO',
+  prices?: (t: string) => number | undefined,
+) {
+  return executeTrade(state, {
+    ticker,
+    side,
+    amount: { kind: 'shares', value: shares },
+    mid,
+    halfSpread: 0,
+    at: AT,
+    prices,
+  });
 }
 
 function ok(r: ReturnType<typeof trade>): AccountState {
@@ -64,7 +79,11 @@ describe('short selling', () => {
   });
 
   it('needs shorts and margin turned on', () => {
-    for (const settings of [DEFAULT_ACCOUNT_SETTINGS, { ...SHORTS, margin: false }, { ...SHORTS, shorts: false }]) {
+    for (const settings of [
+      DEFAULT_ACCOUNT_SETTINGS,
+      { ...SHORTS, margin: false },
+      { ...SHORTS, shorts: false },
+    ]) {
       const r = trade(createAccount(settings), 'sell', 1, 50);
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.reason).toMatch(/don't own any KO/);
@@ -97,7 +116,10 @@ describe('short selling', () => {
     // Equity 30,000 − 400p over holdings 400p: under 30% once p > 57.69.
     const called = checkMargin(a, () => 58, 5);
     expect(called.event?.kind).toBe('call');
-    const r = forceSale({ ...called.state, forcedSaleDue: true }, () => ({ mid: 62, half: 0 }), { day: 7, bar: 0 });
+    const r = forceSale({ ...called.state, forcedSaleDue: true }, () => ({ mid: 62, half: 0 }), {
+      day: 7,
+      bar: 0,
+    });
     expect(r.fills[0]?.side).toBe('buy');
     expect(r.fills[0]?.forced).toBe(true);
     expect(r.fills[0]?.realised).toBeLessThan(0);
@@ -107,12 +129,28 @@ describe('short selling', () => {
   });
 
   it('describes shorts in plain words', () => {
-    const draft = { ticker: 'NVDA', side: 'sell' as const, type: 'market' as const, amount: { kind: 'dollars' as const, value: 1_000 } };
+    const draft = {
+      ticker: 'NVDA',
+      side: 'sell' as const,
+      type: 'market' as const,
+      amount: { kind: 'dollars' as const, value: 1_000 },
+    };
     expect(describeOrder(draft, 0)).toBe('Short $1,000 of NVDA');
-    expect(describeOrder({ ...draft, side: 'buy', amount: { kind: 'shares', value: 12 } }, -12)).toBe('Buy to cover 12 shares of NVDA');
+    expect(
+      describeOrder({ ...draft, side: 'buy', amount: { kind: 'shares', value: 12 } }, -12),
+    ).toBe('Buy to cover 12 shares of NVDA');
     expect(describeOrder(draft)).toBe('Sell $1,000 of NVDA');
     expect(
-      orderMessage({ ...draft, id: 1, tif: 'day', status: 'filled', placedAt: AT, fillPrice: 10, filledShares: 100, short: true }),
+      orderMessage({
+        ...draft,
+        id: 1,
+        tif: 'day',
+        status: 'filled',
+        placedAt: AT,
+        fillPrice: 10,
+        filledShares: 100,
+        short: true,
+      }),
     ).toBe('Sold short 100 shares of NVDA at $10.00.');
   });
 });
@@ -121,13 +159,23 @@ describe('shorts in a run and the debrief', () => {
   const covid = buildMarket(getScenario('covid-2020'), 21, UNIVERSE);
 
   it('scores a short through a crash and flags a squeeze in the rebound', () => {
-    const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true, shorts: true }, undefined, { pauseAtClose: false });
+    const run = new Run(
+      covid,
+      { ...DEFAULT_ACCOUNT_SETTINGS, margin: true, shorts: true },
+      undefined,
+      { pauseAtClose: false },
+    );
     // Short at the bottom of the crash, the worst possible moment.
     const closes = covid.closes[run.indexInstrument] ?? new Float64Array();
     let low = 1;
     for (let k = 1; k < closes.length; k++) if ((closes[k] ?? 0) < (closes[low] ?? 0)) low = k;
     while (run.clock.day < low) run.stepDay();
-    const r = run.place({ ticker: 'SPY', side: 'sell', type: 'market', amount: { kind: 'dollars', value: 5_000 } });
+    const r = run.place({
+      ticker: 'SPY',
+      side: 'sell',
+      type: 'market',
+      amount: { kind: 'dollars', value: 5_000 },
+    });
     expect(r.status).toBe('open'); // after the close: fills at the next open
     while (!run.finished) run.stepDay();
     expect(run.account.fills[0]?.short).toBe(true);

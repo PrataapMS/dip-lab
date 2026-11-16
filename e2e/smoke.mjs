@@ -82,7 +82,10 @@ try {
     await page.goto(`${ORIGIN}/#/stock/AAPL`);
     await page.getByRole('button', { name: 'Buy', exact: true }).click();
     await page.getByRole('button', { name: /^Buy \$1,000 of AAPL/ }).click();
-    await page.getByText(/Bought [\d.]+ shares of AAPL/).first().waitFor();
+    await page
+      .getByText(/Bought [\d.]+ shares of AAPL/)
+      .first()
+      .waitFor();
   });
 
   await step('portfolio shows the holding', async () => {

@@ -33,7 +33,11 @@ export function PlayerCard() {
   const { progress } = useProgress();
   const lv = levelFor(progress.xp);
   const unlock = nextUnlock(lv.level);
-  const next = lv.nextRank ? `next: ${lv.nextRank}` : unlock ? `${unlock.label} at Lv ${unlock.level}` : `Lv ${lv.level + 1} next`;
+  const next = lv.nextRank
+    ? `next: ${lv.nextRank}`
+    : unlock
+      ? `${unlock.label} at Lv ${unlock.level}`
+      : `Lv ${lv.level + 1} next`;
   return (
     <section class="panel player-card" aria-label="Your level">
       <div class="row gap-12">
@@ -91,7 +95,17 @@ function Quests() {
           <div key={q.id} class={`quest ${done ? 'done' : ''}`}>
             <span class="quest-check" aria-hidden="true">
               {done && (
-                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="5 12 10 17 19 7" />
                 </svg>
               )}
@@ -125,7 +139,9 @@ function Quests() {
 
 function BadgeShelf() {
   const { progress } = useProgress();
-  const earned = BADGES.filter((b) => progress.badges[b.id]).sort((a, b) => (progress.badges[b.id] ?? '').localeCompare(progress.badges[a.id] ?? ''));
+  const earned = BADGES.filter((b) => progress.badges[b.id]).sort((a, b) =>
+    (progress.badges[b.id] ?? '').localeCompare(progress.badges[a.id] ?? ''),
+  );
   const slots = Array.from({ length: SHELF }, (_, k) => earned[k] ?? null);
   return (
     <section class="stack gap-8" aria-labelledby="badges-title">
@@ -140,7 +156,13 @@ function BadgeShelf() {
       <div class="badge-shelf">
         {slots.map((b, k) =>
           b ? (
-            <a key={b.id} class="badge-slot" href="#/badges" title={b.name} style={{ color: GROUP_COLOR[b.group], borderColor: GROUP_COLOR[b.group] }}>
+            <a
+              key={b.id}
+              class="badge-slot"
+              href="#/badges"
+              title={b.name}
+              style={{ color: GROUP_COLOR[b.group], borderColor: GROUP_COLOR[b.group] }}
+            >
               <BadgeIcon id={b.id} />
               <span class="sr-only">{b.name}</span>
             </a>
@@ -168,7 +190,10 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
       <header class="home-head">
         <h1 class="logo">DIP_LAB</h1>
         <span class="mono small dim">v{version.split('.').slice(0, 2).join('.')}</span>
-        <span class={`streak-pill mono ${streak ? '' : 'cold'}`} title={`Best: ${progress.streak.best} days`}>
+        <span
+          class={`streak-pill mono ${streak ? '' : 'cold'}`}
+          title={`Best: ${progress.streak.best} days`}
+        >
           <FlameIcon /> {streak} day streak
         </span>
       </header>
@@ -179,11 +204,18 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
           <h2 id="welcome-title" class="title">
             Make your first trade in under a minute
           </h2>
-          <p class="small dim">Four taps with a guide: open the market, pick a stock, buy $1,000 of it. Simulated money, simulated prices.</p>
+          <p class="small dim">
+            Four taps with a guide: open the market, pick a stock, buy $1,000 of it. Simulated
+            money, simulated prices.
+          </p>
           <button type="button" class="primary" onClick={startTutorial}>
             <PlayIcon /> Make your first trade
           </button>
-          <button type="button" class="link small" onClick={() => update((p) => ({ progress: { ...p, tutorialDone: true } }))}>
+          <button
+            type="button"
+            class="link small"
+            onClick={() => update((p) => ({ progress: { ...p, tutorialDone: true } }))}
+          >
             Skip, I know this
           </button>
         </section>
@@ -194,7 +226,9 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
       {hasRun && (
         <a class="panel run-card" href={view.finished ? '#/debrief' : '#/market'}>
           <div class="row">
-            <span class="mono tiny accent">// {view.finished ? 'RUN COMPLETE' : 'RUN IN PROGRESS'}</span>
+            <span class="mono tiny accent">
+              // {view.finished ? 'RUN COMPLETE' : 'RUN IN PROGRESS'}
+            </span>
             <span class="mono tiny dim">
               day {view.day + 1}/{view.dates.length}
             </span>

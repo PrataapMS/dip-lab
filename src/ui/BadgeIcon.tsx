@@ -137,7 +137,9 @@ const PATHS: Record<string, JSX.Element> = {
       <polygon points="22 19 13 12 22 5 22 19" />
     </>
   ),
-  'week-streak': <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z" />,
+  'week-streak': (
+    <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z" />
+  ),
   scholar: (
     <>
       <path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z" />

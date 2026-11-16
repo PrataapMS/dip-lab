@@ -21,7 +21,15 @@ export const BIG_MOVE = 0.08;
 export const MAX_OTHER_PER_DAY = 4;
 
 export function newsItem(e: MarketEvent, mine: boolean): NewsItem {
-  return { day: e.day, bar: e.bar, kind: e.kind, ticker: e.ticker, tone: e.tone, text: eventText(e), mine };
+  return {
+    day: e.day,
+    bar: e.bar,
+    kind: e.kind,
+    ticker: e.ticker,
+    tone: e.tone,
+    text: eventText(e),
+    mine,
+  };
 }
 
 /**
@@ -69,7 +77,13 @@ export function dividendItem(p: DividendPayment): NewsItem {
 }
 
 /** News about one ticker up to a point in time, newest first. */
-export function tickerNews(m: BuiltMarket, ticker: string, day: number, bar: number, limit = 8): NewsItem[] {
+export function tickerNews(
+  m: BuiltMarket,
+  ticker: string,
+  day: number,
+  bar: number,
+  limit = 8,
+): NewsItem[] {
   const out: NewsItem[] = [];
   const end = m.eventIndex[day + 1] ?? m.events.length;
   for (let k = end - 1; k >= 0 && out.length < limit; k--) {

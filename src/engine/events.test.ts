@@ -27,14 +27,22 @@ describe('events', () => {
         expect([1, 2, 4, 5, 7, 8, 10, 11]).toContain(month);
       }
     }
-    expect(rate.events.some((e) => e.kind === 'earnings' && rate.instruments.find((i) => i.ticker === e.ticker)?.kind === 'etf')).toBe(false);
+    expect(
+      rate.events.some(
+        (e) =>
+          e.kind === 'earnings' &&
+          rate.instruments.find((i) => i.ticker === e.ticker)?.kind === 'etf',
+      ),
+    ).toBe(false);
   });
 
   it('keeps a company in the same slot whatever the seed', () => {
     expect(earningsSlot('AAPL')).toBe(earningsSlot('AAPL'));
     const days = earningsDays(rate.dates, 'AAPL');
     const other = buildMarket(getScenario('rate-shock-2022'), 99, UNIVERSE);
-    expect(other.events.filter((e) => e.kind === 'earnings' && e.ticker === 'AAPL').map((e) => e.day)).toEqual(days);
+    expect(
+      other.events.filter((e) => e.kind === 'earnings' && e.ticker === 'AAPL').map((e) => e.day),
+    ).toEqual(days);
   });
 
   it('beats about 70% of the time, and some beats still fall', () => {
@@ -55,8 +63,13 @@ describe('events', () => {
     }
     const aapl = rate.instruments.findIndex((x) => x.ticker === 'AAPL');
     const earnings = rate.events.find((e) => e.kind === 'earnings' && e.ticker === 'AAPL');
-    const news = rate.events.filter((e) => e.kind === 'news' && e.ticker === 'AAPL' && e.day === earnings?.day);
-    expect(rate.jumps[aapl]?.[earnings?.day ?? 0]).toBeCloseTo((earnings?.move ?? 0) + (news[0]?.move ?? 0), 5);
+    const news = rate.events.filter(
+      (e) => e.kind === 'news' && e.ticker === 'AAPL' && e.day === earnings?.day,
+    );
+    expect(rate.jumps[aapl]?.[earnings?.day ?? 0]).toBeCloseTo(
+      (earnings?.move ?? 0) + (news[0]?.move ?? 0),
+      5,
+    );
   });
 
   it('places scenario headlines on waypoint days, matching the move', () => {
@@ -67,7 +80,11 @@ describe('events', () => {
       expect(headlines[0]?.day).toBe(0);
       expect(headlines[0]?.bar).toBe(0);
       const marks = new Map<number, number>([[0, 0]]);
-      for (const p of def.market) marks.set(m.dates.findLastIndex((d) => d <= p.date), p.ret);
+      for (const p of def.market)
+        marks.set(
+          m.dates.findLastIndex((d) => d <= p.date),
+          p.ret,
+        );
       let prev = 0;
       for (const h of def.headlines ?? []) {
         if (h.at === 'open' || h.ticker) continue;
@@ -89,7 +106,11 @@ describe('events', () => {
   });
 
   it('turns news and earnings off for a quiet custom run', () => {
-    const quiet = buildMarket(customScenario({ start: '2019-01-02', days: 120, news: 'off' }), 1, UNIVERSE);
+    const quiet = buildMarket(
+      customScenario({ start: '2019-01-02', days: 120, news: 'off' }),
+      1,
+      UNIVERSE,
+    );
     expect(quiet.events.map((e) => e.kind)).toEqual(['headline']);
   });
 

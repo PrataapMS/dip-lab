@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from './rng';
-import { generateMarketDays, type Regime, REGIMES, regimeChain, TRANSITIONS, volatilityPath } from './regimes';
+import {
+  generateMarketDays,
+  type Regime,
+  REGIMES,
+  regimeChain,
+  TRANSITIONS,
+  volatilityPath,
+} from './regimes';
 
 function autocorr(xs: number[], lag: number): number {
   const n = xs.length;
@@ -26,7 +33,9 @@ describe('regimes', () => {
   it('is deterministic for a seed', () => {
     const opts = { seed: 11, days: 500 };
     expect(generateMarketDays(opts)).toEqual(generateMarketDays(opts));
-    expect(generateMarketDays({ seed: 12, days: 500 }).returns).not.toEqual(generateMarketDays(opts).returns);
+    expect(generateMarketDays({ seed: 12, days: 500 }).returns).not.toEqual(
+      generateMarketDays(opts).returns,
+    );
   });
 
   it('visits every regime over a long run', () => {

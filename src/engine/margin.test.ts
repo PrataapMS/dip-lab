@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { UNIVERSE } from '../data/universe';
-import { type AccountState, buyingPower, chargeInterest, createAccount, DEFAULT_ACCOUNT_SETTINGS, executeTrade, exposure } from './account';
+import {
+  type AccountState,
+  buyingPower,
+  chargeInterest,
+  createAccount,
+  DEFAULT_ACCOUNT_SETTINGS,
+  executeTrade,
+  exposure,
+} from './account';
 import { debrief, gradeRun } from './debrief';
 import { checkMargin, forceSale, marginRatio } from './margin';
 import { buildMarket } from './market';
@@ -10,8 +18,22 @@ import { getScenario } from './scenarios';
 const AT = { day: 0, bar: 10 };
 const MARGIN = { ...DEFAULT_ACCOUNT_SETTINGS, spreadOn: false, margin: true };
 
-function buy(state: AccountState, ticker: string, dollars: number, mid: number, prices?: (t: string) => number | undefined): AccountState {
-  const r = executeTrade(state, { ticker, side: 'buy', amount: { kind: 'dollars', value: dollars }, mid, halfSpread: 0, at: AT, prices });
+function buy(
+  state: AccountState,
+  ticker: string,
+  dollars: number,
+  mid: number,
+  prices?: (t: string) => number | undefined,
+): AccountState {
+  const r = executeTrade(state, {
+    ticker,
+    side: 'buy',
+    amount: { kind: 'dollars', value: dollars },
+    mid,
+    halfSpread: 0,
+    at: AT,
+    prices,
+  });
   if (!r.ok) throw new Error(r.reason);
   return r.state;
 }
@@ -23,7 +45,15 @@ describe('margin account', () => {
     a = buy(a, 'KO', 15_000, 50);
     expect(a.cash).toBe(-5_000);
     expect(buyingPower(a, () => 50)).toBeCloseTo(5_000, 6);
-    const r = executeTrade(a, { ticker: 'PEP', side: 'buy', amount: { kind: 'dollars', value: 5_100 }, mid: 100, halfSpread: 0, at: AT, prices: () => 50 });
+    const r = executeTrade(a, {
+      ticker: 'PEP',
+      side: 'buy',
+      amount: { kind: 'dollars', value: 5_100 },
+      mid: 100,
+      halfSpread: 0,
+      at: AT,
+      prices: () => 50,
+    });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toMatch(/buying power/);
     expect(() => buy(a, 'PEP', 5_000, 100, () => 50)).not.toThrow();
@@ -32,7 +62,14 @@ describe('margin account', () => {
   it('keeps the cash rule when margin is off', () => {
     const a = createAccount({ ...MARGIN, margin: false });
     expect(buyingPower(a)).toBe(10_000);
-    const r = executeTrade(a, { ticker: 'KO', side: 'buy', amount: { kind: 'dollars', value: 10_001 }, mid: 50, halfSpread: 0, at: AT });
+    const r = executeTrade(a, {
+      ticker: 'KO',
+      side: 'buy',
+      amount: { kind: 'dollars', value: 10_001 },
+      mid: 50,
+      halfSpread: 0,
+      at: AT,
+    });
     expect(r.ok).toBe(false);
   });
 
@@ -93,52 +130,78 @@ describe('margin in a run', () => {
   const sharedRun = () => (shared ??= leveredSpy());
 
   function leveredSpy(): Run {
-    const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, { pauseAtClose: false });
-    const r = run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 19_900 } });
+    const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, {
+      pauseAtClose: false,
+    });
+    const r = run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 19_900 },
+    });
     expect(r.status).toBe('filled');
     while (!run.finished) run.stepDay();
     return run;
   }
 
-  it('2x SPY through the COVID crash gets a margin call, a forced sale, and the grade shows it', () => {
-    const run = sharedRun();
-    expect(run.account.marginCalls.length).toBeGreaterThan(0);
-    expect(run.account.interestPaid).toBeGreaterThan(0);
-    expect(run.alerts.map((a) => a.kind)).toContain('marginCall');
-    const forced = run.account.fills.filter((f) => f.forced);
-    expect(forced.length).toBeGreaterThan(0);
-    // The sale happens at an open, after the call's deadline close.
-    const call = run.account.marginCalls[0];
-    expect(forced[0]?.at.bar).toBe(0);
-    expect(forced[0]?.at.day).toBeGreaterThanOrEqual((call?.day ?? 0) + 2);
+  it(
+    '2x SPY through the COVID crash gets a margin call, a forced sale, and the grade shows it',
+    () => {
+      const run = sharedRun();
+      expect(run.account.marginCalls.length).toBeGreaterThan(0);
+      expect(run.account.interestPaid).toBeGreaterThan(0);
+      expect(run.alerts.map((a) => a.kind)).toContain('marginCall');
+      const forced = run.account.fills.filter((f) => f.forced);
+      expect(forced.length).toBeGreaterThan(0);
+      // The sale happens at an open, after the call's deadline close.
+      const call = run.account.marginCalls[0];
+      expect(forced[0]?.at.bar).toBe(0);
+      expect(forced[0]?.at.day).toBeGreaterThanOrEqual((call?.day ?? 0) + 2);
 
-    const d = debrief(run);
-    expect(d.marginCalls).toBe(run.account.marginCalls.length);
-    expect(d.forcedSales).toBeGreaterThan(0);
-    expect(d.avgLeverage).toBeGreaterThan(1.5);
-    expect(d.interest).toBeCloseTo(run.account.interestPaid, 9);
-    expect(d.grade.score).toBeLessThan(70);
-    expect(d.moments.map((m) => m.kind)).toContain('forcedSale');
-  }, SLOW);
+      const d = debrief(run);
+      expect(d.marginCalls).toBe(run.account.marginCalls.length);
+      expect(d.forcedSales).toBeGreaterThan(0);
+      expect(d.avgLeverage).toBeGreaterThan(1.5);
+      expect(d.interest).toBeCloseTo(run.account.interestPaid, 9);
+      expect(d.grade.score).toBeLessThan(70);
+      expect(d.moments.map((m) => m.kind)).toContain('forcedSale');
+    },
+    SLOW,
+  );
 
-  it('is deterministic', () => {
-    const a = sharedRun();
-    const b = leveredSpy();
-    expect(b.account.equityByDay).toEqual(a.account.equityByDay);
-    expect(b.account.fills).toEqual(a.account.fills);
-  }, SLOW);
+  it(
+    'is deterministic',
+    () => {
+      const a = sharedRun();
+      const b = leveredSpy();
+      expect(b.account.equityByDay).toEqual(a.account.equityByDay);
+      expect(b.account.fills).toEqual(a.account.fills);
+    },
+    SLOW,
+  );
 
-  it('pauses the clock at the close where a call is made', () => {
-    const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, { pauseAtClose: false });
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 19_900 } });
-    run.play(true);
-    while (!run.finished && !run.account.marginCall) {
-      run.step();
-      if (!run.clock.playing) break;
-    }
-    expect(run.account.marginCall).not.toBeNull();
-    expect(run.clock.playing).toBe(false);
-  }, SLOW);
+  it(
+    'pauses the clock at the close where a call is made',
+    () => {
+      const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, {
+        pauseAtClose: false,
+      });
+      run.place({
+        ticker: 'SPY',
+        side: 'buy',
+        type: 'market',
+        amount: { kind: 'dollars', value: 19_900 },
+      });
+      run.play(true);
+      while (!run.finished && !run.account.marginCall) {
+        run.step();
+        if (!run.clock.playing) break;
+      }
+      expect(run.account.marginCall).not.toBeNull();
+      expect(run.clock.playing).toBe(false);
+    },
+    SLOW,
+  );
 });
 
 describe('grade with leverage', () => {

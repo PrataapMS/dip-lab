@@ -61,24 +61,44 @@ export function previewOrder(p: PreviewInput): Preview {
   const amount = Number.isFinite(p.amount) ? p.amount : 0;
   const estShares = fill > 0 ? (p.unit === 'dollars' ? amount / fill : amount) : 0;
   const gross = estShares * fill;
-  const cashAfter = p.side === 'buy' ? p.cash - gross - p.commission : p.cash + gross - p.commission;
+  const cashAfter =
+    p.side === 'buy' ? p.cash - gross - p.commission : p.cash + gross - p.commission;
 
   let problem: string | null = null;
   if (!(amount > 0)) problem = 'Enter an amount above zero.';
-  else if (p.type === 'limit' && !(p.limitPrice && p.limitPrice > 0)) problem = 'Set a limit price above zero.';
-  else if (p.type === 'stop' && !(p.stopPrice && p.stopPrice > 0)) problem = 'Set a stop price above zero.';
+  else if (p.type === 'limit' && !(p.limitPrice && p.limitPrice > 0))
+    problem = 'Set a limit price above zero.';
+  else if (p.type === 'stop' && !(p.stopPrice && p.stopPrice > 0))
+    problem = 'Set a stop price above zero.';
   else if (p.side === 'buy' && p.heldShares < 0) {
-    if (estShares > -p.heldShares + 1e-6) problem = `You're short ${Number((-p.heldShares).toFixed(4))} shares; cover up to that.`;
-  } else if (p.side === 'buy' && p.buyingPower !== undefined && gross + p.commission > p.buyingPower + 1e-9)
+    if (estShares > -p.heldShares + 1e-6)
+      problem = `You're short ${Number((-p.heldShares).toFixed(4))} shares; cover up to that.`;
+  } else if (
+    p.side === 'buy' &&
+    p.buyingPower !== undefined &&
+    gross + p.commission > p.buyingPower + 1e-9
+  )
     problem = 'Not enough buying power for this order.';
-  else if (p.side === 'buy' && p.buyingPower === undefined && cashAfter < -1e-9) problem = 'Not enough cash for this order.';
+  else if (p.side === 'buy' && p.buyingPower === undefined && cashAfter < -1e-9)
+    problem = 'Not enough cash for this order.';
   else if (p.side === 'sell' && p.heldShares <= 0) {
     if (!p.canShort) problem = "You don't own any of this stock.";
-    else if (gross > (p.buyingPower ?? 0) + 1e-9) problem = 'Not enough buying power to short this much.';
+    else if (gross > (p.buyingPower ?? 0) + 1e-9)
+      problem = 'Not enough buying power to short this much.';
   } else if (p.side === 'sell' && estShares > p.heldShares + 1e-6)
     problem = `You only own ${Number(p.heldShares.toFixed(4))} shares.${p.canShort ? ' Sell those first, then short.' : ''}`;
-  const borrowed = p.side === 'buy' && p.heldShares >= 0 && p.buyingPower !== undefined ? Math.max(0, -cashAfter) - Math.max(0, -p.cash) : 0;
-  return { estShares, fillPrice: fill, cashAfter, borrowed: Math.max(0, borrowed), fillsNow, problem };
+  const borrowed =
+    p.side === 'buy' && p.heldShares >= 0 && p.buyingPower !== undefined
+      ? Math.max(0, -cashAfter) - Math.max(0, -p.cash)
+      : 0;
+  return {
+    estShares,
+    fillPrice: fill,
+    cashAfter,
+    borrowed: Math.max(0, borrowed),
+    fillsNow,
+    problem,
+  };
 }
 
 export interface RiskInput {
@@ -109,14 +129,18 @@ const LABELS = ['low', 'low', 'medium', 'high', 'very high'];
  * much the name swings. Teaches position sizing rather than forbidding anything.
  */
 export function riskCheck(r: RiskInput): Risk {
-  const after = r.side === 'buy' ? r.heldValue + r.orderValue : Math.max(0, r.heldValue - r.orderValue);
+  const after =
+    r.side === 'buy' ? r.heldValue + r.orderValue : Math.max(0, r.heldValue - r.orderValue);
   const share = r.accountValue > 0 ? after / r.accountValue : 0;
   const pct = `${(share * 100).toFixed(1)}%`;
   if (r.side === 'sell') {
     return {
       level: 1,
       label: 'low',
-      text: !r.closesPosition && after > 0 ? `Selling lowers your bet on ${r.ticker} to ${pct} of your account.` : `This closes your ${r.ticker} position.`,
+      text:
+        !r.closesPosition && after > 0
+          ? `Selling lowers your bet on ${r.ticker} to ${pct} of your account.`
+          : `This closes your ${r.ticker} position.`,
     };
   }
   // A fund holds many companies, so one bad company can't sink it: weigh it at about a third.
@@ -131,7 +155,11 @@ export function riskCheck(r: RiskInput): Risk {
         : r.vol >= 0.25
           ? `${r.ticker} swings a fair bit`
           : `${r.ticker} is fairly steady`;
-  return { level, label: LABELS[level - 1] ?? 'low', text: `${how}, and this puts ${pct} of your account in it.` };
+  return {
+    level,
+    label: LABELS[level - 1] ?? 'low',
+    text: `${how}, and this puts ${pct} of your account in it.`,
+  };
 }
 
 /** Round to cents for price inputs. */

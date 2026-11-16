@@ -38,12 +38,20 @@ describe('dividends', () => {
     if (!spy) throw new Error('SPY missing');
     expect(market.jumps[spyIndex]?.[exDay]).toBeCloseTo(Math.log(1 - quarterlyYield(spy)), 6);
     const d = market.dividends.find((x) => x.ticker === 'SPY');
-    expect(d?.perShare).toBeCloseTo((market.closes[spyIndex]?.[exDay] ?? 0) * quarterlyYield(spy), 4);
+    expect(d?.perShare).toBeCloseTo(
+      (market.closes[spyIndex]?.[exDay] ?? 0) * quarterlyYield(spy),
+      4,
+    );
   });
 
   it('pays holders at the previous close', () => {
     const run = new Run(market);
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'shares', value: 10 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     toCloseBefore(run, exDay);
     const cash = run.account.cash;
     run.step();
@@ -55,29 +63,56 @@ describe('dividends', () => {
 
   it('pays nothing if sold before, or bought on, the ex-date', () => {
     const sold = new Run(market);
-    sold.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'shares', value: 10 } });
+    sold.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     while (sold.clock.day < exDay - 1 || sold.clock.bar < BARS_PER_DAY - 1) sold.step();
-    sold.place({ ticker: 'SPY', side: 'sell', type: 'market', amount: { kind: 'shares', value: 10 } });
+    sold.place({
+      ticker: 'SPY',
+      side: 'sell',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     toOpen(sold, exDay);
     expect(sold.account.dividendsReceived).toBe(0);
 
     // An order placed after the close only fills at the next open, after the dividend is paid.
     const after = new Run(market);
-    after.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'shares', value: 10 } });
+    after.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     toCloseBefore(after, exDay);
-    after.place({ ticker: 'SPY', side: 'sell', type: 'market', amount: { kind: 'shares', value: 10 } });
+    after.place({
+      ticker: 'SPY',
+      side: 'sell',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     after.step();
     expect(after.account.dividendsReceived).toBeGreaterThan(0);
 
     const late = new Run(market);
     toOpen(late, exDay);
-    late.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'shares', value: 10 } });
+    late.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'shares', value: 10 },
+    });
     late.stepDay();
     expect(late.account.dividendsReceived).toBe(0);
   });
 
   it('is the same for the same seed, and counts in SPY total return', () => {
-    expect(buildMarket(getScenario('first-steps'), 5, UNIVERSE).dividends).toEqual(market.dividends);
+    expect(buildMarket(getScenario('first-steps'), 5, UNIVERSE).dividends).toEqual(
+      market.dividends,
+    );
     const run = new Run(market);
     expect(run.indexFactor[exDay - 1]).toBe(1);
     expect(run.indexFactor[exDay]).toBeGreaterThan(1);

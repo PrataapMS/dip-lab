@@ -26,7 +26,9 @@ export function Badges() {
           </span>
         </div>
         <h1 class="picker-title">Badges</h1>
-        <p class="small dim">Each is earned once and is worth 50 XP. They reward good habits, not lucky bets.</p>
+        <p class="small dim">
+          Each is earned once and is worth 50 XP. They reward good habits, not lucky bets.
+        </p>
       </header>
 
       {GROUPS.map((g) => (
@@ -36,8 +38,15 @@ export function Badges() {
             {BADGES.filter((b) => b.group === g.id).map((b) => {
               const when = progress.badges[b.id];
               return (
-                <div key={b.id} class={`badge-card ${when ? '' : 'locked'}`} style={when ? { borderColor: GROUP_COLOR[b.group] } : undefined}>
-                  <span class="badge-card-icon" style={when ? { color: GROUP_COLOR[b.group] } : undefined}>
+                <div
+                  key={b.id}
+                  class={`badge-card ${when ? '' : 'locked'}`}
+                  style={when ? { borderColor: GROUP_COLOR[b.group] } : undefined}
+                >
+                  <span
+                    class="badge-card-icon"
+                    style={when ? { color: GROUP_COLOR[b.group] } : undefined}
+                  >
                     {when ? <BadgeIcon id={b.id} size={26} /> : <LockIcon size={22} />}
                   </span>
                   <span class="stack">

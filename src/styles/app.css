@@ -315,12 +315,12 @@ button:disabled {
   font-size: 11px;
 }
 
-.tabbar a[aria-current='page'] {
+.tabbar a[aria-current="page"] {
   color: var(--accent);
   font-weight: 700;
 }
 
-.tabbar a[aria-disabled='true'] {
+.tabbar a[aria-disabled="true"] {
   opacity: 0.45;
 }
 
@@ -384,7 +384,7 @@ button:disabled {
   font-weight: 400;
 }
 
-.segmented button[aria-pressed='true'] {
+.segmented button[aria-pressed="true"] {
   background: var(--line);
   color: var(--text);
   font-weight: 700;
@@ -443,7 +443,7 @@ button:disabled {
   font-weight: 400;
 }
 
-.chip[aria-pressed='true'] {
+.chip[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--on-accent);
@@ -738,7 +738,7 @@ button:disabled {
   font-weight: 600;
 }
 
-.segmented.side button[aria-pressed='true'] {
+.segmented.side button[aria-pressed="true"] {
   background: var(--accent);
   color: var(--on-accent);
 }
@@ -765,7 +765,7 @@ button:disabled {
   font-weight: 400;
 }
 
-.units button[aria-pressed='true'] {
+.units button[aria-pressed="true"] {
   border-color: var(--text);
   background: var(--text);
   color: var(--on-accent);
@@ -824,7 +824,7 @@ button:disabled {
   font-weight: 400;
 }
 
-.types button[aria-pressed='true'] {
+.types button[aria-pressed="true"] {
   border: 2px solid var(--accent);
   background: var(--panel-2);
   font-weight: 700;
@@ -988,14 +988,32 @@ button:disabled {
   align-items: center;
 }
 
-.mix-0 { background: var(--accent); }
-.mix-1 { background: #3df5ff; }
-.mix-2 { background: var(--xp); }
-.mix-3 { background: var(--warn); }
-.mix-4 { background: var(--down); }
-.mix-5 { background: #5c8aff; }
-.mix-6 { background: #e8ecf8; }
-.mix-cash { background: var(--line); outline: 1px solid var(--text-dim); outline-offset: -1px; }
+.mix-0 {
+  background: var(--accent);
+}
+.mix-1 {
+  background: #3df5ff;
+}
+.mix-2 {
+  background: var(--xp);
+}
+.mix-3 {
+  background: var(--warn);
+}
+.mix-4 {
+  background: var(--down);
+}
+.mix-5 {
+  background: #5c8aff;
+}
+.mix-6 {
+  background: #e8ecf8;
+}
+.mix-cash {
+  background: var(--line);
+  outline: 1px solid var(--text-dim);
+  outline-offset: -1px;
+}
 
 .fills {
   list-style: none;
@@ -1041,11 +1059,21 @@ button:disabled {
   font-size: 11px;
 }
 
-.news .mark.up { color: var(--accent); }
-.news .mark.down { color: var(--down); }
-.news .mark.flat { color: var(--text-dim); }
-.news li.headline .what { color: var(--warn); }
-.news li.mine .what { font-weight: 700; }
+.news .mark.up {
+  color: var(--accent);
+}
+.news .mark.down {
+  color: var(--down);
+}
+.news .mark.flat {
+  color: var(--text-dim);
+}
+.news li.headline .what {
+  color: var(--warn);
+}
+.news li.mine .what {
+  font-weight: 700;
+}
 
 .news a {
   color: var(--text);
@@ -1102,8 +1130,12 @@ button:disabled {
 }
 
 /* ---------- Debrief ---------- */
-.gap-4 { gap: 4px; }
-.gap-8 { gap: 8px; }
+.gap-4 {
+  gap: 4px;
+}
+.gap-8 {
+  gap: 8px;
+}
 
 .debrief-head {
   display: flex;
@@ -1124,9 +1156,13 @@ button:disabled {
   gap: 2px;
 }
 
-.grade-tile.grade-c { border-color: var(--warn); }
+.grade-tile.grade-c {
+  border-color: var(--warn);
+}
 .grade-tile.grade-d,
-.grade-tile.grade-f { border-color: var(--down); }
+.grade-tile.grade-f {
+  border-color: var(--down);
+}
 
 .grade-letter {
   font-family: var(--font-pixel);
@@ -1135,9 +1171,13 @@ button:disabled {
   color: var(--accent);
 }
 
-.grade-c .grade-letter { color: var(--warn); }
+.grade-c .grade-letter {
+  color: var(--warn);
+}
 .grade-d .grade-letter,
-.grade-f .grade-letter { color: var(--down); }
+.grade-f .grade-letter {
+  color: var(--down);
+}
 
 .debrief-title {
   margin: 0;
@@ -1163,7 +1203,9 @@ button:disabled {
   gap: 2px;
 }
 
-.vs-tile.you { border: 2px solid var(--accent); }
+.vs-tile.you {
+  border: 2px solid var(--accent);
+}
 
 .vs-big {
   font-size: 26px;
@@ -1245,13 +1287,13 @@ button:disabled {
   font-weight: 400;
 }
 
-.scenario-card[aria-pressed='true'] {
+.scenario-card[aria-pressed="true"] {
   padding: 12px 13px;
   border: 2px solid var(--accent);
   background: var(--panel-2);
 }
 
-.scenario-card.boss[aria-pressed='true'] {
+.scenario-card.boss[aria-pressed="true"] {
   border-color: var(--down);
 }
 

@@ -13,7 +13,15 @@ interface Props {
 
 const W = 320;
 
-export function LineChart({ values, capacity, baseline, up, label, height = 120, markers = [] }: Props) {
+export function LineChart({
+  values,
+  capacity,
+  baseline,
+  up,
+  label,
+  height = 120,
+  markers = [],
+}: Props) {
   const H = height;
   const slots = Math.max(capacity ?? values.length, 2) - 1;
   const all = baseline !== undefined ? [...values, baseline] : values;
@@ -26,20 +34,55 @@ export function LineChart({ values, capacity, baseline, up, label, height = 120,
   const color = up ? 'var(--accent)' : 'var(--down)';
 
   return (
-    <svg class="chart" role="img" aria-label={label} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H}>
+    <svg
+      class="chart"
+      role="img"
+      aria-label={label}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      width="100%"
+      height={H}
+    >
       {baseline !== undefined && (
-        <line x1="0" x2={W} y1={y(baseline)} y2={y(baseline)} stroke="var(--line)" stroke-dasharray="4 4" />
+        <line
+          x1="0"
+          x2={W}
+          y1={y(baseline)}
+          y2={y(baseline)}
+          stroke="var(--line)"
+          stroke-dasharray="4 4"
+        />
       )}
       {values.length > 1 && (
-        <polyline points={points} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          stroke-width="2"
+          stroke-linejoin="round"
+          vector-effect="non-scaling-stroke"
+        />
       )}
       {markers
         .filter((k) => k >= 0 && k < values.length)
         .map((k) => (
-          <circle key={k} cx={((k / slots) * W).toFixed(1)} cy={y(values[k] ?? 0)} r="3.5" fill="var(--bg)" stroke="var(--warn)" stroke-width="2" />
+          <circle
+            key={k}
+            cx={((k / slots) * W).toFixed(1)}
+            cy={y(values[k] ?? 0)}
+            r="3.5"
+            fill="var(--bg)"
+            stroke="var(--warn)"
+            stroke-width="2"
+          />
         ))}
       {last !== undefined && (
-        <circle cx={(((values.length - 1) / slots) * W).toFixed(1)} cy={y(last)} r="3" fill={color} />
+        <circle
+          cx={(((values.length - 1) / slots) * W).toFixed(1)}
+          cy={y(last)}
+          r="3"
+          fill={color}
+        />
       )}
     </svg>
   );

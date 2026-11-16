@@ -8,7 +8,8 @@ import { XP } from './xp';
  * trade ever or would finish a daily quest; never for trading as such.
  */
 export function orderXpHint(p: Progress, date: string, would: readonly Activity[]): string | null {
-  if (!p.badges['first-trade'] && would.some((a) => a.kind === 'fill')) return `+${XP.badge} XP · first trade`;
+  if (!p.badges['first-trade'] && would.some((a) => a.kind === 'fill'))
+    return `+${XP.badge} XP · first trade`;
   const state = p.quests?.date === date ? p.quests : null;
   let xp = 0;
   questsFor(date).forEach((q, k) => {

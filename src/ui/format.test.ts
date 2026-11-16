@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { dateRange, longDate, MINUS, money, price, shares, signedMoney, signedPct, weekdayShort } from './format';
+import {
+  dateRange,
+  longDate,
+  MINUS,
+  money,
+  price,
+  shares,
+  signedMoney,
+  signedPct,
+  weekdayShort,
+} from './format';
 
 describe('format', () => {
   it('always signs moves', () => {

@@ -73,7 +73,8 @@ export function generateDayPath(input: DayPathInput): DayPath {
   const rand = createRng(childSeed(input.seed, `day:${input.ticker}:${input.day}`));
   const dailySd = annualVol / Math.sqrt(TRADING_DAYS_PER_YEAR);
   const total = Math.log(close / prevClose);
-  const overnight = jump + OVERNIGHT_SHARE * (total - jump) + OVERNIGHT_NOISE * dailySd * normal(rand);
+  const overnight =
+    jump + OVERNIGHT_SHARE * (total - jump) + OVERNIGHT_NOISE * dailySd * normal(rand);
   const logOpen = Math.log(prevClose) + overnight;
   const logClose = Math.log(close);
 

@@ -25,14 +25,20 @@ describe('lessons', () => {
   });
 
   it('every lesson the glossary points to exists', () => {
-    for (const g of GLOSSARY) if (g.lesson) expect(lessonById(g.lesson), `${g.id} → ${g.lesson}`).toBeDefined();
+    for (const g of GLOSSARY)
+      if (g.lesson) expect(lessonById(g.lesson), `${g.id} → ${g.lesson}`).toBeDefined();
   });
 
   it('pays XP once and counts for the streak and quests', () => {
     const lesson = LESSONS[0];
     if (!lesson) throw new Error('no lessons');
     const a = completeLesson(emptyProgress(), lesson, '2026-11-16', { lessonCount: 12 });
-    expect(a.rewards[0]).toEqual({ source: 'lesson', label: `Lesson: ${lesson.title}`, xp: 25, id: lesson.id });
+    expect(a.rewards[0]).toEqual({
+      source: 'lesson',
+      label: `Lesson: ${lesson.title}`,
+      xp: 25,
+      id: lesson.id,
+    });
     expect(a.progress.lessons[lesson.id]).toBe(true);
     expect(a.progress.streak.count).toBe(1);
     const again = completeLesson(a.progress, lesson, '2026-11-16', { lessonCount: 12 });
@@ -58,13 +64,20 @@ describe('challenges', () => {
     if (!c) throw new Error('missing');
     const market = buildMarket(getScenario(c.scenarioId), c.seed, UNIVERSE);
     const run = new Run(market, undefined, undefined, { pauseAtClose: false });
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 9_000 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 9_000 },
+    });
     while (!run.finished) run.stepDay();
     const d = debrief(run);
     expect(c.passed({ ...d, excessPts: 0.5 })).toBe(true);
     expect(c.passed({ ...d, excessPts: -0.5 })).toBe(false);
     const spread = challengeById('dotcom-spread');
-    expect(spread?.passed({ ...d, excessPts: 1, maxWeight: { ticker: 'CSCO', weight: 0.25, day: 3 } })).toBe(false);
+    expect(
+      spread?.passed({ ...d, excessPts: 1, maxWeight: { ticker: 'CSCO', weight: 0.25, day: 3 } }),
+    ).toBe(false);
     expect(spread?.passed({ ...d, excessPts: 1, maxWeight: null })).toBe(true);
     const held = challengeById('earnings-spread');
     expect(held?.passed({ ...d, ret: 0.02, endHoldings: 5 })).toBe(true);

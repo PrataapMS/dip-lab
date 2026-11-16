@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { BARS_PER_DAY, barTime } from '../../engine/intraday';
 import type { InstrumentInfo } from '../../engine/protocol';
 import { price, signedPct, upDown } from '../format';
-import { dayChange, defaultWatchlist, INDEX_TILES, inSector, searchInstruments, SECTOR_CHIPS, topMovers } from '../marketList';
+import {
+  dayChange,
+  defaultWatchlist,
+  INDEX_TILES,
+  inSector,
+  searchInstruments,
+  SECTOR_CHIPS,
+  topMovers,
+} from '../marketList';
 import { DayCard, RunOverCard } from '../DayCard';
 import { NewsList } from '../NewsList';
 import { formatRoute } from '../router';
@@ -20,12 +28,20 @@ function QuoteRow({ inst, view }: { inst: InstrumentInfo; view: MarketView }) {
   const spark = view.watch[inst.ticker];
   return (
     <li>
-      <a class="quote-row" href={formatRoute({ name: 'stock', ticker: inst.ticker })} data-coach={`quote-${inst.ticker}`}>
+      <a
+        class="quote-row"
+        href={formatRoute({ name: 'stock', ticker: inst.ticker })}
+        data-coach={`quote-${inst.ticker}`}
+      >
         <span class="stack who">
           <span class="ticker">{inst.ticker}</span>
           <span class="tiny dim ellipsis">{inst.name}</span>
         </span>
-        {spark ? <Sparkline values={[...spark, p]} up={p >= (spark[0] ?? p)} /> : <span class="spark" />}
+        {spark ? (
+          <Sparkline values={[...spark, p]} up={p >= (spark[0] ?? p)} />
+        ) : (
+          <span class="spark" />
+        )}
         <span class="stack end mono">
           <span class="price">{price(p)}</span>
           <span class={`chg ${upDown(change)}`}>{signedPct(change)}</span>
@@ -64,7 +80,10 @@ export function Market({ market }: { market: MarketApi }) {
   const [sector, setSector] = useState<string | null>(null);
   const [mode, setMode] = useState<ListMode>('watchlist');
 
-  const byTicker = useMemo(() => new Map(view.instruments.map((i) => [i.ticker, i])), [view.instruments]);
+  const byTicker = useMemo(
+    () => new Map(view.instruments.map((i) => [i.ticker, i])),
+    [view.instruments],
+  );
   const watchlist = useMemo(() => defaultWatchlist(view.instruments), [view.instruments]);
   const movers = useMemo(
     () => (mode === 'movers' ? topMovers(view.instruments, view.prices, view.prevCloses) : null),
@@ -84,7 +103,11 @@ export function Market({ market }: { market: MarketApi }) {
     send({ type: 'watch', tickers: watchKey ? watchKey.split(',') : [] });
   }, [watchKey, send]);
 
-  const heading = query.trim() ? `Results for "${query.trim()}"` : sector ? SECTOR_CHIPS.find((c) => c.sector === sector)?.label : null;
+  const heading = query.trim()
+    ? `Results for "${query.trim()}"`
+    : sector
+      ? SECTOR_CHIPS.find((c) => c.sector === sector)?.label
+      : null;
 
   return (
     <>
@@ -97,7 +120,12 @@ export function Market({ market }: { market: MarketApi }) {
           if (i === undefined) return null;
           const c = dayChange(view.prices, view.prevCloses, i);
           return (
-            <a key={ticker} class="tile" href={formatRoute({ name: 'stock', ticker })} aria-label={`${label} fund ${ticker}`}>
+            <a
+              key={ticker}
+              class="tile"
+              href={formatRoute({ name: 'stock', ticker })}
+              aria-label={`${label} fund ${ticker}`}
+            >
               <span class="tiny dim">{ticker}</span>
               <span class="tile-price">{price(view.prices[i] ?? 0)}</span>
               <span class={`tiny ${upDown(c)}`}>{signedPct(c)}</span>
@@ -123,11 +151,22 @@ export function Market({ market }: { market: MarketApi }) {
       </label>
 
       <div class="chips" role="group" aria-label="Filter by sector">
-        <button type="button" class="chip" aria-pressed={sector === null} onClick={() => setSector(null)}>
+        <button
+          type="button"
+          class="chip"
+          aria-pressed={sector === null}
+          onClick={() => setSector(null)}
+        >
           all
         </button>
         {SECTOR_CHIPS.map((c) => (
-          <button key={c.sector} type="button" class="chip" aria-pressed={sector === c.sector} onClick={() => setSector(c.sector)}>
+          <button
+            key={c.sector}
+            type="button"
+            class="chip"
+            aria-pressed={sector === c.sector}
+            onClick={() => setSector(c.sector)}
+          >
             {c.label}
           </button>
         ))}
@@ -139,10 +178,18 @@ export function Market({ market }: { market: MarketApi }) {
             <h2 class="title small-title">{heading}</h2>
           ) : (
             <div class="segmented tabs" role="group" aria-label="List">
-              <button type="button" aria-pressed={mode === 'watchlist'} onClick={() => setMode('watchlist')}>
+              <button
+                type="button"
+                aria-pressed={mode === 'watchlist'}
+                onClick={() => setMode('watchlist')}
+              >
                 Watchlist
               </button>
-              <button type="button" aria-pressed={mode === 'movers'} onClick={() => setMode('movers')}>
+              <button
+                type="button"
+                aria-pressed={mode === 'movers'}
+                onClick={() => setMode('movers')}
+              >
                 Top movers
               </button>
             </div>
@@ -173,7 +220,10 @@ export function Market({ market }: { market: MarketApi }) {
 
       <section class="list-section">
         <h2 class="section">NEWS</h2>
-        <NewsList items={view.news.slice(-NEWS_SHOWN).reverse()} empty="No news yet. Earnings and headlines show up here." />
+        <NewsList
+          items={view.news.slice(-NEWS_SHOWN).reverse()}
+          empty="No news yet. Earnings and headlines show up here."
+        />
       </section>
 
       <p class="status-line mono">

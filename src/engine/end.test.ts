@@ -19,8 +19,20 @@ describe('end of run', () => {
 
   it('ends when the player presses End: orders cancelled, holdings kept, nothing more happens', () => {
     const run = new Run(short);
-    run.place({ ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } });
-    run.place({ ticker: 'KO', side: 'buy', type: 'limit', limitPrice: 1, tif: 'gtc', amount: { kind: 'shares', value: 1 } });
+    run.place({
+      ticker: 'KO',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 1_000 },
+    });
+    run.place({
+      ticker: 'KO',
+      side: 'buy',
+      type: 'limit',
+      limitPrice: 1,
+      tif: 'gtc',
+      amount: { kind: 'shares', value: 1 },
+    });
     for (let k = 0; k < 10; k++) run.step();
     const cancelled = run.end();
     expect(cancelled.map((o) => o.status)).toEqual(['cancelled']);
@@ -32,7 +44,14 @@ describe('end of run', () => {
     expect(run.clock.playing).toBe(false);
     expect(run.step()).toEqual([]);
     expect(run.at).toEqual(at);
-    expect(() => run.place({ ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 10 } })).toThrow();
+    expect(() =>
+      run.place({
+        ticker: 'KO',
+        side: 'buy',
+        type: 'market',
+        amount: { kind: 'dollars', value: 10 },
+      }),
+    ).toThrow();
   });
 
   it('goes bust or hits a target only at a close', () => {
@@ -41,7 +60,12 @@ describe('end of run', () => {
     expect(endAtClose(12_000, 10_000, 0.2)).toBe('target');
     expect(endAtClose(11_999, 10_000, 0.2)).toBeNull();
     const run = new Run(short, undefined, undefined, { targetReturn: 0.0001 });
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 9_000 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 9_000 },
+    });
     while (!run.finished) run.stepDay();
     expect(['target', 'lastDay']).toContain(run.endReason);
     if (run.endReason === 'target') expect(run.clock.bar).toBe(BARS_PER_DAY);
@@ -68,8 +92,18 @@ describe('end of run', () => {
 describe('day summary', () => {
   it('matches the account at the close', () => {
     const run = new Run(short);
-    run.place({ ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 2_000 } });
-    run.place({ ticker: 'MSFT', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 2_000 } });
+    run.place({
+      ticker: 'KO',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 2_000 },
+    });
+    run.place({
+      ticker: 'MSFT',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 2_000 },
+    });
     run.stepDay();
     const s = daySummary(run);
     expect(s.day).toBe(0);

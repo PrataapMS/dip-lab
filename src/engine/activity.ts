@@ -23,7 +23,17 @@ export interface HoldingFact {
 export type Activity =
   /** An order was accepted (it may fill later). */
   | { kind: 'order'; type: OrderType; side: 'buy' | 'sell'; ticker: string; short: boolean }
-  | { kind: 'fill'; ticker: string; side: 'buy' | 'sell'; orderType: OrderType | null; etf: boolean; short: boolean; forced: boolean; realised: number; day: number }
+  | {
+      kind: 'fill';
+      ticker: string;
+      side: 'buy' | 'sell';
+      orderType: OrderType | null;
+      etf: boolean;
+      short: boolean;
+      forced: boolean;
+      realised: number;
+      day: number;
+    }
   | {
       kind: 'close';
       day: number;
@@ -48,7 +58,13 @@ export type Activity =
   | { kind: 'replay'; day: number };
 
 export function orderActivity(o: Order, held: number): Activity {
-  return { kind: 'order', type: o.type, side: o.side, ticker: o.ticker, short: o.side === 'sell' ? held <= 0 : held < 0 };
+  return {
+    kind: 'order',
+    type: o.type,
+    side: o.side,
+    ticker: o.ticker,
+    short: o.side === 'sell' ? held <= 0 : held < 0,
+  };
 }
 
 export function fillActivity(run: Run, f: Fill): Activity {

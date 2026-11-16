@@ -24,7 +24,8 @@ export function halfSpread(
   costs: Pick<CostModel, 'spreadOn'>,
 ): number {
   if (!costs.spreadOn) return 0;
-  const bps = inst.kind === 'etf' ? ETF_HALF_SPREAD_BPS : STOCK_BASE_BPS + STOCK_PER_VOL_BPS * inst.vol;
+  const bps =
+    inst.kind === 'etf' ? ETF_HALF_SPREAD_BPS : STOCK_BASE_BPS + STOCK_PER_VOL_BPS * inst.vol;
   const stress = Math.max(1, marketVol / REFERENCE_MARKET_VOL);
   return (bps * stress) / 10_000;
 }

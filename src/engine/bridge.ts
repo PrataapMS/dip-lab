@@ -33,7 +33,8 @@ export function bridgeThrough(
   for (let s = 0; s + 1 < anchors.length; s++) {
     const a = anchors[s];
     const b = anchors[s + 1];
-    if (!a || !b || b.at <= a.at) throw new Error('bridgeThrough: anchors must be strictly increasing');
+    if (!a || !b || b.at <= a.at)
+      throw new Error('bridgeThrough: anchors must be strictly increasing');
     const span = b.at - a.at;
     // Walk and cumulative variance local to this stretch, both starting at 0.
     const walk = new Float64Array(span + 1);

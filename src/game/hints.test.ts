@@ -4,13 +4,28 @@ import { orderXpHint } from './hints';
 import { emptyProgress } from './progress';
 import { questsFor } from './quests';
 
-const fill: Activity = { kind: 'fill', ticker: 'KO', side: 'buy', orderType: 'market', etf: false, short: false, forced: false, realised: 0, day: 0 };
+const fill: Activity = {
+  kind: 'fill',
+  ticker: 'KO',
+  side: 'buy',
+  orderType: 'market',
+  etf: false,
+  short: false,
+  forced: false,
+  realised: 0,
+  day: 0,
+};
 
 describe('order XP hint', () => {
   it('shows the first-trade XP until the badge is earned', () => {
     expect(orderXpHint(emptyProgress(), '2026-11-16', [fill])).toBe('+50 XP · first trade');
     const p = { ...emptyProgress(), badges: { 'first-trade': '2026-11-16' } };
-    expect(orderXpHint(p, '2026-11-16', [{ kind: 'order', type: 'market', side: 'buy', ticker: 'KO', short: false }, fill])).toBeNull();
+    expect(
+      orderXpHint(p, '2026-11-16', [
+        { kind: 'order', type: 'market', side: 'buy', ticker: 'KO', short: false },
+        fill,
+      ]),
+    ).toBeNull();
   });
 
   it('shows quest XP only when the order would finish a quest', () => {
@@ -22,7 +37,13 @@ describe('order XP hint', () => {
     }
     expect(date).not.toBe('');
     const p = { ...emptyProgress(), badges: { 'first-trade': date } };
-    const limit: Activity = { kind: 'order', type: 'limit', side: 'buy', ticker: 'KO', short: false };
+    const limit: Activity = {
+      kind: 'order',
+      type: 'limit',
+      side: 'buy',
+      ticker: 'KO',
+      short: false,
+    };
     expect(orderXpHint(p, date, [limit])).toBe('+50 XP · quest');
     expect(orderXpHint(p, date, [{ ...limit, type: 'market' }])).toBeNull();
     const claimed = { ...p, quests: { date, progress: [0, 1, 0], claimed: [false, true, false] } };

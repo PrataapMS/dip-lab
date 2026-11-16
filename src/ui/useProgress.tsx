@@ -3,7 +3,16 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'p
 import type { Activity, WorkerEvent } from '../engine/protocol';
 import { SCENARIOS } from '../engine/scenarios';
 import { levelFor } from '../game/levels';
-import { applyActivity, completeLesson, finishChallenge, finishRun, migrate, type Progress, type Reward, type RunResult } from '../game/progress';
+import {
+  applyActivity,
+  completeLesson,
+  finishChallenge,
+  finishRun,
+  migrate,
+  type Progress,
+  type Reward,
+  type RunResult,
+} from '../game/progress';
 import { challengeById } from '../learn/challenges';
 import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from './storage';
@@ -58,7 +67,13 @@ export function useProgress(): ProgressApi {
 }
 
 /** Loads progress from the device, saves every change, and turns run events into XP. */
-export function ProgressProvider({ market, children }: { market: Market; children: ComponentChildren }) {
+export function ProgressProvider({
+  market,
+  children,
+}: {
+  market: Market;
+  children: ComponentChildren;
+}) {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [run, setRun] = useState<RunRewards>({ levelBefore: 1, rewards: [] });
   const viewRef = useRef(market.view);
@@ -98,8 +113,14 @@ export function ProgressProvider({ market, children }: { market: Market; childre
     [notify],
   );
 
-  const record = useCallback((a: Activity) => update((p) => applyActivity(p, a, today(), BADGE_CTX)), [update]);
-  const finishLesson = useCallback((lesson: Lesson) => update((p) => completeLesson(p, lesson, today(), BADGE_CTX)), [update]);
+  const record = useCallback(
+    (a: Activity) => update((p) => applyActivity(p, a, today(), BADGE_CTX)),
+    [update],
+  );
+  const finishLesson = useCallback(
+    (lesson: Lesson) => update((p) => completeLesson(p, lesson, today(), BADGE_CTX)),
+    [update],
+  );
 
   const { subscribe } = market;
   useEffect(
@@ -126,11 +147,23 @@ export function ProgressProvider({ market, children }: { market: Market; childre
             complete: e.reason === 'lastDay' || e.reason === 'target',
           };
           update((p) => finishRun(p, result));
-          record({ kind: 'runEnd', debrief: d, difficulty: result.difficulty, complete: result.complete, margin: !!v.settings?.margin });
+          record({
+            kind: 'runEnd',
+            debrief: d,
+            difficulty: result.difficulty,
+            complete: result.complete,
+            margin: !!v.settings?.margin,
+          });
           const challenge = v.config?.challenge ? challengeById(v.config.challenge) : undefined;
           if (challenge && challenge.scenarioId === d.scenarioId && v.seed === challenge.seed) {
             const passed = result.complete && challenge.passed(d);
-            update((p) => finishChallenge(p, challenge, { passed, letter: d.grade.letter, score: d.grade.score }));
+            update((p) =>
+              finishChallenge(p, challenge, {
+                passed,
+                letter: d.grade.letter,
+                score: d.grade.score,
+              }),
+            );
           }
         }
       }),

@@ -1,4 +1,9 @@
-import { type Debrief as Report, type Moment, REPLAYABLE_MOMENTS, type TradeStat } from '../../engine/protocol';
+import {
+  type Debrief as Report,
+  type Moment,
+  REPLAYABLE_MOMENTS,
+  type TradeStat,
+} from '../../engine/protocol';
 import { CompareChart } from '../CompareChart';
 import { endText } from '../DayCard';
 import { money, MINUS, signedPct } from '../format';
@@ -30,7 +35,17 @@ function tradeText(t: TradeStat | null): string {
   return t ? `${t.ticker} ${signedPct(t.pct, 0)}` : 'n/a';
 }
 
-function Stat({ label, value, tone, term }: { label: string; value: string; tone?: 'up' | 'down'; term?: string }) {
+function Stat({
+  label,
+  value,
+  tone,
+  term,
+}: {
+  label: string;
+  value: string;
+  tone?: 'up' | 'down';
+  term?: string;
+}) {
   return (
     <div class="stat">
       <span class="tiny dim">{term ? <Term id={term}>{label}</Term> : label}</span>
@@ -45,7 +60,9 @@ export function Debrief({ market }: { market: Market }) {
   if (!d) {
     return (
       <section class="panel">
-        <p class="small">No finished run yet. Finish a run, or end one from Portfolio, to see its debrief.</p>
+        <p class="small">
+          No finished run yet. Finish a run, or end one from Portfolio, to see its debrief.
+        </p>
         <a class="button ghost" href="#/home">
           Home
         </a>
@@ -54,7 +71,10 @@ export function Debrief({ market }: { market: Market }) {
   }
 
   const g = d.grade;
-  const markers = d.moments.map((m) => ({ index: Math.min(m.day + 1, d.you.length - 1), color: MOMENT_COLOR[m.kind] }));
+  const markers = d.moments.map((m) => ({
+    index: Math.min(m.day + 1, d.you.length - 1),
+    color: MOMENT_COLOR[m.kind],
+  }));
   const youCurve = d.you.map((v) => (v / d.startValue) * 100);
   const spyCurve = d.spy.map((v) => (v / d.startValue) * 100);
   const replay = () => {
@@ -68,7 +88,8 @@ export function Debrief({ market }: { market: Market }) {
   };
   const branch = d.branchOf;
   const challenge = view.config?.challenge ? challengeById(view.config.challenge) : undefined;
-  const challengePassed = !!challenge && (d.reason === 'lastDay' || d.reason === 'target') && challenge.passed(d);
+  const challengePassed =
+    !!challenge && (d.reason === 'lastDay' || d.reason === 'target') && challenge.passed(d);
 
   return (
     <>
@@ -90,10 +111,13 @@ export function Debrief({ market }: { market: Market }) {
       {challenge && (
         <section class={`panel challenge-result ${challengePassed ? 'passed' : ''}`}>
           <span class={`mono tiny ${challengePassed ? 'accent' : 'warn'}`}>
-            // CHALLENGE · {challenge.title.toUpperCase()} · {challengePassed ? 'PASSED' : 'NOT YET'}
+            // CHALLENGE · {challenge.title.toUpperCase()} ·{' '}
+            {challengePassed ? 'PASSED' : 'NOT YET'}
           </span>
           <p class="small">{challenge.goal}</p>
-          {!challengePassed && d.reason !== 'lastDay' && d.reason !== 'target' && <p class="tiny dim">Challenges count only when played to the last day.</p>}
+          {!challengePassed && d.reason !== 'lastDay' && d.reason !== 'target' && (
+            <p class="tiny dim">Challenges count only when played to the last day.</p>
+          )}
         </section>
       )}
 
@@ -101,7 +125,8 @@ export function Debrief({ market }: { market: Market }) {
         <section class="panel branch-compare">
           <span class="mono tiny accent">// REPLAYED FROM DAY {branch.day + 1}</span>
           <p class="small">
-            First try: <strong class="mono">{branch.letter}</strong> · this try: <strong class="mono">{g.letter}</strong>.{' '}
+            First try: <strong class="mono">{branch.letter}</strong> · this try:{' '}
+            <strong class="mono">{g.letter}</strong>.{' '}
             {g.letter === branch.letter
               ? `Same grade; your score went from ${Math.round(branch.score)} to ${Math.round(g.score)}.`
               : g.score > branch.score
@@ -153,23 +178,48 @@ export function Debrief({ market }: { market: Market }) {
       <section class="stack gap-8">
         <h2 class="section">STATS</h2>
         <div class="stats-grid mono">
-          <Stat label="worst_drop" term="drawdown" value={d.worstDrawdown > 0 ? `${MINUS}${(d.worstDrawdown * 100).toFixed(1)}%` : '0.0%'} tone={d.worstDrawdown > 0 ? 'down' : undefined} />
+          <Stat
+            label="worst_drop"
+            term="drawdown"
+            value={d.worstDrawdown > 0 ? `${MINUS}${(d.worstDrawdown * 100).toFixed(1)}%` : '0.0%'}
+            tone={d.worstDrawdown > 0 ? 'down' : undefined}
+          />
           <Stat label="trades" value={String(d.trades)} />
-          <Stat label="costs_paid" term="spread" value={money(d.fees + d.spread + d.interest + d.borrowFees)} />
-          <Stat label="win_rate" term="win-rate" value={d.closedTrades ? `${d.wins}/${d.closedTrades}` : 'n/a'} />
-          <Stat label="best" value={tradeText(d.best)} tone={d.best ? (d.best.pct >= 0 ? 'up' : 'down') : undefined} />
-          <Stat label="worst" value={tradeText(d.worst)} tone={d.worst ? (d.worst.pct >= 0 ? 'up' : 'down') : undefined} />
+          <Stat
+            label="costs_paid"
+            term="spread"
+            value={money(d.fees + d.spread + d.interest + d.borrowFees)}
+          />
+          <Stat
+            label="win_rate"
+            term="win-rate"
+            value={d.closedTrades ? `${d.wins}/${d.closedTrades}` : 'n/a'}
+          />
+          <Stat
+            label="best"
+            value={tradeText(d.best)}
+            tone={d.best ? (d.best.pct >= 0 ? 'up' : 'down') : undefined}
+          />
+          <Stat
+            label="worst"
+            value={tradeText(d.worst)}
+            tone={d.worst ? (d.worst.pct >= 0 ? 'up' : 'down') : undefined}
+          />
         </div>
         <p class="tiny dim">
           SPY's worst drop was {MINUS}
-          {(d.spyWorstDrawdown * 100).toFixed(1)}%. Costs are spreads plus fees{d.interest > 0 ? ` plus ${money(d.interest, true)} margin interest` : ''}
+          {(d.spyWorstDrawdown * 100).toFixed(1)}%. Costs are spreads plus fees
+          {d.interest > 0 ? ` plus ${money(d.interest, true)} margin interest` : ''}
           {d.borrowFees > 0 ? ` and ${money(d.borrowFees, true)} borrow fees` : ''}
-          {d.dividendsOwed > 0 ? `; your shorts owed ${money(d.dividendsOwed, true)} in dividends` : ''}
-          {d.dividends > 0 ? `; you also collected ${money(d.dividends, true)} in dividends` : ''}. Best and worst count positions still held
-          at their final price.
+          {d.dividendsOwed > 0
+            ? `; your shorts owed ${money(d.dividendsOwed, true)} in dividends`
+            : ''}
+          {d.dividends > 0 ? `; you also collected ${money(d.dividends, true)} in dividends` : ''}.
+          Best and worst count positions still held at their final price.
         </p>
         <p class="mono tiny dim">
-          performance {Math.round(g.performance)}/40 · risk {Math.round(g.risk)}/30 · discipline {Math.round(g.discipline)}/30
+          performance {Math.round(g.performance)}/40 · risk {Math.round(g.risk)}/30 · discipline{' '}
+          {Math.round(g.discipline)}/30
         </p>
         {g.cap && <p class="small warn">{g.cap}</p>}
       </section>
@@ -179,10 +229,16 @@ export function Debrief({ market }: { market: Market }) {
       <section class="stack gap-8">
         <h2 class="section">MOMENTS TO LEARN FROM</h2>
         {d.moments.length === 0 ? (
-          <p class="small dim">Nothing flagged: no panic sells, slipped stops, all-in bets or heavy costs.</p>
+          <p class="small dim">
+            Nothing flagged: no panic sells, slipped stops, all-in bets or heavy costs.
+          </p>
         ) : (
           d.moments.map((m, k) => (
-            <div key={`${m.kind}-${m.day}`} class="moment" style={{ boxShadow: `inset 3px 0 0 ${MOMENT_COLOR[m.kind]}` }}>
+            <div
+              key={`${m.kind}-${m.day}`}
+              class="moment"
+              style={{ boxShadow: `inset 3px 0 0 ${MOMENT_COLOR[m.kind]}` }}
+            >
               <div class="row">
                 <span class="moment-title">
                   #{k + 1} · {m.title}
@@ -192,7 +248,8 @@ export function Debrief({ market }: { market: Market }) {
                     replay day {m.day + 1}
                   </button>
                 ) : (
-                  m.kind !== 'satOut' && m.kind !== 'overtrading' && <span class="mono tiny dim">day {m.day + 1}</span>
+                  m.kind !== 'satOut' &&
+                  m.kind !== 'overtrading' && <span class="mono tiny dim">day {m.day + 1}</span>
                 )}
               </div>
               <span class="small moment-text">{m.lesson}</span>
@@ -209,8 +266,9 @@ export function Debrief({ market }: { market: Market }) {
           <PlusIcon /> New run
         </a>
         <p class="tiny dim">
-          Replay uses the same seed ({d.seed}), so prices and news repeat; only your decisions change. "Replay day N" starts at the close
-          before that day with your account as it was then.
+          Replay uses the same seed ({d.seed}), so prices and news repeat; only your decisions
+          change. "Replay day N" starts at the close before that day with your account as it was
+          then.
         </p>
       </div>
 

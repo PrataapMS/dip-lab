@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { bridgeThrough } from './bridge';
-import { BARS_PER_DAY, barTime, generateDayPath, INTRADAY_WEIGHTS, POINTS_PER_DAY } from './intraday';
+import {
+  BARS_PER_DAY,
+  barTime,
+  generateDayPath,
+  INTRADAY_WEIGHTS,
+  POINTS_PER_DAY,
+} from './intraday';
 import { createRng, normal } from './rng';
 
 const day = { seed: 7, ticker: 'NVDA', day: 12, prevClose: 100, close: 103, annualVol: 0.4 };
@@ -21,10 +27,14 @@ describe('bridgeThrough', () => {
   });
 
   it('is a straight line when there is no noise', () => {
-    const path = bridgeThrough([0, 0, 0, 0], [0, 0, 0, 0], [
-      { at: 0, value: 1 },
-      { at: 4, value: 3 },
-    ]);
+    const path = bridgeThrough(
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [
+        { at: 0, value: 1 },
+        { at: 4, value: 3 },
+      ],
+    );
     expect(Array.from(path)).toEqual([1, 1.5, 2, 2.5, 3]);
   });
 
@@ -51,7 +61,9 @@ describe('intraday', () => {
   it('is deterministic per seed, ticker and day', () => {
     expect(generateDayPath(day)).toEqual(generateDayPath(day));
     expect(generateDayPath({ ...day, day: 13 }).points).not.toEqual(generateDayPath(day).points);
-    expect(generateDayPath({ ...day, ticker: 'AMD' }).points).not.toEqual(generateDayPath(day).points);
+    expect(generateDayPath({ ...day, ticker: 'AMD' }).points).not.toEqual(
+      generateDayPath(day).points,
+    );
   });
 
   it('ends exactly at the day close with consistent highs and lows', () => {

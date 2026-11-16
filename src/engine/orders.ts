@@ -1,4 +1,12 @@
-import { type AccountState, type Amount, executeTrade, type MarketTime, type PriceOf, type Side, usd } from './account';
+import {
+  type AccountState,
+  type Amount,
+  executeTrade,
+  type MarketTime,
+  type PriceOf,
+  type Side,
+  usd,
+} from './account';
 import { fillPrice } from './costs';
 import { BARS_PER_DAY } from './intraday';
 
@@ -62,7 +70,10 @@ export function sessionOf(placedAt: MarketTime): number {
 }
 
 /** Where an order would fill in this segment, or null if it is not triggered. */
-export function triggerPrice(order: OrderDraft, q: SegmentQuote): { price: number; mid: number } | null {
+export function triggerPrice(
+  order: OrderDraft,
+  q: SegmentQuote,
+): { price: number; mid: number } | null {
   const { open, high, low, half } = q;
   switch (order.type) {
     case 'market':
@@ -93,11 +104,15 @@ export function triggerPrice(order: OrderDraft, q: SegmentQuote): { price: numbe
 }
 
 function validate(state: AccountState, draft: OrderDraft): string | null {
-  if (!(draft.amount.value > 0) || !Number.isFinite(draft.amount.value)) return 'Enter an amount above zero.';
-  if (draft.type === 'limit' && !(draft.limitPrice && draft.limitPrice > 0)) return 'Set a limit price above zero.';
-  if (draft.type === 'stop' && !(draft.stopPrice && draft.stopPrice > 0)) return 'Set a stop price above zero.';
+  if (!(draft.amount.value > 0) || !Number.isFinite(draft.amount.value))
+    return 'Enter an amount above zero.';
+  if (draft.type === 'limit' && !(draft.limitPrice && draft.limitPrice > 0))
+    return 'Set a limit price above zero.';
+  if (draft.type === 'stop' && !(draft.stopPrice && draft.stopPrice > 0))
+    return 'Set a stop price above zero.';
   const canShort = !!state.settings.shorts && !!state.settings.margin;
-  if (draft.side === 'sell' && (state.positions[draft.ticker]?.shares ?? 0) <= 0 && !canShort) return `You don't own any ${draft.ticker}.`;
+  if (draft.side === 'sell' && (state.positions[draft.ticker]?.shares ?? 0) <= 0 && !canShort)
+    return `You don't own any ${draft.ticker}.`;
   return null;
 }
 
@@ -106,7 +121,13 @@ function replaceOrder(state: AccountState, order: Order): AccountState {
 }
 
 /** Try to fill one open order in a segment. Returns the state unchanged if it does not trigger. */
-function tryFill(state: AccountState, order: Order, q: SegmentQuote, at: MarketTime, prices?: PriceOf): { state: AccountState; order: Order } {
+function tryFill(
+  state: AccountState,
+  order: Order,
+  q: SegmentQuote,
+  at: MarketTime,
+  prices?: PriceOf,
+): { state: AccountState; order: Order } {
   const hit = triggerPrice(order, q);
   if (!hit) return { state, order };
   const r = executeTrade(state, {
@@ -147,7 +168,11 @@ export interface PlaceContext {
  * Place an order. During the session it is checked against the current price at once
  * (a market order fills; a limit or stop already crossed fills too). After the close it waits.
  */
-export function placeOrder(state: AccountState, draft: OrderDraft, ctx: PlaceContext): { state: AccountState; order: Order } {
+export function placeOrder(
+  state: AccountState,
+  draft: OrderDraft,
+  ctx: PlaceContext,
+): { state: AccountState; order: Order } {
   const order: Order = {
     ...draft,
     id: state.nextOrderId,
@@ -155,12 +180,21 @@ export function placeOrder(state: AccountState, draft: OrderDraft, ctx: PlaceCon
     status: 'open',
     placedAt: ctx.at,
   };
-  const reason = ctx.quote ? validate(state, draft) : `${draft.ticker} doesn't trade in this market.`;
+  const reason = ctx.quote
+    ? validate(state, draft)
+    : `${draft.ticker} doesn't trade in this market.`;
   if (reason) {
     const rejected: Order = { ...order, status: 'rejected', reason };
-    return { state: { ...state, orders: [...state.orders, rejected], nextOrderId: order.id + 1 }, order: rejected };
+    return {
+      state: { ...state, orders: [...state.orders, rejected], nextOrderId: order.id + 1 },
+      order: rejected,
+    };
   }
-  const placed: AccountState = { ...state, orders: [...state.orders, order], nextOrderId: order.id + 1 };
+  const placed: AccountState = {
+    ...state,
+    orders: [...state.orders, order],
+    nextOrderId: order.id + 1,
+  };
   if (!ctx.quote || ctx.at.bar >= BARS_PER_DAY) return { state: placed, order };
   const { mid, half } = ctx.quote;
   return tryFill(placed, order, { open: mid, high: mid, low: mid, half }, ctx.at, ctx.prices);
@@ -170,7 +204,11 @@ export function placeOrder(state: AccountState, draft: OrderDraft, ctx: PlaceCon
  * Run every open order against one step of the clock, oldest first. `at` is the clock
  * position the step ends at, used to stamp fills. Returns the orders that changed.
  */
-export function processOrders(state: AccountState, quote: QuoteFn, at: MarketTime): { state: AccountState; changed: Order[] } {
+export function processOrders(
+  state: AccountState,
+  quote: QuoteFn,
+  at: MarketTime,
+): { state: AccountState; changed: Order[] } {
   const changed: Order[] = [];
   let s = state;
   const prices: PriceOf = (t) => quote(t)?.open;
@@ -190,7 +228,10 @@ export function processOrders(state: AccountState, quote: QuoteFn, at: MarketTim
 }
 
 /** At the close of `day`, day orders for that session expire. */
-export function expireDayOrders(state: AccountState, day: number): { state: AccountState; changed: Order[] } {
+export function expireDayOrders(
+  state: AccountState,
+  day: number,
+): { state: AccountState; changed: Order[] } {
   const changed: Order[] = [];
   const orders = state.orders.map((o) => {
     if (o.status !== 'open' || o.tif !== 'day' || sessionOf(o.placedAt) > day) return o;
@@ -201,10 +242,14 @@ export function expireDayOrders(state: AccountState, day: number): { state: Acco
   return changed.length ? { state: { ...state, orders }, changed } : { state, changed };
 }
 
-export function cancelOrder(state: AccountState, id: number): { state: AccountState; order?: Order; reason?: string } {
+export function cancelOrder(
+  state: AccountState,
+  id: number,
+): { state: AccountState; order?: Order; reason?: string } {
   const order = state.orders.find((o) => o.id === id);
   if (!order) return { state, reason: 'That order no longer exists.' };
-  if (order.status !== 'open') return { state, order, reason: `That order is already ${order.status}.` };
+  if (order.status !== 'open')
+    return { state, order, reason: `That order is already ${order.status}.` };
   const cancelled: Order = { ...order, status: 'cancelled' };
   return { state: replaceOrder(state, cancelled), order: cancelled };
 }
@@ -225,7 +270,8 @@ export function describeOrder(d: OrderDraft, held?: number): string {
       : `${Number(d.amount.value.toFixed(4))} ${d.amount.value === 1 ? 'share' : 'shares'} of ${d.ticker}`;
   const short = held !== undefined && (d.side === 'sell' ? held <= 0 : held < 0);
   const verb = d.side === 'buy' ? (short ? 'Buy to cover' : 'Buy') : short ? 'Short' : 'Sell';
-  if (short && d.type === 'stop' && d.side === 'buy') return `Set a stop on your ${d.ticker} short at ${usd(d.stopPrice ?? 0)}`;
+  if (short && d.type === 'stop' && d.side === 'buy')
+    return `Set a stop on your ${d.ticker} short at ${usd(d.stopPrice ?? 0)}`;
   switch (d.type) {
     case 'market':
       return `${verb} ${amount}`;
@@ -249,7 +295,9 @@ export function orderMessage(o: Order): string {
     case 'filled':
       return `${o.side === 'buy' ? (o.short ? 'Covered' : 'Bought') : o.short ? 'Sold short' : 'Sold'} ${sharesWord(o.filledShares ?? 0)} of ${o.ticker} at ${usd(o.fillPrice ?? 0)}.`;
     case 'open':
-      return o.type === 'market' ? `Market closed. ${describeOrder(o)} at the next open.` : `Order placed: ${describeOrder(o)}.`;
+      return o.type === 'market'
+        ? `Market closed. ${describeOrder(o)} at the next open.`
+        : `Order placed: ${describeOrder(o)}.`;
     case 'cancelled':
       return `Cancelled: ${describeOrder(o)}.`;
     case 'expired':

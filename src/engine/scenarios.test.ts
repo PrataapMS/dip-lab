@@ -100,7 +100,9 @@ describe('scenarios', () => {
     const m = buildScenarioMarket(getScenario('dot-com'), 2);
     const market = levels(m.returns);
     // Typical tech stock: beta 1.2 to the market plus the tech sector factor.
-    const techLog = m.returns.map((r, i) => 1.2 * r + (m.sectors['Information Technology'][i] ?? 0));
+    const techLog = m.returns.map(
+      (r, i) => 1.2 * r + (m.sectors['Information Technology'][i] ?? 0),
+    );
     const tech = levels(techLog);
     expect(maxDrawdown(tech).depth).toBeGreaterThan(0.72);
     expect(maxDrawdown(tech).depth).toBeLessThan(0.88);
@@ -117,7 +119,12 @@ describe('scenarios', () => {
   });
 
   it('gives a custom run an intro headline and its news level', () => {
-    const def = customScenario({ start: '2016-06-04', days: 21, startRegime: 'bear', news: 'busy' });
+    const def = customScenario({
+      start: '2016-06-04',
+      days: 21,
+      startRegime: 'bear',
+      news: 'busy',
+    });
     expect(def.start).toBe('2016-06-06');
     expect(def.news).toBe('busy');
     expect(def.headlines?.[0]).toMatchObject({ date: '2016-06-06', at: 'open', tone: 'flat' });

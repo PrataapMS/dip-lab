@@ -9,7 +9,10 @@ import type { Market } from '../useMarket';
 /** Slices beyond this many sectors are merged into "Other". */
 const MIX_SLOTS = 6;
 
-function mixSlices(sectors: { sector: string; value: number }[], cash: number): { label: string; value: number }[] {
+function mixSlices(
+  sectors: { sector: string; value: number }[],
+  cash: number,
+): { label: string; value: number }[] {
   const top = sectors.slice(0, MIX_SLOTS).map((s) => ({ label: s.sector, value: s.value }));
   const rest = sectors.slice(MIX_SLOTS).reduce((sum, s) => sum + s.value, 0);
   if (rest > 0) top.push({ label: 'Other', value: rest });
@@ -47,7 +50,9 @@ export function Portfolio({ market }: { market: Market }) {
           </div>
           <div class="stack end mono">
             <span class="tiny dim">{a.borrowed > 0 ? 'borrowed' : 'cash'}</span>
-            <span class={`value small-value ${a.borrowed > 0 ? 'down' : ''}`}>{money(a.borrowed > 0 ? a.borrowed : a.cash, true)}</span>
+            <span class={`value small-value ${a.borrowed > 0 ? 'down' : ''}`}>
+              {money(a.borrowed > 0 ? a.borrowed : a.cash, true)}
+            </span>
           </div>
         </div>
         <dl class="facts">
@@ -79,7 +84,8 @@ export function Portfolio({ market }: { market: Market }) {
                 <Term id="margin-call">equity / holdings</Term>
               </dt>
               <dd class={a.marginRatio !== null && a.marginRatio < 0.3 ? 'down' : ''}>
-                {a.marginRatio === null ? 'n/a' : `${Math.round(a.marginRatio * 100)}%`} <span class="dim">(min 30%)</span>
+                {a.marginRatio === null ? 'n/a' : `${Math.round(a.marginRatio * 100)}%`}{' '}
+                <span class="dim">(min 30%)</span>
               </dd>
             </>
           )}
@@ -117,7 +123,8 @@ export function Portfolio({ market }: { market: Market }) {
           label={`Your account ${signedPct(total)} against SPY ${signedPct(spy)} since the start, both rebased to 100`}
         />
         <p class="tiny dim">
-          Both start at 100; SPY includes its dividends. Above the dashed SPY line means you are beating buy-and-hold.
+          Both start at 100; SPY includes its dividends. Above the dashed SPY line means you are
+          beating buy-and-hold.
         </p>
       </section>
 
@@ -135,7 +142,8 @@ export function Portfolio({ market }: { market: Market }) {
                   <span class="stack">
                     <span class="ticker">{p.ticker}</span>
                     <span class="tiny dim mono">
-                      {shares(p.shares)} sh{p.shares < 0 ? ' short' : ''} · avg {money(p.avgCost, true)}
+                      {shares(p.shares)} sh{p.shares < 0 ? ' short' : ''} · avg{' '}
+                      {money(p.avgCost, true)}
                     </span>
                   </span>
                   <span class="stack end mono">
@@ -157,7 +165,11 @@ export function Portfolio({ market }: { market: Market }) {
         </h2>
         <div class="mix-bar" aria-hidden="true">
           {slices.map((s, k) => (
-            <span key={s.label} class={s.label === 'Cash' ? 'mix-cash' : `mix-${k}`} style={{ width: `${(s.value / mixTotal) * 100}%` }} />
+            <span
+              key={s.label}
+              class={s.label === 'Cash' ? 'mix-cash' : `mix-${k}`}
+              style={{ width: `${(s.value / mixTotal) * 100}%` }}
+            />
           ))}
         </div>
         <ul class="mix-legend">
@@ -181,7 +193,11 @@ export function Portfolio({ market }: { market: Market }) {
                   {describeOrder(o)}
                   <span class="dim"> · {o.tif === 'gtc' ? 'until cancelled' : 'today'}</span>
                 </span>
-                <button type="button" class="ghost small-button" onClick={() => send({ type: 'cancelOrder', id: o.id })}>
+                <button
+                  type="button"
+                  class="ghost small-button"
+                  onClick={() => send({ type: 'cancelOrder', id: o.id })}
+                >
                   Cancel
                 </button>
               </li>
@@ -204,7 +220,9 @@ export function Portfolio({ market }: { market: Market }) {
                   {shares(f.shares)} {f.ticker}
                 </span>
                 <span>@ {money(f.price, true)}</span>
-                {f.side === 'sell' && <span class={upDown(f.realised)}>{signedMoney(f.realised, true)}</span>}
+                {f.side === 'sell' && (
+                  <span class={upDown(f.realised)}>{signedMoney(f.realised, true)}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -232,7 +250,8 @@ export function Portfolio({ market }: { market: Market }) {
         <section class="panel">
           <h2 class="section">END THE RUN</h2>
           <p class="small dim">
-            Stop here and see your debrief. Holdings are valued at today's prices and open orders are cancelled.
+            Stop here and see your debrief. Holdings are valued at today's prices and open orders
+            are cancelled.
           </p>
           <button
             type="button"

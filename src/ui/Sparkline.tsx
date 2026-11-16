@@ -7,7 +7,9 @@ export function Sparkline({ values, up }: { values: readonly number[]; up: boole
   const min = Math.min(...values);
   const span = Math.max(...values) - min || 1;
   const step = W / (values.length - 1);
-  const points = values.map((v, i) => `${(i * step).toFixed(1)},${(H - 2 - ((v - min) / span) * (H - 4)).toFixed(1)}`).join(' ');
+  const points = values
+    .map((v, i) => `${(i * step).toFixed(1)},${(H - 2 - ((v - min) / span) * (H - 4)).toFixed(1)}`)
+    .join(' ');
   return (
     <svg class="spark" aria-hidden="true" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
       <polyline

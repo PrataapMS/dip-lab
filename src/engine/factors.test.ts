@@ -1,13 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { generateStockPath, idioVolFor, MIN_IDIO_VOL, sectorShocks, type StockParams } from './factors';
+import {
+  generateStockPath,
+  idioVolFor,
+  MIN_IDIO_VOL,
+  sectorShocks,
+  type StockParams,
+} from './factors';
 import { generateMarketDays } from './regimes';
 
 const DAYS = 5000;
-const market = generateMarketDays({ seed: 1, days: DAYS, regimes: Array.from({ length: DAYS }, () => 'calm' as const) });
+const market = generateMarketDays({
+  seed: 1,
+  days: DAYS,
+  regimes: Array.from({ length: DAYS }, () => 'calm' as const),
+});
 
 function logReturns(closes: Float64Array): number[] {
   const out: number[] = [];
-  for (let i = 1; i < closes.length; i++) out.push(Math.log((closes[i] ?? 1) / (closes[i - 1] ?? 1)));
+  for (let i = 1; i < closes.length; i++)
+    out.push(Math.log((closes[i] ?? 1) / (closes[i - 1] ?? 1)));
   return out;
 }
 
@@ -73,7 +84,9 @@ describe('factors', () => {
   it('makes stocks in the same sector move together more than across sectors', () => {
     const a = logReturns(generateStockPath(4, stock('AAA'), 100, market, tech).closes);
     const b = logReturns(generateStockPath(4, stock('BBB'), 100, market, tech).closes);
-    const c = logReturns(generateStockPath(4, stock('CCC', { sector: 'Energy' }), 100, market, energy).closes);
+    const c = logReturns(
+      generateStockPath(4, stock('CCC', { sector: 'Energy' }), 100, market, energy).closes,
+    );
     expect(corr(a, b)).toBeGreaterThan(corr(a, c) + 0.03);
     expect(corr(a, market.returns)).toBeGreaterThan(0.3);
   });

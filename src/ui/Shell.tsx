@@ -3,7 +3,15 @@ import { useEffect } from 'preact/hooks';
 import { type Speed, SPEEDS, speedOf } from '../engine/clock';
 import { BARS_PER_DAY, barTime } from '../engine/intraday';
 import { money, signedMoney, signedPct, upDown, weekdayShort } from './format';
-import { HomeIcon, LearnIcon, MarketIcon, PauseIcon, PlayIcon, PortfolioIcon, SkipIcon } from './icons';
+import {
+  HomeIcon,
+  LearnIcon,
+  MarketIcon,
+  PauseIcon,
+  PlayIcon,
+  PortfolioIcon,
+  SkipIcon,
+} from './icons';
 import { formatRoute, type Route } from './router';
 import { levelFor } from '../game/levels';
 import type { Market, MarketView } from './useMarket';
@@ -119,7 +127,7 @@ export function RunControls({ market }: { market: Market }) {
   );
 }
 
-const TABS:{ route: Route; label: string; icon: () => preact.JSX.Element }[] = [
+const TABS: { route: Route; label: string; icon: () => preact.JSX.Element }[] = [
   { route: { name: 'home' }, label: 'home', icon: HomeIcon },
   { route: { name: 'market' }, label: 'market', icon: MarketIcon },
   { route: { name: 'portfolio' }, label: 'portfolio', icon: PortfolioIcon },
@@ -127,7 +135,12 @@ const TABS:{ route: Route; label: string; icon: () => preact.JSX.Element }[] = [
 ];
 
 export function TabBar({ route, hasRun }: { route: Route; hasRun: boolean }) {
-  const current = route.name === 'stock' ? 'market' : route.name === 'new' || route.name === 'debrief' || route.name === 'badges' ? 'home' : route.name;
+  const current =
+    route.name === 'stock'
+      ? 'market'
+      : route.name === 'new' || route.name === 'debrief' || route.name === 'badges'
+        ? 'home'
+        : route.name;
   return (
     <nav class="tabbar" aria-label="Main">
       {TABS.map(({ route: r, label, icon: Icon }) => {
@@ -164,7 +177,12 @@ export function Notices({ market }: { market: Market }) {
   return (
     <div class="notices" role="status" aria-live="polite">
       {notices.map((n) => (
-        <button key={n.id} type="button" class={`notice ${n.ok ? '' : 'bad'}`} onClick={() => dismissNotice(n.id)}>
+        <button
+          key={n.id}
+          type="button"
+          class={`notice ${n.ok ? '' : 'bad'}`}
+          onClick={() => dismissNotice(n.id)}
+        >
           <span class={n.ok ? 'accent' : 'down'}>&gt;</span> {n.message}
         </button>
       ))}

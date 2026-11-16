@@ -33,7 +33,11 @@ export const LESSONS: readonly Lesson[] = [
     ],
     check: {
       question: 'What do you own when you buy a share?',
-      options: ['A loan to the company', 'A small part of the company', 'A promise of a fixed return'],
+      options: [
+        'A loan to the company',
+        'A small part of the company',
+        'A promise of a fixed return',
+      ],
       answer: 1,
       explain: 'A share is part-ownership. Nothing is promised: the price can rise or fall.',
     },
@@ -49,10 +53,12 @@ export const LESSONS: readonly Lesson[] = [
       'Orders placed while the market is closed wait for the next open, and the open can be far from the last close.',
     ],
     check: {
-      question: 'Your stop-loss is at $90. Bad news overnight, and the stock opens at $82. Where do you sell?',
+      question:
+        'Your stop-loss is at $90. Bad news overnight, and the stock opens at $82. Where do you sell?',
       options: ['Exactly $90', 'Near $82', 'Nothing happens'],
       answer: 1,
-      explain: 'The stop triggers at the open, and the best price then is around $82. That gap is called slippage.',
+      explain:
+        'The stop triggers at the open, and the best price then is around $82. That gap is called slippage.',
     },
     tryIt: 'earnings-season',
   },
@@ -82,9 +88,14 @@ export const LESSONS: readonly Lesson[] = [
     ],
     check: {
       question: 'Why is buy-and-hold SPY a tough benchmark?',
-      options: ['It can never fall', 'It is cheap, spread out and never panics', 'It only holds winners'],
+      options: [
+        'It can never fall',
+        'It is cheap, spread out and never panics',
+        'It only holds winners',
+      ],
       answer: 1,
-      explain: 'SPY can fall a lot. It is hard to beat because it costs almost nothing and never sells at the bottom.',
+      explain:
+        'SPY can fall a lot. It is hard to beat because it costs almost nothing and never sells at the bottom.',
     },
     tryIt: 'long-bull',
   },
@@ -133,7 +144,8 @@ export const LESSONS: readonly Lesson[] = [
       question: 'A company beats its earnings estimates. What happens to the stock?',
       options: ['It always rises', 'It can rise or fall', 'It doesn’t move'],
       answer: 1,
-      explain: 'Expectations were already in the price. Guidance and surprises in the details move it too.',
+      explain:
+        'Expectations were already in the price. Guidance and surprises in the details move it too.',
     },
     tryIt: 'earnings-season',
   },
@@ -164,9 +176,14 @@ export const LESSONS: readonly Lesson[] = [
     ],
     check: {
       question: 'Why does selling in a crash often hurt?',
-      options: ['Fees are higher in crashes', 'You lock in the loss and often miss the rebound', 'It is against the rules'],
+      options: [
+        'Fees are higher in crashes',
+        'You lock in the loss and often miss the rebound',
+        'It is against the rules',
+      ],
       answer: 1,
-      explain: 'Selling makes the loss permanent, and rebounds tend to come fast and without warning.',
+      explain:
+        'Selling makes the loss permanent, and rebounds tend to come fast and without warning.',
     },
     tryIt: 'covid-2020',
   },
@@ -180,9 +197,14 @@ export const LESSONS: readonly Lesson[] = [
     ],
     check: {
       question: 'Why do past results from today’s company list look too good?',
-      options: ['Prices were lower then', 'Companies that failed are missing from it', 'Dividends were higher'],
+      options: [
+        'Prices were lower then',
+        'Companies that failed are missing from it',
+        'Dividends were higher',
+      ],
       answer: 1,
-      explain: 'Only survivors are on today’s list, so the failures that would have hurt are left out.',
+      explain:
+        'Only survivors are on today’s list, so the failures that would have hurt are left out.',
     },
   },
   {
@@ -195,10 +217,12 @@ export const LESSONS: readonly Lesson[] = [
       'A 50% fall at 2x wipes out everything you put in.',
     ],
     check: {
-      question: 'You hold $20,000 of stock with $10,000 of your own money. The stock falls 25%. What is your equity now?',
+      question:
+        'You hold $20,000 of stock with $10,000 of your own money. The stock falls 25%. What is your equity now?',
       options: ['$7,500', '$5,000', '$10,000'],
       answer: 1,
-      explain: 'Holdings are worth $15,000, you still owe $10,000: $5,000 left. A 25% fall cost you half your money.',
+      explain:
+        'Holdings are worth $15,000, you still owe $10,000: $5,000 left. A 25% fall cost you half your money.',
     },
     tryIt: 'covid-2020',
   },
@@ -213,9 +237,14 @@ export const LESSONS: readonly Lesson[] = [
     ],
     check: {
       question: 'You short a stock at $20 and it rises to $60. What have you lost per share?',
-      options: ['$20, the most you can lose', '$40, and it could be more', 'Nothing until you buy back'],
+      options: [
+        '$20, the most you can lose',
+        '$40, and it could be more',
+        'Nothing until you buy back',
+      ],
       answer: 1,
-      explain: 'You owe shares now worth $60 against $20 received. The loss keeps growing while the price rises.',
+      explain:
+        'You owe shares now worth $60 against $20 received. The loss keeps growing while the price rises.',
     },
     tryIt: 'meme-squeeze',
   },

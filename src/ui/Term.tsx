@@ -24,7 +24,13 @@ export function TermSheet({ entry, onClose }: { entry: GlossaryEntry; onClose: (
       >
         <div class="row">
           <span class="mono tiny accent">// GLOSSARY</span>
-          <button ref={close} type="button" class="icon-button" aria-label="Close" onClick={onClose}>
+          <button
+            ref={close}
+            type="button"
+            class="icon-button"
+            aria-label="Close"
+            onClick={onClose}
+          >
             <CloseIcon />
           </button>
         </div>
@@ -32,7 +38,11 @@ export function TermSheet({ entry, onClose }: { entry: GlossaryEntry; onClose: (
         <p class="term-short">{entry.short}</p>
         <p class="small dim">{entry.why}</p>
         {entry.example && <p class="mono small term-example">&gt; {entry.example}</p>}
-        <a class="link small" href={entry.lesson ? `#/learn/${entry.lesson}` : '#/learn'} onClick={onClose}>
+        <a
+          class="link small"
+          href={entry.lesson ? `#/learn/${entry.lesson}` : '#/learn'}
+          onClick={onClose}
+        >
           {entry.lesson ? 'Read the lesson' : 'More in Learn'}
         </a>
       </div>

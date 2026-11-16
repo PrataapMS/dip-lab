@@ -30,7 +30,9 @@ export function dividendCycle(inst: Instrument): { offset: number; dayOfMonth: n
   const rand = createRng(childSeed(0xd1, `dividend-cycle:${inst.ticker}`));
   const offset = Math.floor(rand() * 3);
   const dayOfMonth = 5 + Math.floor(rand() * 20);
-  return inst.kind === 'etf' ? { offset: 2, dayOfMonth: 15 + (dayOfMonth % 7) } : { offset, dayOfMonth };
+  return inst.kind === 'etf'
+    ? { offset: 2, dayOfMonth: 15 + (dayOfMonth % 7) }
+    : { offset, dayOfMonth };
 }
 
 /** Days in the run when an instrument goes ex-dividend (empty for non-payers). */
@@ -59,7 +61,12 @@ export function exDividendDays(inst: Instrument, dates: readonly IsoDate[]): num
  * Total-return multiplier for one instrument: holding it with dividends reinvested is worth
  * price × factor[d] on day d (factor 1 before the first ex-date).
  */
-export function reinvestFactors(dividends: readonly Dividend[], instrument: number, closes: ArrayLike<number>, days: number): Float64Array {
+export function reinvestFactors(
+  dividends: readonly Dividend[],
+  instrument: number,
+  closes: ArrayLike<number>,
+  days: number,
+): Float64Array {
   const factor = new Float64Array(days);
   let f = 1;
   let k = 0;

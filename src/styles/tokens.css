@@ -12,9 +12,9 @@
   --warn: #ffb23d; /* streaks, risk */
   --on-accent: #0b0d14;
 
-  --font-ui: 'Space Grotesk', system-ui, sans-serif;
-  --font-data: 'JetBrains Mono', ui-monospace, monospace;
-  --font-pixel: 'Silkscreen', var(--font-data);
+  --font-ui: "Space Grotesk", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, monospace;
+  --font-pixel: "Silkscreen", var(--font-data);
 
   --radius-sm: 6px;
   --radius-md: 8px;

@@ -33,7 +33,15 @@ import { checkMargin, forceSale, marginRatio } from './margin';
 import { BARS_PER_DAY, POINTS_PER_DAY } from './intraday';
 import { type Dividend, reinvestFactors } from './dividends';
 import { type BuiltMarket, type DayBars, dayBars } from './market';
-import { cancelOrder, expireDayOrders, type Order, type OrderDraft, placeOrder, processOrders, type SegmentQuote } from './orders';
+import {
+  cancelOrder,
+  expireDayOrders,
+  type Order,
+  type OrderDraft,
+  placeOrder,
+  processOrders,
+  type SegmentQuote,
+} from './orders';
 import { REFERENCE_MARKET_VOL } from './regimes';
 
 /** What the UI needs to draw the account; plain data, safe to post from the worker. */
@@ -121,9 +129,14 @@ export interface RunOptions {
 }
 
 /** How a close ends the run, if it does. */
-export function endAtClose(value: number, startingCash: number, targetReturn?: number): EndReason | null {
+export function endAtClose(
+  value: number,
+  startingCash: number,
+  targetReturn?: number,
+): EndReason | null {
   if (value <= startingCash * BUST_LINE) return 'bust';
-  if (targetReturn !== undefined && targetReturn > 0 && value >= startingCash * (1 + targetReturn)) return 'target';
+  if (targetReturn !== undefined && targetReturn > 0 && value >= startingCash * (1 + targetReturn))
+    return 'target';
   return null;
 }
 
@@ -171,7 +184,12 @@ export class Run {
       list.push(d);
       this.dividendsByDay.set(d.day, list);
     }
-    this.indexFactor = reinvestFactors(market.dividends, this.indexInstrument, market.closes[this.indexInstrument] ?? [], market.dates.length);
+    this.indexFactor = reinvestFactors(
+      market.dividends,
+      this.indexInstrument,
+      market.closes[this.indexInstrument] ?? [],
+      market.dates.length,
+    );
     this.clock = createClock(market.dates.length, dayLengthMs);
     this.account = createAccount(settings);
     this.bars = dayBars(market, 0);
@@ -276,7 +294,8 @@ export class Run {
       spreadPaid: a.spreadPaid,
       dividendsReceived: a.dividendsReceived,
       recentDividends: a.dividends.slice(-RECENT_FILLS).reverse(),
-      prevCloseValue: day > 0 ? (a.equityByDay[day - 1] ?? a.settings.startingCash) : a.settings.startingCash,
+      prevCloseValue:
+        day > 0 ? (a.equityByDay[day - 1] ?? a.settings.startingCash) : a.settings.startingCash,
       positions: m.positions,
       sectorMix: m.sectorMix,
       openOrders: a.orders.filter((o) => o.status === 'open'),
@@ -368,7 +387,8 @@ export class Run {
       this.snapshot();
       if (reason) changed.push(...this.end(reason));
       else if (isFinished(this.clock)) this.endReason = 'lastDay';
-      else if (this.pauseAtClose || called) this.clock = { ...this.clock, playing: false, carry: 0 };
+      else if (this.pauseAtClose || called)
+        this.clock = { ...this.clock, playing: false, carry: 0 };
     }
     if (this.finished) this.clock = { ...this.clock, playing: false, carry: 0 };
     return changed;
@@ -415,7 +435,8 @@ export class Run {
     });
     r.account = this.accountAtClose(from - 1);
     for (let d = 0; d < from; d++) r.snapshots[d] = this.snapshots[d] as CloseSnapshot;
-    if (from > 0) r.clock = { ...r.clock, day: from - 1, bar: BARS_PER_DAY, playing: false, carry: 0 };
+    if (from > 0)
+      r.clock = { ...r.clock, day: from - 1, bar: BARS_PER_DAY, playing: false, carry: 0 };
     r.branchOf = { day: from, ...of };
     return r;
   }
@@ -435,7 +456,12 @@ export class Run {
         });
         return true;
       case 'met':
-        this.alerts.push({ kind: 'marginMet', day, ok: true, message: 'Margin call met: your equity is back above 30% of what you hold.' });
+        this.alerts.push({
+          kind: 'marginMet',
+          day,
+          ok: true,
+          message: 'Margin call met: your equity is back above 30% of what you hold.',
+        });
         return false;
       default:
         return false;
@@ -471,7 +497,8 @@ export class Run {
   advance(elapsedMs: number): Order[] {
     const { steps, carry } = pendingSteps(this.clock, elapsedMs);
     const changed: Order[] = [];
-    for (let s = 0; s < steps && this.clock.playing && !this.finished; s++) changed.push(...this.step());
+    for (let s = 0; s < steps && this.clock.playing && !this.finished; s++)
+      changed.push(...this.step());
     if (!this.finished && this.clock.playing) this.clock = { ...this.clock, carry };
     return changed;
   }
@@ -480,7 +507,8 @@ export class Run {
   stepDay(): Order[] {
     const target = stepDay(this.clock);
     const changed: Order[] = [];
-    while (!this.finished && (this.clock.day !== target.day || this.clock.bar !== target.bar)) changed.push(...this.step());
+    while (!this.finished && (this.clock.day !== target.day || this.clock.bar !== target.bar))
+      changed.push(...this.step());
     this.clock = { ...this.clock, carry: 0 };
     return changed;
   }

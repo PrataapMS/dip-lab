@@ -9,7 +9,16 @@ const info = (id: string): InstrumentInfo[] => instrumentsFor(getScenario(id), U
 
 describe('market lists', () => {
   it('uses the default watchlist and tops it up in older scenarios', () => {
-    expect(defaultWatchlist(info('covid-2020'))).toEqual(['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'TSLA', 'JPM', 'KO']);
+    expect(defaultWatchlist(info('covid-2020'))).toEqual([
+      'AAPL',
+      'MSFT',
+      'NVDA',
+      'AMZN',
+      'GOOGL',
+      'TSLA',
+      'JPM',
+      'KO',
+    ]);
     const dotCom = defaultWatchlist(info('dot-com'));
     expect(dotCom).toHaveLength(8);
     expect(dotCom).not.toContain('GOOGL');

@@ -19,7 +19,9 @@ export function civilFromDays(z: number): [number, number, number] {
   const zz = z + 719468;
   const era = Math.floor(zz / 146097);
   const doe = zz - era * 146097;
-  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+  const yoe = Math.floor(
+    (doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365,
+  );
   const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
   const mp = Math.floor((5 * doy + 2) / 153);
   const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
@@ -145,14 +147,16 @@ export function nextTradingDay(iso: IsoDate): IsoDate {
 export function tradingDaysBetween(start: IsoDate, end: IsoDate): IsoDate[] {
   const out: IsoDate[] = [];
   const last = toDayNumber(end);
-  for (let n = toDayNumber(start); n <= last; n++) if (isTradingDayNumber(n)) out.push(fromDayNumber(n));
+  for (let n = toDayNumber(start); n <= last; n++)
+    if (isTradingDayNumber(n)) out.push(fromDayNumber(n));
   return out;
 }
 
 /** `count` trading days starting on or after `start`. */
 export function tradingDaysFrom(start: IsoDate, count: number): IsoDate[] {
   const out: IsoDate[] = [];
-  for (let n = toDayNumber(start); out.length < count; n++) if (isTradingDayNumber(n)) out.push(fromDayNumber(n));
+  for (let n = toDayNumber(start); out.length < count; n++)
+    if (isTradingDayNumber(n)) out.push(fromDayNumber(n));
   return out;
 }
 

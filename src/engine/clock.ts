@@ -42,7 +42,10 @@ export interface ClockState {
   carry: number;
 }
 
-export function createClock(totalDays: number, dayLengthMs: number = DEFAULT_DAY_LENGTH_MS): ClockState {
+export function createClock(
+  totalDays: number,
+  dayLengthMs: number = DEFAULT_DAY_LENGTH_MS,
+): ClockState {
   return { day: 0, bar: 0, totalDays, dayLengthMs, playing: false, carry: 0 };
 }
 

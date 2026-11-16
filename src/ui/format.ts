@@ -16,7 +16,20 @@ export function price(value: number): string {
 export function longDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return `${days[wd]} ${d} ${months[m - 1]} ${y}`;
@@ -52,7 +65,11 @@ export function shares(value: number): string {
 export function weekdayShort(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return '';
-  return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? '';
+  return (
+    ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][
+      new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+    ] ?? ''
+  );
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -63,6 +80,7 @@ export function dateRange(start: string, end: string): string {
   const [y1, m1] = end.split('-').map(Number);
   if (!y0 || !m0 || !y1 || !m1) return `${start}–${end}`;
   if (m0 === 1 && m1 === 12 && y1 > y0) return `${y0}–${y1}`;
-  if (y0 === y1) return m0 === m1 ? `${MONTHS[m0 - 1]} ${y0}` : `${MONTHS[m0 - 1]}–${MONTHS[m1 - 1]} ${y0}`;
+  if (y0 === y1)
+    return m0 === m1 ? `${MONTHS[m0 - 1]} ${y0}` : `${MONTHS[m0 - 1]}–${MONTHS[m1 - 1]} ${y0}`;
   return `${MONTHS[m0 - 1]} ${y0}–${MONTHS[m1 - 1]} ${y1}`;
 }

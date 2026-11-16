@@ -23,13 +23,46 @@ export interface QuestDef {
   measure: (a: Activity) => number;
 }
 
-const sectors = (a: Activity) => (a.kind === 'close' ? new Set(a.holdings.map((h) => h.sector ?? 'Broad market')).size : 0);
+const sectors = (a: Activity) =>
+  a.kind === 'close' ? new Set(a.holdings.map((h) => h.sector ?? 'Broad market')).size : 0;
 
 export const QUESTS: readonly QuestDef[] = [
-  { id: 'glossary-2', tier: 'learn', text: 'Read 2 glossary cards', goal: 2, xp: 30, mode: 'add', measure: (a) => (a.kind === 'glossaryRead' ? 1 : 0) },
-  { id: 'glossary-5', tier: 'learn', text: 'Read 5 glossary cards', goal: 5, xp: 50, mode: 'add', measure: (a) => (a.kind === 'glossaryRead' ? 1 : 0) },
-  { id: 'lesson-1', tier: 'learn', text: 'Finish a lesson', goal: 1, xp: 40, mode: 'add', measure: (a) => (a.kind === 'lessonDone' ? 1 : 0) },
-  { id: 'lesson-2', tier: 'learn', text: 'Finish 2 lessons', goal: 2, xp: 60, mode: 'add', measure: (a) => (a.kind === 'lessonDone' ? 1 : 0) },
+  {
+    id: 'glossary-2',
+    tier: 'learn',
+    text: 'Read 2 glossary cards',
+    goal: 2,
+    xp: 30,
+    mode: 'add',
+    measure: (a) => (a.kind === 'glossaryRead' ? 1 : 0),
+  },
+  {
+    id: 'glossary-5',
+    tier: 'learn',
+    text: 'Read 5 glossary cards',
+    goal: 5,
+    xp: 50,
+    mode: 'add',
+    measure: (a) => (a.kind === 'glossaryRead' ? 1 : 0),
+  },
+  {
+    id: 'lesson-1',
+    tier: 'learn',
+    text: 'Finish a lesson',
+    goal: 1,
+    xp: 40,
+    mode: 'add',
+    measure: (a) => (a.kind === 'lessonDone' ? 1 : 0),
+  },
+  {
+    id: 'lesson-2',
+    tier: 'learn',
+    text: 'Finish 2 lessons',
+    goal: 2,
+    xp: 60,
+    mode: 'add',
+    measure: (a) => (a.kind === 'lessonDone' ? 1 : 0),
+  },
   {
     id: 'limit',
     tier: 'trade',
@@ -46,7 +79,8 @@ export const QUESTS: readonly QuestDef[] = [
     goal: 1,
     xp: 50,
     mode: 'add',
-    measure: (a) => (a.kind === 'order' && a.type === 'stop' && a.side === 'sell' && !a.short ? 1 : 0),
+    measure: (a) =>
+      a.kind === 'order' && a.type === 'stop' && a.side === 'sell' && !a.short ? 1 : 0,
   },
   {
     id: 'etf',
@@ -57,7 +91,15 @@ export const QUESTS: readonly QuestDef[] = [
     mode: 'add',
     measure: (a) => (a.kind === 'fill' && a.side === 'buy' && a.etf && !a.short ? 1 : 0),
   },
-  { id: 'sectors-3', tier: 'trade', text: 'Own 3 sectors at a close', goal: 3, xp: 50, mode: 'max', measure: sectors },
+  {
+    id: 'sectors-3',
+    tier: 'trade',
+    text: 'Own 3 sectors at a close',
+    goal: 3,
+    xp: 50,
+    mode: 'max',
+    measure: sectors,
+  },
   {
     id: 'dividend',
     tier: 'trade',
@@ -83,7 +125,10 @@ export const QUESTS: readonly QuestDef[] = [
     goal: 5,
     xp: 80,
     mode: 'max',
-    measure: (a) => (a.kind === 'close' ? Math.max(0, ...a.holdings.filter((h) => !h.etf).map((h) => h.heldDays)) : 0),
+    measure: (a) =>
+      a.kind === 'close'
+        ? Math.max(0, ...a.holdings.filter((h) => !h.etf).map((h) => h.heldDays))
+        : 0,
   },
   {
     id: 'beat-spy-3',
@@ -94,8 +139,24 @@ export const QUESTS: readonly QuestDef[] = [
     mode: 'add',
     measure: (a) => (a.kind === 'close' && a.holdings.length > 0 && a.dayPct > a.spyPct ? 1 : 0),
   },
-  { id: 'play-20', tier: 'stretch', text: 'Play 20 trading days', goal: 20, xp: 80, mode: 'add', measure: (a) => (a.kind === 'close' ? 1 : 0) },
-  { id: 'finish', tier: 'stretch', text: 'Finish a run', goal: 1, xp: 100, mode: 'add', measure: (a) => (a.kind === 'runEnd' && a.complete ? 1 : 0) },
+  {
+    id: 'play-20',
+    tier: 'stretch',
+    text: 'Play 20 trading days',
+    goal: 20,
+    xp: 80,
+    mode: 'add',
+    measure: (a) => (a.kind === 'close' ? 1 : 0),
+  },
+  {
+    id: 'finish',
+    tier: 'stretch',
+    text: 'Finish a run',
+    goal: 1,
+    xp: 100,
+    mode: 'add',
+    measure: (a) => (a.kind === 'runEnd' && a.complete ? 1 : 0),
+  },
   {
     id: 'grade-b',
     tier: 'stretch',
@@ -103,10 +164,27 @@ export const QUESTS: readonly QuestDef[] = [
     goal: 1,
     xp: 100,
     mode: 'add',
-    measure: (a) => (a.kind === 'runEnd' && a.debrief.days >= 10 && a.debrief.grade.score >= 75 ? 1 : 0),
+    measure: (a) =>
+      a.kind === 'runEnd' && a.debrief.days >= 10 && a.debrief.grade.score >= 75 ? 1 : 0,
   },
-  { id: 'replay', tier: 'stretch', text: 'Replay a moment', goal: 1, xp: 60, mode: 'add', measure: (a) => (a.kind === 'replay' ? 1 : 0) },
-  { id: 'diversify-5', tier: 'stretch', text: 'Own 5 sectors at a close', goal: 5, xp: 80, mode: 'max', measure: sectors },
+  {
+    id: 'replay',
+    tier: 'stretch',
+    text: 'Replay a moment',
+    goal: 1,
+    xp: 60,
+    mode: 'add',
+    measure: (a) => (a.kind === 'replay' ? 1 : 0),
+  },
+  {
+    id: 'diversify-5',
+    tier: 'stretch',
+    text: 'Own 5 sectors at a close',
+    goal: 5,
+    xp: 80,
+    mode: 'max',
+    measure: sectors,
+  },
 ];
 
 const TIERS: readonly QuestTier[] = ['learn', 'trade', 'stretch'];
@@ -131,7 +209,11 @@ export function freshQuests(date: string): QuestState {
 }
 
 /** Apply one activity to today's quests. Returns the new state and the quests just completed. */
-export function advanceQuests(state: QuestState | null, date: string, a: Activity): { state: QuestState; completed: QuestDef[] } {
+export function advanceQuests(
+  state: QuestState | null,
+  date: string,
+  a: Activity,
+): { state: QuestState; completed: QuestDef[] } {
   const s = state && state.date === date ? state : freshQuests(date);
   const defs = questsFor(date);
   const progress = [...s.progress];
@@ -148,7 +230,8 @@ export function advanceQuests(state: QuestState | null, date: string, a: Activit
       completed.push(q);
     }
   });
-  if (!completed.length && progress.every((v, k) => v === s.progress[k]) && s === state) return { state: s, completed };
+  if (!completed.length && progress.every((v, k) => v === s.progress[k]) && s === state)
+    return { state: s, completed };
   return { state: { date, progress, claimed }, completed };
 }
 

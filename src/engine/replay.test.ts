@@ -14,9 +14,26 @@ type Script = Record<number, OrderDraft[]>;
 const SCRIPT: Script = {
   0: [{ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 5_000 } }],
   3: [{ ticker: 'AAPL', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 2_000 } }],
-  8: [{ ticker: 'AAPL', side: 'sell', type: 'stop', stopPrice: 1, amount: { kind: 'shares', value: 1 }, tif: 'gtc' }],
+  8: [
+    {
+      ticker: 'AAPL',
+      side: 'sell',
+      type: 'stop',
+      stopPrice: 1,
+      amount: { kind: 'shares', value: 1 },
+      tif: 'gtc',
+    },
+  ],
   15: [{ ticker: 'SPY', side: 'sell', type: 'market', amount: { kind: 'shares', value: 3 } }],
-  25: [{ ticker: 'MSFT', side: 'buy', type: 'limit', limitPrice: 1_000, amount: { kind: 'dollars', value: 1_000 } }],
+  25: [
+    {
+      ticker: 'MSFT',
+      side: 'buy',
+      type: 'limit',
+      limitPrice: 1_000,
+      amount: { kind: 'dollars', value: 1_000 },
+    },
+  ],
 };
 
 /** Play to the end, placing each day's orders at that day's open. */

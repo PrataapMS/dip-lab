@@ -27,7 +27,12 @@ export function DayCard({ market }: { market: Market }) {
         <h2 id="day-card-title" class="section">
           DAY {s.day + 1} CLOSE · {longDate(s.date)}
         </h2>
-        <button type="button" class="icon-button" aria-label="Hide the day summary" onClick={dismissSummary}>
+        <button
+          type="button"
+          class="icon-button"
+          aria-label="Hide the day summary"
+          onClick={dismissSummary}
+        >
           <CloseIcon />
         </button>
       </div>
@@ -71,11 +76,20 @@ export function DayCard({ market }: { market: Market }) {
       </dl>
       {s.headline && <p class="mono small warn">&gt; {s.headline}</p>}
       {s.reportsTomorrow.length > 0 && (
-        <p class="small">Reporting earnings before tomorrow's open: {s.reportsTomorrow.join(', ')}. Expect a price gap.</p>
+        <p class="small">
+          Reporting earnings before tomorrow's open: {s.reportsTomorrow.join(', ')}. Expect a price
+          gap.
+        </p>
       )}
       <div class="row">
         <label class="check small">
-          <input type="checkbox" checked={view.pauseAtClose} onChange={(e) => send({ type: 'pauseAtClose', on: (e.target as HTMLInputElement).checked })} />
+          <input
+            type="checkbox"
+            checked={view.pauseAtClose}
+            onChange={(e) =>
+              send({ type: 'pauseAtClose', on: (e.target as HTMLInputElement).checked })
+            }
+          />
           pause at each close
         </label>
         {paused && (

@@ -30,7 +30,8 @@ describe('daily quests', () => {
     expect(questsFor('2026-11-16').map((q) => q.id)).toEqual(a.map((q) => q.id));
     // Over a month the picks vary.
     const ids = new Set<string>();
-    for (let d = 1; d <= 28; d++) for (const q of questsFor(`2026-02-${String(d).padStart(2, '0')}`)) ids.add(q.id);
+    for (let d = 1; d <= 28; d++)
+      for (const q of questsFor(`2026-02-${String(d).padStart(2, '0')}`)) ids.add(q.id);
     expect(ids.size).toBeGreaterThan(8);
   });
 
@@ -57,12 +58,26 @@ describe('daily quests', () => {
     expect(advanceQuests(two.state, date, read).completed).toEqual([]);
     const tomorrow = advanceQuests(two.state, '2027-01-01', { kind: 'replay', day: 1 });
     expect(tomorrow.state.date).toBe('2027-01-01');
-    expect(tomorrow.state.claimed.every((c) => !c || questsFor('2027-01-01')[2]?.id === 'replay')).toBe(true);
+    expect(
+      tomorrow.state.claimed.every((c) => !c || questsFor('2027-01-01')[2]?.id === 'replay'),
+    ).toBe(true);
   });
 
   it('"max" quests keep the best value seen', () => {
     const hold = QUESTS.find((q) => q.id === 'hold-5');
-    const h = (days: number) => close({ holdings: [{ ticker: 'KO', sector: 'Consumer Staples', etf: false, shares: 1, value: 60, heldDays: days }] });
+    const h = (days: number) =>
+      close({
+        holdings: [
+          {
+            ticker: 'KO',
+            sector: 'Consumer Staples',
+            etf: false,
+            shares: 1,
+            value: 60,
+            heldDays: days,
+          },
+        ],
+      });
     expect(hold?.measure(h(3))).toBe(3);
     expect(hold?.measure(close())).toBe(0);
     const sectors = QUESTS.find((q) => q.id === 'sectors-3');
@@ -70,8 +85,22 @@ describe('daily quests', () => {
       sectors?.measure(
         close({
           holdings: [
-            { ticker: 'KO', sector: 'Consumer Staples', etf: false, shares: 1, value: 1, heldDays: 1 },
-            { ticker: 'AAPL', sector: 'Information Technology', etf: false, shares: 1, value: 1, heldDays: 1 },
+            {
+              ticker: 'KO',
+              sector: 'Consumer Staples',
+              etf: false,
+              shares: 1,
+              value: 1,
+              heldDays: 1,
+            },
+            {
+              ticker: 'AAPL',
+              sector: 'Information Technology',
+              etf: false,
+              shares: 1,
+              value: 1,
+              heldDays: 1,
+            },
             { ticker: 'SPY', sector: null, etf: true, shares: 1, value: 1, heldDays: 1 },
           ],
         }),
@@ -83,8 +112,9 @@ describe('daily quests', () => {
     let p = emptyProgress();
     const date = '2026-11-16';
     const quest = questsFor(date)[0];
-    const act: Activity =
-      quest?.id.startsWith('glossary') ? { kind: 'glossaryRead', term: 'x' } : { kind: 'lessonDone', lesson: 'x' };
+    const act: Activity = quest?.id.startsWith('glossary')
+      ? { kind: 'glossaryRead', term: 'x' }
+      : { kind: 'lessonDone', lesson: 'x' };
     let paid = 0;
     for (let k = 0; k < (quest?.goal ?? 1); k++) {
       const r = applyActivity(p, act, date);
@@ -120,8 +150,14 @@ describe('streaks', () => {
   it('counts a played close or a finished lesson, not reading the glossary', () => {
     const date = '2026-11-16';
     expect(applyActivity(emptyProgress(), close(), date).progress.streak.count).toBe(1);
-    expect(applyActivity(emptyProgress(), { kind: 'lessonDone', lesson: 'x' }, date).progress.streak.count).toBe(1);
-    expect(applyActivity(emptyProgress(), { kind: 'glossaryRead', term: 'x' }, date).progress.streak.count).toBe(0);
+    expect(
+      applyActivity(emptyProgress(), { kind: 'lessonDone', lesson: 'x' }, date).progress.streak
+        .count,
+    ).toBe(1);
+    expect(
+      applyActivity(emptyProgress(), { kind: 'glossaryRead', term: 'x' }, date).progress.streak
+        .count,
+    ).toBe(0);
   });
 });
 
@@ -130,8 +166,18 @@ describe('activity facts', () => {
 
   it('reports holdings, days held and SPY at a close', () => {
     const run = new Run(first, undefined, undefined, { pauseAtClose: false });
-    run.place({ ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } });
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } });
+    run.place({
+      ticker: 'KO',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 1_000 },
+    });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 1_000 },
+    });
     for (let d = 0; d < 3; d++) run.stepDay();
     expect(run.clock.bar).toBe(BARS_PER_DAY);
     const a = closeActivity(run);

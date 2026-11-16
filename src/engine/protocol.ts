@@ -70,7 +70,13 @@ export interface Series {
 }
 
 /** Debrief moments tied to one day, so they can be replayed from the close before it. */
-export const REPLAYABLE_MOMENTS: readonly string[] = ['soldNearLow', 'stopSlippage', 'marginCall', 'forcedSale', 'shortSqueeze'];
+export const REPLAYABLE_MOMENTS: readonly string[] = [
+  'soldNearLow',
+  'stopSlippage',
+  'marginCall',
+  'forcedSale',
+  'shortSqueeze',
+];
 
 /** Closes kept for each watchlist sparkline. */
 export const SPARK_DAYS = 30;

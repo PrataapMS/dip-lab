@@ -15,7 +15,14 @@ import { REFERENCE_MARKET_VOL } from './regimes';
 
 const AT = { day: 0, bar: 10 };
 
-function trade(state: AccountState, side: Side, amount: Amount, mid: number, half = 0, ticker = 'KO'): TradeResult {
+function trade(
+  state: AccountState,
+  side: Side,
+  amount: Amount,
+  mid: number,
+  half = 0,
+  ticker = 'KO',
+): TradeResult {
   return executeTrade(state, { ticker, side, amount, mid, halfSpread: half, at: AT });
 }
 
@@ -28,10 +35,16 @@ describe('costs', () => {
   it('sets the half-spread from volatility and market stress', () => {
     const on = { spreadOn: true };
     expect(halfSpread({ kind: 'etf', vol: 0.16 }, REFERENCE_MARKET_VOL, on)).toBeCloseTo(1e-4, 10);
-    expect(halfSpread({ kind: 'stock', vol: 0.3 }, REFERENCE_MARKET_VOL, on)).toBeCloseTo(3.4e-4, 10);
+    expect(halfSpread({ kind: 'stock', vol: 0.3 }, REFERENCE_MARKET_VOL, on)).toBeCloseTo(
+      3.4e-4,
+      10,
+    );
     // Calm markets never narrow spreads below normal; stressed ones widen them.
     expect(halfSpread({ kind: 'stock', vol: 0.3 }, 0.08, on)).toBeCloseTo(3.4e-4, 10);
-    expect(halfSpread({ kind: 'stock', vol: 0.3 }, REFERENCE_MARKET_VOL * 3, on)).toBeCloseTo(10.2e-4, 10);
+    expect(halfSpread({ kind: 'stock', vol: 0.3 }, REFERENCE_MARKET_VOL * 3, on)).toBeCloseTo(
+      10.2e-4,
+      10,
+    );
     expect(halfSpread({ kind: 'stock', vol: 0.3 }, 0.5, { spreadOn: false })).toBe(0);
   });
 
@@ -98,16 +111,28 @@ describe('account', () => {
   it('rejects a buy without enough cash, in plain words', () => {
     const a = createAccount({ startingCash: 500, commission: 0, spreadOn: false });
     const r = trade(a, 'buy', { kind: 'dollars', value: 1_000 }, 50);
-    expect(r).toEqual({ ok: false, reason: 'Not enough cash: this needs $1,000.00 and you have $500.00.' });
+    expect(r).toEqual({
+      ok: false,
+      reason: 'Not enough cash: this needs $1,000.00 and you have $500.00.',
+    });
   });
 
   it('caps sells at the shares held', () => {
     let a = createAccount();
-    expect(trade(a, 'sell', { kind: 'shares', value: 1 }, 50)).toEqual({ ok: false, reason: "You don't own any KO." });
+    expect(trade(a, 'sell', { kind: 'shares', value: 1 }, 50)).toEqual({
+      ok: false,
+      reason: "You don't own any KO.",
+    });
     a = ok(trade(a, 'buy', { kind: 'shares', value: 2.5 }, 50));
     const r = trade(a, 'sell', { kind: 'shares', value: 3 }, 50);
-    expect(r).toEqual({ ok: false, reason: "You own 2.5 shares of KO, so you can't sell 3 shares." });
-    expect(trade(a, 'buy', { kind: 'shares', value: 0 }, 50)).toEqual({ ok: false, reason: 'Enter an amount above zero.' });
+    expect(r).toEqual({
+      ok: false,
+      reason: "You own 2.5 shares of KO, so you can't sell 3 shares.",
+    });
+    expect(trade(a, 'buy', { kind: 'shares', value: 0 }, 50)).toEqual({
+      ok: false,
+      reason: 'Enter an amount above zero.',
+    });
   });
 
   it('sells everything when a dollar sell rounds just above the holding', () => {

@@ -70,7 +70,8 @@ function dayPayload(r: Run): Extract<WorkerEvent, { type: 'day' }> {
     type: 'day',
     day,
     prevCloses: Float32Array.from(r.market.closes, (c) => c[day] ?? 0),
-    indexHistory: r.indexInstrument < 0 ? [] : Array.from({ length: day + 1 }, (_, k) => r.indexClose(k)),
+    indexHistory:
+      r.indexInstrument < 0 ? [] : Array.from({ length: day + 1 }, (_, k) => r.indexClose(k)),
     indexFactor: r.indexFactor[day] ?? 1,
     watch: watchSeries(r, day),
     marketVol: r.market.factors.vols[day] ?? REFERENCE_MARKET_VOL,
@@ -109,7 +110,11 @@ function emitNews(r: Run): void {
     newsCursor++;
   }
   const a = r.account;
-  const followed = new Set<string>([...Object.keys(a.positions), ...watched, ...(inspected ? [inspected] : [])]);
+  const followed = new Set<string>([
+    ...Object.keys(a.positions),
+    ...watched,
+    ...(inspected ? [inspected] : []),
+  ]);
   for (const o of a.orders) if (o.status === 'open') followed.add(o.ticker);
   const items = selectNews(
     events.slice(start, newsCursor),
@@ -144,8 +149,14 @@ function emitTick(): void {
       day: r.clock.day,
       bar: r.clock.bar,
       prices,
-      indexToday: r.indexInstrument < 0 ? [] : r.today(r.indexInstrument).map((p) => p * (r.indexFactor[r.clock.day] ?? 1)),
-      focus: inspected && focusIndex !== undefined ? { ticker: inspected, values: r.today(focusIndex) } : null,
+      indexToday:
+        r.indexInstrument < 0
+          ? []
+          : r.today(r.indexInstrument).map((p) => p * (r.indexFactor[r.clock.day] ?? 1)),
+      focus:
+        inspected && focusIndex !== undefined
+          ? { ticker: inspected, values: r.today(focusIndex) }
+          : null,
       playing: r.clock.playing,
       finished: r.finished,
       endReason: r.endReason,
@@ -158,7 +169,9 @@ function emitTick(): void {
   const newAlerts = r.alerts.slice(alertsSent);
   if (newAlerts.length) post({ type: 'alerts', alerts: newAlerts });
   alertsSent = r.alerts.length;
-  const extra: Activity[] = newAlerts.filter((x) => x.kind === 'marginCall').map((x) => ({ kind: 'marginCall', day: x.day }));
+  const extra: Activity[] = newAlerts
+    .filter((x) => x.kind === 'marginCall')
+    .map((x) => ({ kind: 'marginCall', day: x.day }));
   post({ type: 'account', account: r.view() });
   const closes = r.account.equityByDay.length;
   if (closes > closesSent && r.clock.bar === BARS_PER_DAY) {
@@ -190,7 +203,8 @@ function loop(): void {
   const changed = run.advance(elapsed);
   const after = run.clock;
   emitUpdates(changed);
-  if (after.day !== before.day || after.bar !== before.bar || after.playing !== before.playing) emitTick();
+  if (after.day !== before.day || after.bar !== before.bar || after.playing !== before.playing)
+    emitTick();
   if (!after.playing) stopLoop();
 }
 
@@ -233,7 +247,12 @@ function load(r: Run, seed: number): void {
   const market = r.market;
   post({
     type: 'loaded',
-    scenario: scenarioInfo ?? { id: market.scenario.id, name: market.scenario.name, teaches: market.scenario.teaches, fictional: market.scenario.fictional },
+    scenario: scenarioInfo ?? {
+      id: market.scenario.id,
+      name: market.scenario.name,
+      teaches: market.scenario.teaches,
+      fictional: market.scenario.fictional,
+    },
     seed,
     settings: r.account.settings,
     dates: market.dates,
@@ -256,10 +275,16 @@ function handle(cmd: Command): void {
   switch (cmd.type) {
     case 'newRun': {
       stopLoop();
-      const def = cmd.scenarioId === 'custom' && cmd.custom ? customScenario(cmd.custom) : getScenario(cmd.scenarioId);
+      const def =
+        cmd.scenarioId === 'custom' && cmd.custom
+          ? customScenario(cmd.custom)
+          : getScenario(cmd.scenarioId);
       const market = buildMarket(def, cmd.seed, UNIVERSE);
       scenarioInfo = { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional };
-      load(new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn }), cmd.seed);
+      load(
+        new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn }),
+        cmd.seed,
+      );
       return;
     }
     case 'replayFrom': {
@@ -306,13 +331,23 @@ function handle(cmd: Command): void {
       return;
     case 'placeOrder': {
       if (requireRun().endReason) {
-        post({ type: 'orderResult', ok: false, order: null, message: 'This run is over. Start a new one to keep trading.' });
+        post({
+          type: 'orderResult',
+          ok: false,
+          order: null,
+          message: 'This run is over. Start a new one to keep trading.',
+        });
         return;
       }
       const r = requireRun();
       const held = r.account.positions[cmd.draft.ticker]?.shares ?? 0;
       const order = r.place(cmd.draft);
-      post({ type: 'orderResult', ok: order.status !== 'rejected', order, message: orderMessage(order) });
+      post({
+        type: 'orderResult',
+        ok: order.status !== 'rejected',
+        order,
+        message: orderMessage(order),
+      });
       emitActivity(r, order.status === 'rejected' ? [] : [orderActivity(order, held)]);
       post({ type: 'account', account: requireRun().view() });
       return;
@@ -320,7 +355,12 @@ function handle(cmd: Command): void {
     case 'cancelOrder': {
       const r = requireRun().cancel(cmd.id);
       const ok = !r.reason;
-      post({ type: 'orderResult', ok, order: r.order ?? null, message: r.reason ?? (r.order ? orderMessage(r.order) : '') });
+      post({
+        type: 'orderResult',
+        ok,
+        order: r.order ?? null,
+        message: r.reason ?? (r.order ? orderMessage(r.order) : ''),
+      });
       post({ type: 'account', account: requireRun().view() });
       return;
     }

@@ -18,7 +18,8 @@ function openDb(): Promise<IDBDatabase | null> {
       if (typeof indexedDB === 'undefined') return resolve(null);
       const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = () => {
-        for (const s of STORES) if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
+        for (const s of STORES)
+          if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => resolve(null);

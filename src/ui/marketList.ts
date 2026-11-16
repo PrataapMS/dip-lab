@@ -2,7 +2,25 @@ import type { InstrumentInfo } from '../engine/protocol';
 
 export const DEFAULT_WATCHLIST = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'TSLA', 'JPM', 'KO'];
 /** Long-standing large companies, used to top the watchlist up in older scenarios. */
-const LARGE_NAMES = ['XOM', 'JNJ', 'WMT', 'PG', 'GE', 'IBM', 'INTC', 'CSCO', 'ORCL', 'PFE', 'BAC', 'HD', 'MRK', 'PEP', 'DIS', 'MCD', 'CVX'];
+const LARGE_NAMES = [
+  'XOM',
+  'JNJ',
+  'WMT',
+  'PG',
+  'GE',
+  'IBM',
+  'INTC',
+  'CSCO',
+  'ORCL',
+  'PFE',
+  'BAC',
+  'HD',
+  'MRK',
+  'PEP',
+  'DIS',
+  'MCD',
+  'CVX',
+];
 export const INDEX_TILES: { ticker: string; label: string }[] = [
   { ticker: 'SPY', label: 'S&P 500' },
   { ticker: 'QQQ', label: 'NASDAQ' },
@@ -30,7 +48,10 @@ export const SECTOR_CHIPS: { label: string; sector: string }[] = [
  * The default watchlist, keeping only names listed in this scenario's year and topping it
  * back up from other large companies.
  */
-export function defaultWatchlist(instruments: readonly InstrumentInfo[], size = DEFAULT_WATCHLIST.length): string[] {
+export function defaultWatchlist(
+  instruments: readonly InstrumentInfo[],
+  size = DEFAULT_WATCHLIST.length,
+): string[] {
   const listed = new Set(instruments.filter((i) => i.kind === 'stock').map((i) => i.ticker));
   const out: string[] = [];
   for (const t of [...DEFAULT_WATCHLIST, ...LARGE_NAMES, ...listed]) {
@@ -41,7 +62,11 @@ export function defaultWatchlist(instruments: readonly InstrumentInfo[], size = 
 }
 
 /** Ticker prefix matches first, then name matches (word starts), up to `limit`. */
-export function searchInstruments(instruments: readonly InstrumentInfo[], query: string, limit = 30): InstrumentInfo[] {
+export function searchInstruments(
+  instruments: readonly InstrumentInfo[],
+  query: string,
+  limit = 30,
+): InstrumentInfo[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const exact: InstrumentInfo[] = [];
@@ -51,7 +76,14 @@ export function searchInstruments(instruments: readonly InstrumentInfo[], query:
     const t = inst.ticker.toLowerCase();
     if (t === q) exact.push(inst);
     else if (t.startsWith(q)) ticker.push(inst);
-    else if (inst.name.toLowerCase().split(/[\s.&,-]+/).some((w) => w.startsWith(q)) || inst.name.toLowerCase().startsWith(q)) name.push(inst);
+    else if (
+      inst.name
+        .toLowerCase()
+        .split(/[\s.&,-]+/)
+        .some((w) => w.startsWith(q)) ||
+      inst.name.toLowerCase().startsWith(q)
+    )
+      name.push(inst);
   }
   return [...exact, ...ticker, ...name].slice(0, limit);
 }
@@ -61,7 +93,11 @@ export function inSector(inst: InstrumentInfo, sector: string): boolean {
 }
 
 /** Day change as a fraction for each instrument index. */
-export function dayChange(prices: ArrayLike<number>, prevCloses: ArrayLike<number>, i: number): number {
+export function dayChange(
+  prices: ArrayLike<number>,
+  prevCloses: ArrayLike<number>,
+  i: number,
+): number {
   const p = prices[i] ?? 0;
   const pc = prevCloses[i] ?? 0;
   return pc > 0 && p > 0 ? p / pc - 1 : 0;
@@ -75,7 +111,11 @@ export function topMovers(
   count = 5,
 ): { up: string[]; down: string[] } {
   const rows = instruments
-    .map((inst, i) => ({ ticker: inst.ticker, kind: inst.kind, change: dayChange(prices, prevCloses, i) }))
+    .map((inst, i) => ({
+      ticker: inst.ticker,
+      kind: inst.kind,
+      change: dayChange(prices, prevCloses, i),
+    }))
     .filter((r) => r.kind === 'stock');
   rows.sort((a, b) => b.change - a.change || a.ticker.localeCompare(b.ticker));
   return {

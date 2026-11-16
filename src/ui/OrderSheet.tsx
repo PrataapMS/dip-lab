@@ -12,7 +12,8 @@ import type { Market } from './useMarket';
 import { today, useProgress } from './useProgress';
 
 const EXPLAIN: Record<OrderType, (side: Side) => string> = {
-  market: () => 'Market: trade right now at the current price. You pay a tiny extra called the spread.',
+  market: () =>
+    'Market: trade right now at the current price. You pay a tiny extra called the spread.',
   limit: (side) =>
     side === 'buy'
       ? 'Limit: only buy at your price or lower. If the price never drops that far, nothing happens.'
@@ -53,7 +54,9 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const [side, setSide] = useState<Side>(initialSide);
   // Closing a position starts with all of it; opening one starts with a dollar amount.
   const closing = (s: Side) => (s === 'sell' ? heldShares > 0 : heldShares < 0);
-  const [unit, setUnit] = useState<'dollars' | 'shares'>(closing(initialSide) ? 'shares' : 'dollars');
+  const [unit, setUnit] = useState<'dollars' | 'shares'>(
+    closing(initialSide) ? 'shares' : 'dollars',
+  );
   const [amountText, setAmountText] = useState(() =>
     closing(initialSide) ? String(Number(Math.abs(heldShares).toFixed(6))) : startAmount(),
   );
@@ -78,8 +81,10 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const pickType = (t: OrderType) => {
     setType(t);
     // Sensible starting prices: a limit a little better than now, a stop a little worse.
-    if (t === 'limit' && !limitText) setLimitText(cents(price * (side === 'buy' ? 0.98 : 1.02)).toFixed(2));
-    if (t === 'stop' && !stopText) setStopText(cents(price * (side === 'sell' ? 0.95 : 1.05)).toFixed(2));
+    if (t === 'limit' && !limitText)
+      setLimitText(cents(price * (side === 'buy' ? 0.98 : 1.02)).toFixed(2));
+    if (t === 'stop' && !stopText)
+      setStopText(cents(price * (side === 'sell' ? 0.95 : 1.05)).toFixed(2));
   };
 
   const pickSide = (s: Side) => {
@@ -147,7 +152,17 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
     const short = side === 'sell' ? heldShares <= 0 : heldShares < 0;
     const would: Activity[] = [{ kind: 'order', type, side, ticker: inst.ticker, short }];
     if (type === 'market' || preview.fillsNow) {
-      would.push({ kind: 'fill', ticker: inst.ticker, side, orderType: type, etf: inst.kind === 'etf', short, forced: false, realised: 0, day: view.day });
+      would.push({
+        kind: 'fill',
+        ticker: inst.ticker,
+        side,
+        orderType: type,
+        etf: inst.kind === 'etf',
+        short,
+        forced: false,
+        realised: 0,
+        day: view.day,
+      });
     }
     return orderXpHint(progress, today(), would);
   }, [progress, type, side, heldShares, inst.ticker, inst.kind, preview.fillsNow, view.day]);
@@ -195,7 +210,12 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           <button type="button" aria-pressed={side === 'buy'} onClick={() => pickSide('buy')}>
             {heldShares < 0 ? 'Cover' : 'Buy'}
           </button>
-          <button type="button" aria-pressed={side === 'sell'} disabled={heldShares <= 0 && !canShort} onClick={() => pickSide('sell')}>
+          <button
+            type="button"
+            aria-pressed={side === 'sell'}
+            disabled={heldShares <= 0 && !canShort}
+            onClick={() => pickSide('sell')}
+          >
             {heldShares <= 0 && canShort ? 'Short' : 'Sell'}
           </button>
         </div>
@@ -206,10 +226,18 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
               Amount
             </label>
             <div class="units" role="group" aria-label="Amount unit">
-              <button type="button" aria-pressed={unit === 'dollars'} onClick={() => setUnit('dollars')}>
+              <button
+                type="button"
+                aria-pressed={unit === 'dollars'}
+                onClick={() => setUnit('dollars')}
+              >
                 $
               </button>
-              <button type="button" aria-pressed={unit === 'shares'} onClick={() => setUnit('shares')}>
+              <button
+                type="button"
+                aria-pressed={unit === 'shares'}
+                onClick={() => setUnit('shares')}
+              >
                 shares
               </button>
             </div>
@@ -239,12 +267,21 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         <div class="field">
           <div class="row baseline">
             <span class="field-label">Order type</span>
-            <button type="button" class="link" aria-expanded={explain} onClick={() => setExplain(!explain)}>
+            <button
+              type="button"
+              class="link"
+              aria-expanded={explain}
+              onClick={() => setExplain(!explain)}
+            >
               ? explain like I'm new
             </button>
           </div>
           <div class="types" role="group" aria-label="Order type">
-            <button type="button" aria-pressed={type === 'market'} onClick={() => pickType('market')}>
+            <button
+              type="button"
+              aria-pressed={type === 'market'}
+              onClick={() => pickType('market')}
+            >
               Market
             </button>
             <button type="button" aria-pressed={type === 'limit'} onClick={() => pickType('limit')}>
@@ -261,12 +298,20 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           <div class="trigger">
             <label class="field">
               <span class="field-label">
-                {type === 'limit' ? <Term id="limit-order">Limit price</Term> : <Term id="stop-loss">Stop price</Term>}
+                {type === 'limit' ? (
+                  <Term id="limit-order">Limit price</Term>
+                ) : (
+                  <Term id="stop-loss">Stop price</Term>
+                )}
               </span>
               <input
                 inputMode="decimal"
                 value={type === 'limit' ? limitText : stopText}
-                onInput={(e) => (type === 'limit' ? setLimitText : setStopText)((e.target as HTMLInputElement).value)}
+                onInput={(e) =>
+                  (type === 'limit' ? setLimitText : setStopText)(
+                    (e.target as HTMLInputElement).value,
+                  )
+                }
               />
             </label>
             <div class="field">
@@ -293,13 +338,18 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           <div class="row">
             <span class="dim">&gt; fill_price</span>
             <span>
-              {money(preview.fillPrice, true)} <span class="dim">{type === 'limit' && !preview.fillsNow ? '(or better)' : spreadNote}</span>
+              {money(preview.fillPrice, true)}{' '}
+              <span class="dim">
+                {type === 'limit' && !preview.fillsNow ? '(or better)' : spreadNote}
+              </span>
             </span>
           </div>
           {type !== 'market' && (
             <div class="row">
               <span class="dim">&gt; trigger</span>
-              <span>{preview.fillsNow && !closed ? 'already reached: fills now' : 'waits for the price'}</span>
+              <span>
+                {preview.fillsNow && !closed ? 'already reached: fills now' : 'waits for the price'}
+              </span>
             </div>
           )}
           <div class="row">
@@ -316,17 +366,21 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           )}
           {shorting && (
             <p class="tiny warn">
-              You <Term id="short-selling">borrow {inst.ticker} shares and sell them</Term>. You make money if {inst.ticker} falls; if it rises, your loss has no
-              ceiling. Borrow fee {inst.ticker === 'MOONR' ? '30' : '0.5'}% a year, and you pay its dividends.
+              You <Term id="short-selling">borrow {inst.ticker} shares and sell them</Term>. You
+              make money if {inst.ticker} falls; if it rises, your loss has no ceiling. Borrow fee{' '}
+              {inst.ticker === 'MOONR' ? '30' : '0.5'}% a year, and you pay its dividends.
             </p>
           )}
           {preview.borrowed > 0 && (
             <p class="tiny warn">
-              {money(preview.borrowed, true)} of this is <Term id="margin">borrowed</Term> at {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on
-              it are yours too.
+              {money(preview.borrowed, true)} of this is <Term id="margin">borrowed</Term> at{' '}
+              {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on it are yours
+              too.
             </p>
           )}
-          {closed && <p class="tiny warn">Market closed: this fills at the next open, which can gap.</p>}
+          {closed && (
+            <p class="tiny warn">Market closed: this fills at the next open, which can gap.</p>
+          )}
         </div>
 
         <div class="field">
@@ -345,7 +399,12 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         </div>
 
         <div class="stack gap-6">
-          <button type="button" class="primary confirm" disabled={!!preview.problem} onClick={confirm}>
+          <button
+            type="button"
+            class="primary confirm"
+            disabled={!!preview.problem}
+            onClick={confirm}
+          >
             {preview.problem ?? describeOrder(draft, heldShares)}
             {!preview.problem && xpHint && <span class="xp-label mono">{xpHint}</span>}
           </button>

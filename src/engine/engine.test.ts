@@ -47,7 +47,13 @@ describe('rng', () => {
 });
 
 describe('generateDailyCloses', () => {
-  const base = { seed: 2008, start: 100, days: TRADING_DAYS_PER_YEAR, annualDrift: 0.08, annualVol: 0.2 };
+  const base = {
+    seed: 2008,
+    start: 100,
+    days: TRADING_DAYS_PER_YEAR,
+    annualDrift: 0.08,
+    annualVol: 0.2,
+  };
 
   it('is deterministic for a seed', () => {
     expect(generateDailyCloses(base)).toEqual(generateDailyCloses(base));

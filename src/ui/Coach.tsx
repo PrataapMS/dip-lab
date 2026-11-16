@@ -41,7 +41,15 @@ interface Box {
  * The guided first trade: a callout and a ring around the one thing to tap next. It follows
  * the player rather than driving the app, so normal taps do all the work. Skip ends it.
  */
-export function Coach({ route, market, onClose }: { route: Route; market: Market; onClose: () => void }) {
+export function Coach({
+  route,
+  market,
+  onClose,
+}: {
+  route: Route;
+  market: Market;
+  onClose: () => void;
+}) {
   const { update } = useProgress();
   const [step, setStep] = useState<Step>('market');
   const [box, setBox] = useState<Box | null>(null);
@@ -53,7 +61,9 @@ export function Coach({ route, market, onClose }: { route: Route; market: Market
       const sel = TARGET[s];
       const el = sel ? document.querySelector<HTMLElement>(sel) : null;
       const r = el?.getBoundingClientRect();
-      setBox(r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null);
+      setBox(
+        r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null,
+      );
     };
     tick();
     const t = setInterval(tick, 150);
@@ -72,7 +82,12 @@ export function Coach({ route, market, onClose }: { route: Route; market: Market
       {box && step !== 'done' && (
         <div
           class={`coach-ring ${step === 'sheet' ? '' : 'dim'}`}
-          style={{ top: `${box.top - 6}px`, left: `${box.left - 6}px`, width: `${box.width + 12}px`, height: `${box.height + 12}px` }}
+          style={{
+            top: `${box.top - 6}px`,
+            left: `${box.left - 6}px`,
+            width: `${box.width + 12}px`,
+            height: `${box.height + 12}px`,
+          }}
           aria-hidden="true"
         />
       )}

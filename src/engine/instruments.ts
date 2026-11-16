@@ -35,12 +35,28 @@ export function etfParams(ticker: string, tracks: EtfTracks): StockParams & { di
     case 'market':
       return { ...base, beta: 1, vol: 0.16, sector: null, idioVol: 0.003, divYield: 0.014 };
     case 'nasdaq':
-      return { ...base, beta: 1.15, vol: 0.22, sector: 'Information Technology', sectorLoading: 0.6, idioVol: 0.03, divYield: 0.006 };
+      return {
+        ...base,
+        beta: 1.15,
+        vol: 0.22,
+        sector: 'Information Technology',
+        sectorLoading: 0.6,
+        idioVol: 0.03,
+        divYield: 0.006,
+      };
     case 'dow':
       return { ...base, beta: 0.95, vol: 0.16, sector: null, idioVol: 0.03, divYield: 0.017 };
     case 'smallcap':
       return { ...base, beta: 1.2, vol: 0.22, sector: null, idioVol: 0.07, divYield: 0.012 };
     default:
-      return { ...base, beta: SECTOR_ETF_BETA[tracks], vol: 0.2, sector: tracks, sectorLoading: 1, idioVol: 0.02, divYield: 0.02 };
+      return {
+        ...base,
+        beta: SECTOR_ETF_BETA[tracks],
+        vol: 0.2,
+        sector: tracks,
+        sectorLoading: 1,
+        idioVol: 0.02,
+        divYield: 0.02,
+      };
   }
 }

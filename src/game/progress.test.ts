@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { isUnlocked, levelFor, nextUnlock, rankFor, unlocksBetween, xpForLevel, xpToNext } from './levels';
+import {
+  isUnlocked,
+  levelFor,
+  nextUnlock,
+  rankFor,
+  unlocksBetween,
+  xpForLevel,
+  xpToNext,
+} from './levels';
 import { emptyProgress, finishRun, migrate, type RunResult } from './progress';
 import { baseRunXp, runXp } from './xp';
 
@@ -11,7 +19,13 @@ describe('levels', () => {
     expect(levelFor(599).level).toBe(1);
     expect(levelFor(600)).toMatchObject({ level: 2, into: 0 });
     // The canvas: 620 / 1,000 XP at Lv 3, next rank Quant padawan.
-    expect(levelFor(1_400 + 620)).toMatchObject({ level: 3, into: 620, need: 1_000, rank: 'Chart reader', nextRank: 'Quant padawan' });
+    expect(levelFor(1_400 + 620)).toMatchObject({
+      level: 3,
+      into: 620,
+      need: 1_000,
+      rank: 'Chart reader',
+      nextRank: 'Quant padawan',
+    });
     expect(levelFor(3_600).level).toBe(5);
   });
 
@@ -90,7 +104,9 @@ describe('progress', () => {
     expect(same.rewards).toEqual([]);
     expect(same.progress.xp).toBe(a.xp);
     const better = finishRun(a, { ...result, letter: 'A', score: 91 });
-    expect(better.rewards).toEqual([{ source: 'run', label: 'First steps: beat your best', xp: 60 }]);
+    expect(better.rewards).toEqual([
+      { source: 'run', label: 'First steps: beat your best', xp: 60 },
+    ]);
     expect(better.progress.bestXp['first-steps:7']).toBe(200);
     expect(better.progress.bestGrade['first-steps']?.letter).toBe('A');
     // Worse later: nothing, and the best stays.
@@ -108,7 +124,13 @@ describe('progress', () => {
   it('migrates missing or broken saves', () => {
     expect(migrate(undefined)).toEqual(emptyProgress());
     expect(migrate('junk')).toEqual(emptyProgress());
-    const m = migrate({ version: 0, xp: 1234.7, badges: { 'first-trade': '2026-11-16' }, glossarySeen: ['spread', 3], streak: null });
+    const m = migrate({
+      version: 0,
+      xp: 1234.7,
+      badges: { 'first-trade': '2026-11-16' },
+      glossarySeen: ['spread', 3],
+      streak: null,
+    });
     expect(m.xp).toBe(1234);
     expect(m.badges).toEqual({ 'first-trade': '2026-11-16' });
     expect(m.glossarySeen).toEqual(['spread']);

@@ -35,9 +35,13 @@ function earningsText(t: string, e: MarketEvent): string {
   const pct = movePct(e.move);
   switch (e.result) {
     case 'beat':
-      return e.move >= 0 ? `${t} beats estimates, shares ${pct}` : `${t} beats estimates but guidance disappoints, shares ${pct}`;
+      return e.move >= 0
+        ? `${t} beats estimates, shares ${pct}`
+        : `${t} beats estimates but guidance disappoints, shares ${pct}`;
     case 'miss':
-      return e.move < 0 ? `${t} misses estimates, shares ${pct}` : `${t} misses estimates but outlook lifts shares ${pct}`;
+      return e.move < 0
+        ? `${t} misses estimates, shares ${pct}`
+        : `${t} misses estimates but outlook lifts shares ${pct}`;
     default:
       return `${t} results in line with estimates, shares ${pct}`;
   }

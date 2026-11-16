@@ -55,7 +55,12 @@ export function parseUniverse(data: { stocks: RawStock[]; etfs: RawEtf[] }): Ins
     check(!seen.has(e.ticker), `duplicate ticker ${e.ticker}`);
     check(TRACKS.has(e.tracks), `${e.ticker} tracks unknown ${e.tracks}`);
     seen.add(e.ticker);
-    out.push({ ...etfParams(e.ticker, e.tracks as EtfTracks), name: e.name, kind: 'etf', ipoYear: e.ipoYear });
+    out.push({
+      ...etfParams(e.ticker, e.tracks as EtfTracks),
+      name: e.name,
+      kind: 'etf',
+      ipoYear: e.ipoYear,
+    });
   }
   return out;
 }

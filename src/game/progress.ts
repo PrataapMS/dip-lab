@@ -69,7 +69,8 @@ export function migrate(saved: unknown): Progress {
   const base = emptyProgress();
   if (!saved || typeof saved !== 'object') return base;
   const s = saved as Partial<Progress>;
-  const obj = <T>(v: unknown, d: T): T => (v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : d);
+  const obj = <T>(v: unknown, d: T): T =>
+    v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : d;
   return {
     ...base,
     name: typeof s.name === 'string' && s.name ? s.name : base.name,
@@ -83,8 +84,12 @@ export function migrate(saved: unknown): Progress {
     streak: obj(s.streak, base.streak),
     quests: s.quests && typeof s.quests === 'object' ? s.quests : null,
     counters: obj(s.counters, base.counters),
-    glossarySeen: Array.isArray(s.glossarySeen) ? s.glossarySeen.filter((x) => typeof x === 'string') : [],
-    dividendTickers: Array.isArray(s.dividendTickers) ? s.dividendTickers.filter((x) => typeof x === 'string') : [],
+    glossarySeen: Array.isArray(s.glossarySeen)
+      ? s.glossarySeen.filter((x) => typeof x === 'string')
+      : [],
+    dividendTickers: Array.isArray(s.dividendTickers)
+      ? s.dividendTickers.filter((x) => typeof x === 'string')
+      : [],
     tutorialDone: s.tutorialDone === true,
     unlockAll: s.unlockAll === true,
     version: PROGRESS_VERSION,
@@ -133,16 +138,30 @@ export function finishRun(p: Progress, r: RunResult): { progress: Progress; rewa
   const worth = runXp(r);
   const best = p.bestXp[r.runKey] ?? 0;
   const award = replayAward(worth, best);
-  if (award > 0) rewards.push({ source: 'run', label: best > 0 ? `${r.scenarioName}: beat your best` : `${r.scenarioName} · ${r.letter}`, xp: award });
+  if (award > 0)
+    rewards.push({
+      source: 'run',
+      label: best > 0 ? `${r.scenarioName}: beat your best` : `${r.scenarioName} · ${r.letter}`,
+      xp: award,
+    });
   const firstFinish = r.complete && !p.finished[r.scenarioId];
-  if (firstFinish) rewards.push({ source: 'firstFinish', label: `First finish: ${r.scenarioName}`, xp: FIRST_FINISH_XP });
+  if (firstFinish)
+    rewards.push({
+      source: 'firstFinish',
+      label: `First finish: ${r.scenarioName}`,
+      xp: FIRST_FINISH_XP,
+    });
   const prevGrade = p.bestGrade[r.scenarioId];
   let next: Progress = {
     ...p,
     bestXp: worth > best ? { ...p.bestXp, [r.runKey]: worth } : p.bestXp,
-    finished: r.complete ? { ...p.finished, [r.scenarioId]: (p.finished[r.scenarioId] ?? 0) + 1 } : p.finished,
+    finished: r.complete
+      ? { ...p.finished, [r.scenarioId]: (p.finished[r.scenarioId] ?? 0) + 1 }
+      : p.finished,
     bestGrade:
-      r.days >= 10 && (!prevGrade || r.score > prevGrade.score) ? { ...p.bestGrade, [r.scenarioId]: { letter: r.letter, score: r.score } } : p.bestGrade,
+      r.days >= 10 && (!prevGrade || r.score > prevGrade.score)
+        ? { ...p.bestGrade, [r.scenarioId]: { letter: r.letter, score: r.score } }
+        : p.bestGrade,
   };
   next = grant(next, rewards);
   return { progress: next, rewards };
@@ -151,7 +170,12 @@ export function finishRun(p: Progress, r: RunResult): { progress: Progress; rewa
 const NO_LESSONS: BadgeCtx = { lessonCount: 0 };
 
 /** Apply one activity on a local date: running totals, streak, quests, then badges. */
-export function applyActivity(p: Progress, a: Activity, date: string, ctx: BadgeCtx = NO_LESSONS): { progress: Progress; rewards: Reward[] } {
+export function applyActivity(
+  p: Progress,
+  a: Activity,
+  date: string,
+  ctx: BadgeCtx = NO_LESSONS,
+): { progress: Progress; rewards: Reward[] } {
   const rewards: Reward[] = [];
   const q = advanceQuests(p.quests, date, a);
   let next: Progress = q.state === p.quests ? p : { ...p, quests: q.state };
@@ -163,7 +187,8 @@ export function applyActivity(p: Progress, a: Activity, date: string, ctx: Badge
     const streak = markPlayed(next.streak, date);
     if (streak !== next.streak) next = { ...next, streak };
   }
-  if (a.kind === 'glossaryRead' && !next.glossarySeen.includes(a.term)) next = { ...next, glossarySeen: [...next.glossarySeen, a.term] };
+  if (a.kind === 'glossaryRead' && !next.glossarySeen.includes(a.term))
+    next = { ...next, glossarySeen: [...next.glossarySeen, a.term] };
   if (a.kind === 'fill' && a.orderType === 'limit' && !a.forced) next = bump(next, 'limitFills');
   if (a.kind === 'close') {
     const fresh = a.dividendTickers.filter((t) => !next.dividendTickers.includes(t));
@@ -177,10 +202,17 @@ export function applyActivity(p: Progress, a: Activity, date: string, ctx: Badge
 }
 
 /** A lesson's question answered right: XP the first time, plus quest and streak credit. */
-export function completeLesson(p: Progress, lesson: { id: string; title: string }, date: string, ctx: BadgeCtx = NO_LESSONS): { progress: Progress; rewards: Reward[] } {
+export function completeLesson(
+  p: Progress,
+  lesson: { id: string; title: string },
+  date: string,
+  ctx: BadgeCtx = NO_LESSONS,
+): { progress: Progress; rewards: Reward[] } {
   const first = !p.lessons[lesson.id];
   let next: Progress = first ? { ...p, lessons: { ...p.lessons, [lesson.id]: true } } : p;
-  const rewards: Reward[] = first ? [{ source: 'lesson', label: `Lesson: ${lesson.title}`, xp: XP.lesson, id: lesson.id }] : [];
+  const rewards: Reward[] = first
+    ? [{ source: 'lesson', label: `Lesson: ${lesson.title}`, xp: XP.lesson, id: lesson.id }]
+    : [];
   next = grant(next, rewards);
   const r = applyActivity(next, { kind: 'lessonDone', lesson: lesson.id }, date, ctx);
   return { progress: r.progress, rewards: [...rewards, ...r.rewards] };
@@ -194,7 +226,13 @@ export function finishChallenge(
 ): { progress: Progress; rewards: Reward[] } {
   if (!result.passed) return { progress: p, rewards: [] };
   const prev = p.challenges[c.id];
-  const rewards: Reward[] = prev ? [] : [{ source: 'challenge', label: `Challenge: ${c.title}`, xp: c.xp, id: c.id }];
-  const best = !prev || result.score > prev.score ? { letter: result.letter, score: result.score } : prev;
-  return { progress: grant({ ...p, challenges: { ...p.challenges, [c.id]: best } }, rewards), rewards };
+  const rewards: Reward[] = prev
+    ? []
+    : [{ source: 'challenge', label: `Challenge: ${c.title}`, xp: c.xp, id: c.id }];
+  const best =
+    !prev || result.score > prev.score ? { letter: result.letter, score: result.score } : prev;
+  return {
+    progress: grant({ ...p, challenges: { ...p.challenges, [c.id]: best } }, rewards),
+    rewards,
+  };
 }

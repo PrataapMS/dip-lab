@@ -53,7 +53,12 @@ function LessonView({ lesson }: { lesson: Lesson }) {
         <section class="panel lesson-card">
           <p>{lesson.cards[step]}</p>
           <div class="row">
-            <button type="button" class="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>
+            <button
+              type="button"
+              class="ghost"
+              disabled={step === 0}
+              onClick={() => setStep(step - 1)}
+            >
               Back
             </button>
             <button type="button" class="primary" onClick={() => setStep(step + 1)}>
@@ -88,7 +93,9 @@ function LessonView({ lesson }: { lesson: Lesson }) {
           )}
           {right && (
             <div class="stack gap-8">
-              <span class="mono small xp">{paid ? 'Done (XP already earned)' : `Done · +${XP.lesson} XP`}</span>
+              <span class="mono small xp">
+                {paid ? 'Done (XP already earned)' : `Done · +${XP.lesson} XP`}
+              </span>
               {lesson.tryIt && (
                 <a class="button ghost" href="#/new">
                   <PlayIcon /> Try it in {scenarioName(lesson.tryIt)}
@@ -124,7 +131,17 @@ function Lessons() {
           <a key={l.id} class={`lesson-row ${isDone ? 'done' : ''}`} href={`#/learn/${l.id}`}>
             <span class="quest-check" aria-hidden="true">
               {isDone && (
-                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="5 12 10 17 19 7" />
                 </svg>
               )}
@@ -149,7 +166,12 @@ function Challenges({ market }: { market: Market }) {
   const start = (c: Challenge) => {
     const running = market.view.ready && !market.view.finished ? market.view.scenario : null;
     if (running && !confirm(`Leave ${running.name} and start the challenge?`)) return;
-    market.startRun({ scenarioId: c.scenarioId, seed: c.seed, settings: DEFAULT_ACCOUNT_SETTINGS, challenge: c.id });
+    market.startRun({
+      scenarioId: c.scenarioId,
+      seed: c.seed,
+      settings: DEFAULT_ACCOUNT_SETTINGS,
+      challenge: c.id,
+    });
     navigate({ name: 'market' });
   };
   return (
@@ -162,7 +184,8 @@ function Challenges({ market }: { market: Market }) {
       </div>
       {CHALLENGES.map((c) => {
         const best = progress.challenges[c.id];
-        const locked = c.scenarioId === 'meme-squeeze' && !isUnlocked('meme-squeeze', level, progress.unlockAll);
+        const locked =
+          c.scenarioId === 'meme-squeeze' && !isUnlocked('meme-squeeze', level, progress.unlockAll);
         return (
           <div key={c.id} class={`panel challenge ${best ? 'done' : ''} ${locked ? 'locked' : ''}`}>
             <div class="row">
@@ -170,7 +193,9 @@ function Challenges({ market }: { market: Market }) {
                 <span class="quest-text">{c.title}</span>
                 <span class="tiny dim">{scenarioName(c.scenarioId)}</span>
               </span>
-              <span class={`mono small ${best ? 'accent' : 'xp'}`}>{best ? `passed · ${best.letter}` : `+${c.xp} XP`}</span>
+              <span class={`mono small ${best ? 'accent' : 'xp'}`}>
+                {best ? `passed · ${best.letter}` : `+${c.xp} XP`}
+              </span>
             </div>
             <p class="small">{c.goal}</p>
             {locked ? (
@@ -251,7 +276,10 @@ export function Learn({ market, lesson }: { market: Market; lesson?: string }) {
   return (
     <>
       <h1 class="screen-title">Learn</h1>
-      <p class="small dim">Short lessons, challenges on a fixed market, and every term in plain words. Tap any dotted word in the app to see what it means.</p>
+      <p class="small dim">
+        Short lessons, challenges on a fixed market, and every term in plain words. Tap any dotted
+        word in the app to see what it means.
+      </p>
       <Lessons />
       <Challenges market={market} />
       <Glossary />

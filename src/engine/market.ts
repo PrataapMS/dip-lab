@@ -1,13 +1,25 @@
 import type { IsoDate } from './calendar';
 import { type Dividend, exDividendDays, quarterlyYield } from './dividends';
-import { indexEvents, type MarketEvent, newsEvents, planEarnings, scenarioHeadlines, sortEvents } from './events';
+import {
+  indexEvents,
+  type MarketEvent,
+  newsEvents,
+  planEarnings,
+  scenarioHeadlines,
+  sortEvents,
+} from './events';
 import { generateStockPath, idioVolFor, SECTOR_VOL } from './factors';
 import type { Instrument } from './instruments';
 import { BARS_PER_DAY, generateDayPath, POINTS_PER_DAY } from './intraday';
 import { REFERENCE_MARKET_VOL } from './regimes';
 import { childSeed, createRng, normal } from './rng';
 import { knownStartPrice } from './startPrices';
-import { buildScenarioMarket, buildSpecialPath, type ScenarioDef, type ScenarioMarket } from './scenarios';
+import {
+  buildScenarioMarket,
+  buildSpecialPath,
+  type ScenarioDef,
+  type ScenarioMarket,
+} from './scenarios';
 
 /** A whole scenario's market: every instrument's daily closes, ready to play. */
 export interface BuiltMarket {
@@ -55,7 +67,11 @@ export function instrumentsFor(def: ScenarioDef, universe: readonly Instrument[]
   return [...listed, ...special];
 }
 
-export function buildMarket(def: ScenarioDef, seed: number, universe: readonly Instrument[]): BuiltMarket {
+export function buildMarket(
+  def: ScenarioDef,
+  seed: number,
+  universe: readonly Instrument[],
+): BuiltMarket {
   const factors = buildScenarioMarket(def, seed);
   const instruments = instrumentsFor(def, universe);
   const marketFactor = { vols: factors.vols, returns: factors.returns };
@@ -73,24 +89,49 @@ export function buildMarket(def: ScenarioDef, seed: number, universe: readonly I
     }
     const sectorReturns = inst.sector ? factors.sectors[inst.sector] : null;
     const p0 = knownStartPrice(def.start, inst.ticker) ?? startPrice(seed, inst.ticker);
-    const earnings = inst.kind === 'stock' && news !== 'off' ? planEarnings(seed, inst, factors.dates, def.earningsScale) : null;
+    const earnings =
+      inst.kind === 'stock' && news !== 'off'
+        ? planEarnings(seed, inst, factors.dates, def.earningsScale)
+        : null;
     const q = quarterlyYield(inst);
     const exDays = exDividendDays(inst, factors.dates);
     const scheduled = new Float64Array(factors.dates.length);
     for (const day of exDays) scheduled[day] = Math.log(1 - q);
-    if (earnings) for (let d = 0; d < scheduled.length; d++) scheduled[d] = (scheduled[d] ?? 0) + (earnings.jumps[d] ?? 0);
-    const path = generateStockPath(seed, inst, p0, marketFactor, sectorReturns, { scheduled, newsScale: NEWS_SCALE[news] });
+    if (earnings)
+      for (let d = 0; d < scheduled.length; d++)
+        scheduled[d] = (scheduled[d] ?? 0) + (earnings.jumps[d] ?? 0);
+    const path = generateStockPath(seed, inst, p0, marketFactor, sectorReturns, {
+      scheduled,
+      newsScale: NEWS_SCALE[news],
+    });
     const pathCloses = Float32Array.from(path.closes);
     closes.push(pathCloses);
     jumps.push(Float32Array.from(path.jumps));
     if (earnings) events.push(...earnings.events);
     events.push(...newsEvents(seed, inst.ticker, path.news));
-    for (const day of exDays) dividends.push({ day, instrument: index, ticker: inst.ticker, perShare: (pathCloses[day] ?? 0) * q });
+    for (const day of exDays)
+      dividends.push({
+        day,
+        instrument: index,
+        ticker: inst.ticker,
+        perShare: (pathCloses[day] ?? 0) * q,
+      });
   });
   sortEvents(events);
   dividends.sort((a, b) => a.day - b.day || a.instrument - b.instrument);
   const eventIndex = indexEvents(events, factors.dates.length);
-  return { scenario: def, seed, dates: factors.dates, instruments, factors, closes, jumps, events, eventIndex, dividends };
+  return {
+    scenario: def,
+    seed,
+    dates: factors.dates,
+    instruments,
+    factors,
+    closes,
+    jumps,
+    events,
+    eventIndex,
+    dividends,
+  };
 }
 
 /** Everything that happens on one day, in order. */

@@ -30,7 +30,8 @@ describe('start prices', () => {
 
   it('falls back to the seeded price for other stocks and for Custom stocks', () => {
     const custom = buildMarket(customScenario({ start: '2012-06-01', days: 20 }), 3, UNIVERSE);
-    const at = (t: string) => custom.closes[custom.instruments.findIndex((i) => i.ticker === t)]?.[0];
+    const at = (t: string) =>
+      custom.closes[custom.instruments.findIndex((i) => i.ticker === t)]?.[0];
     expect(at('AAPL')).toBeCloseTo(startPrice(3, 'AAPL'), 3);
     expect(at('QQQ')).toBeCloseTo(knownStartPrice('2012-06-01', 'QQQ') ?? 0, 3);
   });

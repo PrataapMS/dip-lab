@@ -32,7 +32,9 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
   if (i === undefined || !inst) {
     return (
       <section class="panel">
-        <p class="small">{ticker} doesn't trade in this market (it may not have been listed yet).</p>
+        <p class="small">
+          {ticker} doesn't trade in this market (it may not have been listed yet).
+        </p>
         <a class="button ghost" href="#/market">
           Back to market
         </a>
@@ -52,7 +54,9 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
   const canShort = !!view.settings?.shorts && !!view.settings?.margin;
   const orders = view.account?.openOrders.filter((o) => o.ticker === ticker) ?? [];
   // An earnings gap shows between the close before the report and the close of its day.
-  const earningsMarks = (hist?.news ?? []).filter((n) => n.kind === 'earnings').map((n) => n.day + 1);
+  const earningsMarks = (hist?.news ?? [])
+    .filter((n) => n.kind === 'earnings')
+    .map((n) => n.day + 1);
   const upcoming = hist?.upcoming;
   const inDays = (d: number) => {
     const n = d - view.day;
@@ -128,7 +132,12 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
         <button type="button" class="primary" data-coach="buy" onClick={() => setSheet('buy')}>
           {held && held.shares < 0 ? 'Buy to cover' : 'Buy'}
         </button>
-        <button type="button" class="ghost" disabled={!(held && held.shares > 0) && !canShort} onClick={() => setSheet('sell')}>
+        <button
+          type="button"
+          class="ghost"
+          disabled={!(held && held.shares > 0) && !canShort}
+          onClick={() => setSheet('sell')}
+        >
           {held && held.shares > 0 ? 'Sell' : canShort ? 'Short' : 'Sell'}
         </button>
       </div>
@@ -168,7 +177,11 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
                   {describeOrder(o)}
                   <span class="dim"> · {o.tif === 'gtc' ? 'until cancelled' : 'today'}</span>
                 </span>
-                <button type="button" class="ghost small-button" onClick={() => send({ type: 'cancelOrder', id: o.id })}>
+                <button
+                  type="button"
+                  class="ghost small-button"
+                  onClick={() => send({ type: 'cancelOrder', id: o.id })}
+                >
                   Cancel
                 </button>
               </li>
@@ -180,7 +193,9 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
       <section class="panel">
         <h2 class="section">NEWS</h2>
         <NewsList items={hist?.news ?? []} empty={`No news about ${ticker} yet in this run.`} />
-        {earningsMarks.length > 0 && range === 'run' && <p class="tiny dim">Amber dots on the chart mark earnings days.</p>}
+        {earningsMarks.length > 0 && range === 'run' && (
+          <p class="tiny dim">Amber dots on the chart mark earnings days.</p>
+        )}
       </section>
 
       <section class="panel">
@@ -193,7 +208,9 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
           <dt>
             <Term id="beta">beta</Term>
           </dt>
-          <dd title="How much it tends to move with the market (1 = same as the market)">{inst.beta.toFixed(2)}</dd>
+          <dd title="How much it tends to move with the market (1 = same as the market)">
+            {inst.beta.toFixed(2)}
+          </dd>
           <dt>
             <Term id="volatility">swings</Term>
           </dt>
@@ -208,7 +225,14 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
         <p class="tiny dim">Simulated price. The company is real; its moves here are not.</p>
       </section>
 
-      {sheet && <OrderSheet market={market} inst={inst} initialSide={sheet} onClose={() => setSheet(null)} />}
+      {sheet && (
+        <OrderSheet
+          market={market}
+          inst={inst}
+          initialSide={sheet}
+          onClose={() => setSheet(null)}
+        />
+      )}
     </>
   );
 }

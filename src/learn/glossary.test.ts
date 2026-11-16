@@ -24,7 +24,8 @@ describe('glossary', () => {
   it('every <Term id> used in the UI exists', () => {
     const used = new Set<string>();
     for (const file of tsxFiles(join(__dirname, '..', 'ui'))) {
-      for (const m of readFileSync(file, 'utf8').matchAll(/<Term id="([^"]+)"/g)) used.add(m[1] ?? '');
+      for (const m of readFileSync(file, 'utf8').matchAll(/<Term id="([^"]+)"/g))
+        used.add(m[1] ?? '');
       for (const m of readFileSync(file, 'utf8').matchAll(/term="([^"]+)"/g)) used.add(m[1] ?? '');
     }
     expect(used.size).toBeGreaterThan(20);

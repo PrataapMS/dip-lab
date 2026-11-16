@@ -48,7 +48,13 @@ function Choice<T extends string | number>({
       <span class="field-label">{label}</span>
       <div class="chips quick wrap" role="group" aria-label={label}>
         {options.map((o) => (
-          <button key={String(o.value)} type="button" class="chip" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
+          <button
+            key={String(o.value)}
+            type="button"
+            class="chip"
+            aria-pressed={o.value === value}
+            onClick={() => onChange(o.value)}
+          >
             {o.label}
           </button>
         ))}
@@ -67,7 +73,10 @@ const MARGIN: { value: 'off' | '2x'; label: string }[] = [
   { value: 'off', label: 'Off' },
   { value: '2x', label: '2x' },
 ];
-const SPEED_OPTIONS = (Object.keys(SPEEDS) as Speed[]).map((s) => ({ value: s, label: `${s} · ${SPEEDS[s] / 1000}s/day` }));
+const SPEED_OPTIONS = (Object.keys(SPEEDS) as Speed[]).map((s) => ({
+  value: s,
+  label: `${s} · ${SPEEDS[s] / 1000}s/day`,
+}));
 const LENGTHS = [
   { value: 21, label: '1 month' },
   { value: 63, label: '3 months' },
@@ -126,10 +135,19 @@ function ScenarioCard({ def, selected, inProgress, lockedUntil, best, onPick }: 
     );
   }
   return (
-    <button type="button" class={`scenario-card ${boss ? 'boss' : ''}`} aria-pressed={selected} onClick={onPick}>
+    <button
+      type="button"
+      class={`scenario-card ${boss ? 'boss' : ''}`}
+      aria-pressed={selected}
+      onClick={onPick}
+    >
       <span class="row">
         <span class="scenario-name">{def.name}</span>
-        {inProgress ? <span class="pill">in progress</span> : boss ? <span class="badge boss">BOSS RUN</span> : null}
+        {inProgress ? (
+          <span class="pill">in progress</span>
+        ) : boss ? (
+          <span class="badge boss">BOSS RUN</span>
+        ) : null}
       </span>
       <span class="small dim">
         {def.fictional ? 'Made-up market' : dateRange(def.start, def.end)} · {def.teaches}
@@ -149,7 +167,8 @@ export function Scenarios({ market }: { market: Market }) {
   const { progress } = useProgress();
   const level = levelFor(progress.xp).level;
   const can = (what: keyof typeof UNLOCKS) => isUnlocked(what, level, progress.unlockAll);
-  const lockedUntil = (id: string) => (id === 'meme-squeeze' && !can('meme-squeeze') ? UNLOCKS['meme-squeeze'].level : null);
+  const lockedUntil = (id: string) =>
+    id === 'meme-squeeze' && !can('meme-squeeze') ? UNLOCKS['meme-squeeze'].level : null;
   const [picked, setPicked] = useState(DEFAULT_SCENARIO);
   const [tweak, setTweak] = useState(false);
   const [cash, setCash] = useState(DEFAULT_ACCOUNT_SETTINGS.startingCash);
@@ -183,9 +202,16 @@ export function Scenarios({ market }: { market: Market }) {
         startingCash: cash,
         commission: fee,
         ...(margin === '2x' && can('margin') ? { margin: true } : {}),
-        ...(margin === '2x' && shorts === 'on' && can('margin') && can('shorts') ? { shorts: true } : {}),
+        ...(margin === '2x' && shorts === 'on' && can('margin') && can('shorts')
+          ? { shorts: true }
+          : {}),
       },
-      ...(custom ? { custom: { start, days, startRegime: mood, volScale: vol, news }, targetReturn: target || undefined } : {}),
+      ...(custom
+        ? {
+            custom: { start, days, startRegime: mood, volScale: vol, news },
+            targetReturn: target || undefined,
+          }
+        : {}),
     };
     send({ type: 'speed', dayLengthMs: SPEEDS[speed] });
     startRun(config);
@@ -217,7 +243,12 @@ export function Scenarios({ market }: { market: Market }) {
             onPick={() => setPicked(s.id)}
           />
         ))}
-        <button type="button" class={`scenario-card custom`} aria-pressed={custom} onClick={() => setPicked(CUSTOM)}>
+        <button
+          type="button"
+          class={`scenario-card custom`}
+          aria-pressed={custom}
+          onClick={() => setPicked(CUSTOM)}
+        >
           <span class="scenario-name">Custom</span>
           <span class="small dim">Any start date, length and mood · free exploration</span>
         </button>
@@ -225,7 +256,9 @@ export function Scenarios({ market }: { market: Market }) {
 
       {custom && (
         <section class="panel stack gap-8" aria-labelledby="custom-title">
-          <h2 id="custom-title" class="section">CUSTOM MARKET</h2>
+          <h2 id="custom-title" class="section">
+            CUSTOM MARKET
+          </h2>
           <label class="field">
             <span class="field-label">Start date</span>
             <input
@@ -240,8 +273,18 @@ export function Scenarios({ market }: { market: Market }) {
           <Choice label="Length" value={days} options={LENGTHS} onChange={setDays} />
           <Choice label="Starting mood" value={mood} options={MOODS} onChange={setMood} />
           <Choice label="Volatility" value={vol} options={VOLS} onChange={setVol} />
-          <Choice label="Company news and earnings" value={news} options={NEWS} onChange={setNews} />
-          <Choice label="End early at a target return" value={target} options={TARGETS} onChange={setTarget} />
+          <Choice
+            label="Company news and earnings"
+            value={news}
+            options={NEWS}
+            onChange={setNews}
+          />
+          <Choice
+            label="End early at a target return"
+            value={target}
+            options={TARGETS}
+            onChange={setTarget}
+          />
           <label class="field">
             <span class="field-label">Seed</span>
             <span class="row gap-8">
@@ -257,18 +300,27 @@ export function Scenarios({ market }: { market: Market }) {
                 random
               </button>
             </span>
-            <span class="tiny dim">The same seed and options always build the same market, so you can share one.</span>
+            <span class="tiny dim">
+              The same seed and options always build the same market, so you can share one.
+            </span>
           </label>
         </section>
       )}
 
       {tweak && (
         <section class="panel stack gap-8" aria-labelledby="rules-title">
-          <h2 id="rules-title" class="section">RULES AND SPEED</h2>
+          <h2 id="rules-title" class="section">
+            RULES AND SPEED
+          </h2>
           <Choice label="Starting cash" value={cash} options={CASH} onChange={setCash} />
           <Choice label="Commission" value={fee} options={FEES} onChange={setFee} />
           {can('margin') ? (
-            <Choice label="Margin (borrow up to 2x, 8% a year)" value={margin} options={MARGIN} onChange={setMargin} />
+            <Choice
+              label="Margin (borrow up to 2x, 8% a year)"
+              value={margin}
+              options={MARGIN}
+              onChange={setMargin}
+            />
           ) : (
             <p class="small dim locked-rule">
               <LockIcon size={16} /> Margin unlocks at Lv {UNLOCKS.margin.level}
@@ -289,11 +341,19 @@ export function Scenarios({ market }: { market: Market }) {
 
       <div class="picker-footer">
         <span class="mono tiny dim">
-          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin={can('margin') ? margin : 'off'}
-          {can('margin') && can('shorts') && margin === '2x' && shorts === 'on' ? ' shorts=on' : ''} fees=${fee}
+          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin=
+          {can('margin') ? margin : 'off'}
+          {can('margin') && can('shorts') && margin === '2x' && shorts === 'on' ? ' shorts=on' : ''}{' '}
+          fees=${fee}
         </span>
-        <button type="button" class={`primary ${boss ? 'boss' : ''}`} onClick={go} disabled={custom && (!startOk || !seedOk)}>
-          <PlayIcon /> {custom ? 'Start custom run' : boss ? 'Start boss run' : `Start ${def?.name ?? 'run'}`}
+        <button
+          type="button"
+          class={`primary ${boss ? 'boss' : ''}`}
+          onClick={go}
+          disabled={custom && (!startOk || !seedOk)}
+        >
+          <PlayIcon />{' '}
+          {custom ? 'Start custom run' : boss ? 'Start boss run' : `Start ${def?.name ?? 'run'}`}
         </button>
         {!tweak && (
           <button type="button" class="ghost" onClick={() => setTweak(true)}>

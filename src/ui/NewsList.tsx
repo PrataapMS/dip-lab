@@ -10,7 +10,10 @@ export function NewsList({ items, empty }: { items: readonly NewsItem[]; empty: 
   return (
     <ul class="news mono">
       {items.map((n, k) => (
-        <li key={`${n.day}-${n.bar}-${n.ticker}-${k}`} class={n.kind === 'headline' ? 'headline' : n.mine ? 'mine' : ''}>
+        <li
+          key={`${n.day}-${n.bar}-${n.ticker}-${k}`}
+          class={n.kind === 'headline' ? 'headline' : n.mine ? 'mine' : ''}
+        >
           <span class="dim when">
             d{n.day + 1} {barTime(n.bar)}
           </span>

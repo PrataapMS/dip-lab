@@ -46,7 +46,11 @@ function stress(marketVol: number): number {
  * Zero-mean daily log shocks of one sector factor. Sector noise scales with market
  * volatility, so sectors get choppier in crashes too.
  */
-export function sectorShocks(seed: number, sector: Sector, marketVols: readonly number[]): number[] {
+export function sectorShocks(
+  seed: number,
+  sector: Sector,
+  marketVols: readonly number[],
+): number[] {
   const rand = createRng(childSeed(seed, `sector:${sector}`));
   return marketVols.map((v) => SECTOR_VOL * stress(v) * SQRT_DT * normal(rand));
 }
@@ -70,7 +74,8 @@ export interface StockParams {
 export function idioVolFor(p: StockParams): number {
   if (p.idioVol !== undefined) return p.idioVol;
   const s = p.sector ? (p.sectorLoading ?? 1) : 0;
-  const left = p.vol * p.vol - p.beta * p.beta * REFERENCE_MARKET_VOL ** 2 - s * s * SECTOR_VOL ** 2;
+  const left =
+    p.vol * p.vol - p.beta * p.beta * REFERENCE_MARKET_VOL ** 2 - s * s * SECTOR_VOL ** 2;
   return Math.sqrt(Math.max(left, MIN_IDIO_VOL ** 2));
 }
 
@@ -130,7 +135,8 @@ export function generateStockPath(
     news[t] = hit ? size : 0;
     const jump = (news[t] ?? 0) + (extras.scheduled?.[t] ?? 0);
     jumps[t] = jump;
-    logPrice += p.beta * (market.returns[t] ?? 0) + loading * (sectorReturns?.[t] ?? 0) + own + jump;
+    logPrice +=
+      p.beta * (market.returns[t] ?? 0) + loading * (sectorReturns?.[t] ?? 0) + own + jump;
     closes[t + 1] = Math.exp(logPrice);
   }
   return { closes, jumps, news };

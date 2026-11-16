@@ -113,7 +113,12 @@ export interface EarningsPlan {
 }
 
 /** Earnings dates, results and price reactions for one stock. */
-export function planEarnings(seed: number, inst: Instrument, dates: readonly IsoDate[], scale = 1): EarningsPlan {
+export function planEarnings(
+  seed: number,
+  inst: Instrument,
+  dates: readonly IsoDate[],
+  scale = 1,
+): EarningsPlan {
   const jumps = new Float64Array(dates.length);
   const events: MarketEvent[] = [];
   const rand = createRng(childSeed(seed, `earnings:${inst.ticker}`));
@@ -125,7 +130,16 @@ export function planEarnings(seed: number, inst: Instrument, dates: readonly Iso
     const result: EarningsResult = u < BEAT_P ? 'beat' : u < BEAT_P + INLINE_P ? 'inline' : 'miss';
     const move = (REACTION[result] + REACTION_NOISE * z) * sd;
     jumps[day] = move;
-    events.push({ day, bar: 0, kind: 'earnings', ticker: inst.ticker, move, tone: toneOf(move), result, variant });
+    events.push({
+      day,
+      bar: 0,
+      kind: 'earnings',
+      ticker: inst.ticker,
+      move,
+      tone: toneOf(move),
+      result,
+      variant,
+    });
   }
   return { jumps, events };
 }
@@ -137,7 +151,15 @@ export function newsEvents(seed: number, ticker: string, news: ArrayLike<number>
   for (let day = 0; day < news.length; day++) {
     const move = news[day] ?? 0;
     if (move === 0) continue;
-    out.push({ day, bar: 0, kind: 'news', ticker, move, tone: toneOf(move), variant: Math.floor(rand() * VARIANTS) });
+    out.push({
+      day,
+      bar: 0,
+      kind: 'news',
+      ticker,
+      move,
+      tone: toneOf(move),
+      variant: Math.floor(rand() * VARIANTS),
+    });
   }
   return out;
 }

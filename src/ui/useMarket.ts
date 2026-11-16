@@ -135,7 +135,9 @@ export const NEWS_KEPT = 60;
 
 /** Headlines and news about holdings also pop up as notices. */
 export function newsNotices(items: readonly NewsItem[]): { ok: boolean; message: string }[] {
-  return items.filter((n) => n.kind === 'headline' || n.mine).map((n) => ({ ok: n.tone !== 'down', message: n.text }));
+  return items
+    .filter((n) => n.kind === 'headline' || n.mine)
+    .map((n) => ({ ok: n.tone !== 'down', message: n.text }));
 }
 
 let noticeId = 0;
@@ -189,11 +191,21 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'day': {
       const watch: Record<string, number[]> = {};
       for (const s of e.watch) watch[s.ticker] = s.values;
-      return { ...state, day: e.day, prevCloses: e.prevCloses, indexHistory: e.indexHistory, indexFactor: e.indexFactor, watch, marketVol: e.marketVol };
+      return {
+        ...state,
+        day: e.day,
+        prevCloses: e.prevCloses,
+        indexHistory: e.indexHistory,
+        indexFactor: e.indexFactor,
+        watch,
+        marketVol: e.marketVol,
+      };
     }
     case 'tick': {
       const history =
-        state.history && e.focus && e.focus.ticker === state.history.ticker ? { ...state.history, today: e.focus.values } : state.history;
+        state.history && e.focus && e.focus.ticker === state.history.ticker
+          ? { ...state.history, today: e.focus.values }
+          : state.history;
       return {
         ...state,
         day: e.day,
@@ -211,7 +223,16 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'account':
       return { ...state, account: e.account };
     case 'history':
-      return { ...state, history: { ticker: e.ticker, closes: e.closes, today: e.today, news: e.news, upcoming: e.upcoming } };
+      return {
+        ...state,
+        history: {
+          ticker: e.ticker,
+          closes: e.closes,
+          today: e.today,
+          news: e.news,
+          upcoming: e.upcoming,
+        },
+      };
     case 'news':
       return {
         ...state,
@@ -223,7 +244,13 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'activity':
       return state;
     case 'alerts':
-      return { ...state, notices: addNotices(state, e.alerts.map((a) => ({ ok: a.ok, message: a.message }))) };
+      return {
+        ...state,
+        notices: addNotices(
+          state,
+          e.alerts.map((a) => ({ ok: a.ok, message: a.message })),
+        ),
+      };
     case 'orderUpdates':
       return { ...state, notices: addNotices(state, e.orders.map(updateMessage)) };
     case 'dayEnd':
@@ -242,7 +269,9 @@ export function useMarket() {
   const listeners = useRef(new Set<(e: WorkerEvent) => void>());
 
   useEffect(() => {
-    const w = new Worker(new URL('../worker/market.worker.ts', import.meta.url), { type: 'module' });
+    const w = new Worker(new URL('../worker/market.worker.ts', import.meta.url), {
+      type: 'module',
+    });
     w.onmessage = (e: MessageEvent<WorkerEvent>) => {
       setView((s) => reduce(s, e.data));
       for (const fn of listeners.current) fn(e.data);
@@ -271,7 +300,10 @@ export function useMarket() {
     [send],
   );
   const dismissSummary = useCallback(() => setView((s) => ({ ...s, daySummary: null })), []);
-  const dismissNotice = useCallback((id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })), []);
+  const dismissNotice = useCallback(
+    (id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })),
+    [],
+  );
   /** Hear every worker event (after it is applied to the view). Returns an unsubscribe. */
   const subscribe = useCallback((fn: (e: WorkerEvent) => void) => {
     listeners.current.add(fn);
@@ -280,7 +312,11 @@ export function useMarket() {
     };
   }, []);
   /** Show a message in the notice stack. */
-  const notify = useCallback((ok: boolean, message: string) => setView((s) => ({ ...s, notices: addNotices(s, [{ ok, message }]) })), []);
+  const notify = useCallback(
+    (ok: boolean, message: string) =>
+      setView((s) => ({ ...s, notices: addNotices(s, [{ ok, message }]) })),
+    [],
+  );
   return { view, send, startRun, replayFrom, dismissNotice, dismissSummary, subscribe, notify };
 }
 

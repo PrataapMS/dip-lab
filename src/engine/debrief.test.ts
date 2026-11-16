@@ -16,7 +16,12 @@ function playOut(run: Run): void {
 describe('debrief', () => {
   it('scores buy-and-hold SPY about a B and matches SPY', () => {
     const run = new Run(first);
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 10_000 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 10_000 },
+    });
     playOut(run);
     const d = debrief(run);
     expect(d.ret).toBeCloseTo(d.spyRet, 2);
@@ -39,7 +44,12 @@ describe('debrief', () => {
       const r = (c?.[c.length - 1] ?? 0) / (c?.[1] ?? 1);
       if (r > bestRet) [best, bestRet] = [inst.ticker, r];
     });
-    run.place({ ticker: best, side: 'buy', type: 'market', amount: { kind: 'dollars', value: 9_900 } });
+    run.place({
+      ticker: best,
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 9_900 },
+    });
     playOut(run);
     const d = debrief(run);
     expect(d.ret).toBeGreaterThan(d.spyRet);
@@ -56,9 +66,19 @@ describe('debrief', () => {
     const closes = covid.closes[spy] ?? new Float32Array();
     let lowDay = 0;
     for (let d = 0; d < 40; d++) if ((closes[d + 1] ?? 0) < (closes[lowDay + 1] ?? 0)) lowDay = d;
-    run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 9_000 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 9_000 },
+    });
     while (run.clock.day < lowDay || run.clock.bar < BARS_PER_DAY - 1) run.step();
-    run.place({ ticker: 'SPY', side: 'sell', type: 'market', amount: { kind: 'shares', value: run.account.positions.SPY?.shares ?? 0 } });
+    run.place({
+      ticker: 'SPY',
+      side: 'sell',
+      type: 'market',
+      amount: { kind: 'shares', value: run.account.positions.SPY?.shares ?? 0 },
+    });
     playOut(run);
     const d = debrief(run);
     const sold = d.moments.find((x) => x.kind === 'soldNearLow');
@@ -82,7 +102,12 @@ describe('debrief', () => {
     }
     if (!pick) throw new Error('no gap found');
     const run = new Run(covid);
-    run.place({ ticker: pick.ticker, side: 'buy', type: 'market', amount: { kind: 'dollars', value: 2_000 } });
+    run.place({
+      ticker: pick.ticker,
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 2_000 },
+    });
     while (run.clock.day < pick.day - 1 || run.clock.bar < BARS_PER_DAY - 1) run.step();
     const i = run.indexOf(pick.ticker) ?? -1;
     run.place({
@@ -100,7 +125,12 @@ describe('debrief', () => {
 
   it('values a run ended mid-day at current prices', () => {
     const run = new Run(first);
-    run.place({ ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 3_000 } });
+    run.place({
+      ticker: 'KO',
+      side: 'buy',
+      type: 'market',
+      amount: { kind: 'dollars', value: 3_000 },
+    });
     run.stepDay();
     for (let k = 0; k < 30; k++) run.step();
     run.end();
@@ -114,10 +144,25 @@ describe('debrief', () => {
   it('is deterministic', () => {
     const make = () => {
       const run = new Run(first);
-      run.place({ ticker: 'NVDA', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 4_000 } });
-      run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 4_000 } });
+      run.place({
+        ticker: 'NVDA',
+        side: 'buy',
+        type: 'market',
+        amount: { kind: 'dollars', value: 4_000 },
+      });
+      run.place({
+        ticker: 'SPY',
+        side: 'buy',
+        type: 'market',
+        amount: { kind: 'dollars', value: 4_000 },
+      });
       for (let k = 0; k < 20; k++) run.stepDay();
-      run.place({ ticker: 'NVDA', side: 'sell', type: 'market', amount: { kind: 'dollars', value: 1_000 } });
+      run.place({
+        ticker: 'NVDA',
+        side: 'sell',
+        type: 'market',
+        amount: { kind: 'dollars', value: 1_000 },
+      });
       playOut(run);
       return debrief(run);
     };
@@ -126,7 +171,19 @@ describe('debrief', () => {
 });
 
 describe('grade', () => {
-  const base = { ret: 0.05, spyRet: 0.05, years: 0.25, dd: 0.05, spyDd: 0.05, costShare: 0, panicSells: 0, maxWeight: 0, tradesPerDay: 0.1, avgInvested: 0.9, bust: false };
+  const base = {
+    ret: 0.05,
+    spyRet: 0.05,
+    years: 0.25,
+    dd: 0.05,
+    spyDd: 0.05,
+    costShare: 0,
+    panicSells: 0,
+    maxWeight: 0,
+    tradesPerDay: 0.1,
+    avgInvested: 0.9,
+    bust: false,
+  };
   it('maps scores to letters', () => {
     expect(letterFor(95)).toBe('A');
     expect(letterFor(80)).toBe('B+');

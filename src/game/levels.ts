@@ -48,7 +48,13 @@ export function levelFor(xp: number): LevelInfo {
     level++;
   }
   const next = rankFor(level + 1);
-  return { level, rank: rankFor(level), into: left, need: xpToNext(level), nextRank: next !== rankFor(level) ? next : null };
+  return {
+    level,
+    rank: rankFor(level),
+    into: left,
+    need: xpToNext(level),
+    nextRank: next !== rankFor(level) ? next : null,
+  };
 }
 
 /** What levels unlock. */
@@ -66,12 +72,16 @@ export function isUnlocked(what: Unlock, level: number, unlockAll = false): bool
 
 /** Unlocks gained by going from one level to another, lowest first. */
 export function unlocksBetween(from: number, to: number): Unlock[] {
-  return (Object.keys(UNLOCKS) as Unlock[]).filter((k) => UNLOCKS[k].level > from && UNLOCKS[k].level <= to).sort((a, b) => UNLOCKS[a].level - UNLOCKS[b].level);
+  return (Object.keys(UNLOCKS) as Unlock[])
+    .filter((k) => UNLOCKS[k].level > from && UNLOCKS[k].level <= to)
+    .sort((a, b) => UNLOCKS[a].level - UNLOCKS[b].level);
 }
 
 /** The next unlock above a level, for "Meme squeeze unlocks at Lv 5". */
 export function nextUnlock(level: number): { what: Unlock; level: number; label: string } | null {
-  const ahead = (Object.keys(UNLOCKS) as Unlock[]).filter((k) => UNLOCKS[k].level > level).sort((a, b) => UNLOCKS[a].level - UNLOCKS[b].level);
+  const ahead = (Object.keys(UNLOCKS) as Unlock[])
+    .filter((k) => UNLOCKS[k].level > level)
+    .sort((a, b) => UNLOCKS[a].level - UNLOCKS[b].level);
   const what = ahead[0];
   return what ? { what, level: UNLOCKS[what].level, label: UNLOCKS[what].label } : null;
 }
