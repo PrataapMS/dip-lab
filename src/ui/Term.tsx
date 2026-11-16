@@ -1,12 +1,14 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { type GlossaryEntry, glossaryEntry } from '../learn/glossary';
+import { trapTab, useReturnFocus } from './focus';
 import { CloseIcon } from './icons';
 import { useProgress } from './useProgress';
 
 /** The glossary card, as a small bottom sheet above everything else. */
 export function TermSheet({ entry, onClose }: { entry: GlossaryEntry; onClose: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
+  useReturnFocus();
   useEffect(() => {
     close.current?.focus();
   }, []);
@@ -20,6 +22,7 @@ export function TermSheet({ entry, onClose }: { entry: GlossaryEntry; onClose: (
         aria-label={entry.term}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose();
+          trapTab(e, e.currentTarget);
         }}
       >
         <div class="row">

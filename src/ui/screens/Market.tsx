@@ -187,6 +187,7 @@ export function Market({ market }: { market: MarketApi }) {
 
   return (
     <>
+      <h1 class="sr-only">Market</h1>
       <RunOverCard market={market} />
       <DayCard market={market} />
       <MarginBanner market={market} />

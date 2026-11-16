@@ -7,6 +7,7 @@ import type { Activity, InstrumentInfo } from '../engine/protocol';
 import { orderXpHint } from '../game/hints';
 import { money, shares as fmtShares } from './format';
 import { cents, parseAmount, previewOrder, riskCheck } from './orderPreview';
+import { trapTab, useReturnFocus } from './focus';
 import { Term } from './Term';
 import type { Market } from './useMarket';
 import { today, useProgress } from './useProgress';
@@ -66,6 +67,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const [stopText, setStopText] = useState('');
   const [explain, setExplain] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
+  useReturnFocus();
 
   // Pause while deciding; resume on close if the clock was running.
   useEffect(() => {
@@ -202,6 +204,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         aria-label={`${covering ? 'Buy to cover' : side === 'buy' ? 'Buy' : shorting ? 'Short' : 'Sell'} ${inst.ticker}`}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose();
+          trapTab(e, e.currentTarget);
         }}
       >
         <div class="grabber" aria-hidden="true" />

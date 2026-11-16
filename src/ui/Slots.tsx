@@ -4,6 +4,7 @@ import { money, signedPct, upDown } from './format';
 import { CloseIcon } from './icons';
 import { navigate } from './router';
 import type { Market } from './useMarket';
+import { trapTab } from './focus';
 
 /** "Day 41 of 220 · +3.2% · 1.4 pts ahead of SPY" or "Finished · B+". */
 function slotLine(h: SlotHeader): string {
@@ -122,6 +123,7 @@ export function SlotPicker({ market }: { market: Market }) {
         aria-labelledby="slot-pick-title"
         onKeyDown={(e) => {
           if (e.key === 'Escape') cancelSlotPick();
+          trapTab(e, e.currentTarget);
         }}
       >
         <div class="row">
