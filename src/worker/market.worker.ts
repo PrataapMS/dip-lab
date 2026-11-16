@@ -12,7 +12,18 @@ import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { customScenario, getScenario } from '../engine/scenarios';
 import type { ScenarioInfo } from '../engine/protocol';
+import { encodeSnapshots, type RunSource, restoreRun, saveRun } from '../engine/save';
 import { daySummary } from '../engine/summary';
+import { deleteSlot, readHeaders, readSlot, writeSlot } from '../storage/saves';
+import {
+  CHUNK,
+  chunksToWrite,
+  createSaver,
+  SLOTS,
+  type SlotConfig,
+  type SlotHeader,
+} from '../storage/slots';
+import { version } from '../../package.json';
 
 /**
  * Runs the market off the main thread. Owns the real-time loop: it measures elapsed time,
@@ -44,6 +55,20 @@ let scenarioInfo: ScenarioInfo | null = null;
 /** Fills already reported as activity. */
 let fillsSent = 0;
 let lastDebrief: ReturnType<typeof debrief> | null = null;
+/** The run was opened already finished from a save. */
+let endRestored = false;
+
+/** Autosave: the slot the run lives in, how it was started, and how far its closes are stored. */
+let slot: number | null = null;
+let config: SlotConfig = { scenarioId: '', seed: 0 };
+let savedCloses = 0;
+let clearChunks = false;
+/** Bumped whenever another run is loaded, so a write in flight can tell it is stale. */
+let generation = 0;
+let lastSaveAt = 0;
+let headers: (SlotHeader | null)[] = Array(SLOTS).fill(null);
+/** While playing, save at least this often even without a close (slow day lengths). */
+const SAVE_EVERY_MS = 15_000;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
   scope.postMessage(event, transfer);
@@ -179,12 +204,83 @@ function emitTick(): void {
     extra.push(closeActivity(r));
   }
   emitActivity(r, extra);
+  const closed = closes > closesSent;
   closesSent = closes;
   if (r.endReason && !endSent) {
     endSent = true;
     lastDebrief = debrief(r);
-    post({ type: 'ended', reason: r.endReason, debrief: lastDebrief });
+    post({ type: 'ended', reason: r.endReason, debrief: lastDebrief, restored: endRestored });
+    if (!endRestored) autosave();
   }
+  if (closed) autosave();
+}
+
+function sourceOf(c: SlotConfig): RunSource {
+  return { scenarioId: c.scenarioId, seed: c.seed, ...(c.custom ? { custom: c.custom } : {}) };
+}
+
+function headerOf(r: Run, s: number): SlotHeader {
+  const start = r.indexClose(0);
+  const spyNow =
+    r.indexInstrument < 0 ? start : r.mid(r.indexInstrument) * (r.indexFactor[r.clock.day] ?? 1);
+  return {
+    slot: s,
+    config,
+    scenarioName: r.market.scenario.name,
+    day: r.clock.day,
+    totalDays: r.market.dates.length,
+    value: r.marks().value,
+    startingCash: r.account.settings.startingCash,
+    spyReturn: start > 0 ? spyNow / start - 1 : 0,
+    finished: r.finished,
+    letter: r.finished && lastDebrief ? lastDebrief.grade.letter : null,
+    branchDay: r.branchOf?.day ?? null,
+    savedAt: new Date().toISOString(),
+    app: version,
+  };
+}
+
+/** Write the current run to its slot: header, run without closes, and closes not yet stored. */
+async function writeCurrent(): Promise<void> {
+  const r = run;
+  const s = slot;
+  if (!r || s === null) return;
+  const g = generation;
+  const clear = clearChunks;
+  const n = r.snapshots.length;
+  const chunks = chunksToWrite(clear ? 0 : savedCloses, n).map((index) => ({
+    index,
+    snapshots: encodeSnapshots(r.snapshots, index * CHUNK, Math.min(n, (index + 1) * CHUNK)),
+  }));
+  const header = headerOf(r, s);
+  clearChunks = false;
+  savedCloses = n;
+  lastSaveAt = performance.now();
+  const ok = await writeSlot(header, saveRun(r, sourceOf(config), false), chunks, clear);
+  if (g !== generation) return;
+  if (!ok) {
+    // Try everything again next time.
+    clearChunks = true;
+    savedCloses = 0;
+    return;
+  }
+  headers[s] = header;
+  post({ type: 'slots', headers: [...headers] });
+}
+
+const saver = createSaver(writeCurrent);
+
+function autosave(): void {
+  if (run && slot !== null) saver.request();
+}
+
+/** Start saving a freshly built or branched run into a slot (or not at all). */
+function useSlot(s: number | null | undefined, c: SlotConfig): void {
+  generation++;
+  slot = s ?? null;
+  config = c;
+  savedCloses = 0;
+  clearChunks = true;
 }
 
 function emitUpdates(changed: Order[]): void {
@@ -205,7 +301,11 @@ function loop(): void {
   emitUpdates(changed);
   if (after.day !== before.day || after.bar !== before.bar || after.playing !== before.playing)
     emitTick();
-  if (!after.playing) stopLoop();
+  if (after.playing && now - lastSaveAt > SAVE_EVERY_MS) autosave();
+  if (!after.playing) {
+    stopLoop();
+    autosave();
+  }
 }
 
 function startLoop(): void {
@@ -226,7 +326,7 @@ function requireRun(): Run {
 }
 
 /** Point the feeds at a run that was just built or branched, and tell the UI. */
-function load(r: Run, seed: number): void {
+function load(r: Run, seed: number, restored = false): void {
   run = r;
   postedDay = -1;
   // A branch starts part-way: news, dividends and closes before it count as already sent.
@@ -242,7 +342,8 @@ function load(r: Run, seed: number): void {
   closesSent = r.account.equityByDay.length;
   fillsSent = r.account.fills.length;
   endSent = false;
-  alertsSent = 0;
+  endRestored = restored && r.endReason !== null;
+  alertsSent = r.alerts.length;
   lastDebrief = null;
   const market = r.market;
   post({
@@ -267,26 +368,110 @@ function load(r: Run, seed: number): void {
     })),
     indexInstrument: r.indexInstrument,
     branchOf: r.branchOf,
+    slot,
+    config,
+    restored,
   });
   emitTick();
+  if (restored) emitRecentNews(r);
+}
+
+/** News lines shown again when a saved run is opened. */
+const NEWS_ON_OPEN = 12;
+
+function emitRecentNews(r: Run): void {
+  const a = r.account;
+  const items = selectNews(
+    r.market.events.slice(Math.max(0, newsCursor - 300), newsCursor),
+    (t) => watched.includes(t) || t in a.positions,
+    (t) => (a.positions[t]?.shares ?? 0) > 0,
+  ).slice(-NEWS_ON_OPEN);
+  if (items.length) post({ type: 'news', items, earlier: true });
+}
+
+function buildFor(c: SlotConfig) {
+  const def =
+    c.scenarioId === 'custom' && c.custom ? customScenario(c.custom) : getScenario(c.scenarioId);
+  scenarioInfo = { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional };
+  return buildMarket(def, c.seed, UNIVERSE);
+}
+
+async function openSlot(s: number): Promise<void> {
+  const body = await readSlot(s);
+  if (!body) throw new Error('That save slot is empty.');
+  const market = buildFor(body.header.config);
+  const r = restoreRun(market, body.save);
+  stopLoop();
+  generation++;
+  slot = s;
+  config = body.header.config;
+  savedCloses = body.save.snapshots.length;
+  clearChunks = false;
+  dayLengthMs = r.clock.dayLengthMs;
+  load(r, r.market.seed, true);
+}
+
+async function removeSlot(s: number): Promise<void> {
+  if (slot === s) {
+    await saver.idle();
+    generation++;
+    slot = null;
+  }
+  await deleteSlot(s);
+  headers[s] = null;
+  post({ type: 'slots', headers: [...headers] });
+}
+
+/** Commands that touch storage: answered when it replies; errors go to the UI. */
+function handleAsync(cmd: Command): boolean {
+  let job: Promise<void>;
+  switch (cmd.type) {
+    case 'listSlots':
+      job = readHeaders().then((h) => {
+        headers = h;
+        post({ type: 'slots', headers: [...headers] });
+      });
+      break;
+    case 'loadSlot':
+      job = openSlot(cmd.slot);
+      break;
+    case 'deleteSlot':
+      job = removeSlot(cmd.slot);
+      break;
+    default:
+      return false;
+  }
+  job.catch((err: unknown) =>
+    post({ type: 'error', message: err instanceof Error ? err.message : String(err) }),
+  );
+  return true;
 }
 
 function handle(cmd: Command): void {
   switch (cmd.type) {
     case 'newRun': {
       stopLoop();
-      const def =
-        cmd.scenarioId === 'custom' && cmd.custom
-          ? customScenario(cmd.custom)
-          : getScenario(cmd.scenarioId);
-      const market = buildMarket(def, cmd.seed, UNIVERSE);
-      scenarioInfo = { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional };
+      const { type: _type, slot: s, ...c } = cmd;
+      const market = buildFor(c);
+      useSlot(s, c);
       load(
         new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn }),
         cmd.seed,
       );
+      autosave();
       return;
     }
+    case 'flush':
+      autosave();
+      void saver.idle().then(() => post({ type: 'flushed' }));
+      return;
+    case 'detach':
+      stopLoop();
+      run?.play(false);
+      generation++;
+      slot = null;
+      if (run) emitTick();
+      return;
     case 'replayFrom': {
       const r = requireRun();
       if (!r.finished || !lastDebrief) throw new Error('Finish the run before replaying a moment.');
@@ -294,7 +479,9 @@ function handle(cmd: Command): void {
       const g = lastDebrief.grade;
       // A branch of a branch still compares with the very first try.
       const first = r.branchOf ?? { letter: g.letter, score: g.score };
+      useSlot(slot, config);
       load(r.branch(cmd.day, { letter: first.letter, score: first.score }), r.market.seed);
+      autosave();
       return;
     }
     case 'play': {
@@ -308,11 +495,13 @@ function handle(cmd: Command): void {
       requireRun().play(false);
       stopLoop();
       emitTick();
+      autosave();
       return;
     case 'speed':
       dayLengthMs = cmd.dayLengthMs;
       run?.setDayLength(cmd.dayLengthMs);
       if (run) emitTick();
+      autosave();
       return;
     case 'stepDay':
       emitUpdates(requireRun().stepDay());
@@ -328,6 +517,7 @@ function handle(cmd: Command): void {
     case 'pauseAtClose':
       requireRun().pauseAtClose = cmd.on;
       emitTick();
+      autosave();
       return;
     case 'placeOrder': {
       if (requireRun().endReason) {
@@ -350,6 +540,7 @@ function handle(cmd: Command): void {
       });
       emitActivity(r, order.status === 'rejected' ? [] : [orderActivity(order, held)]);
       post({ type: 'account', account: requireRun().view() });
+      autosave();
       return;
     }
     case 'cancelOrder': {
@@ -362,6 +553,7 @@ function handle(cmd: Command): void {
         message: r.reason ?? (r.order ? orderMessage(r.order) : ''),
       });
       post({ type: 'account', account: requireRun().view() });
+      autosave();
       return;
     }
     case 'watch':
@@ -377,7 +569,7 @@ function handle(cmd: Command): void {
 
 scope.onmessage = (e: MessageEvent<Command>) => {
   try {
-    handle(e.data);
+    if (!handleAsync(e.data)) handle(e.data);
   } catch (err) {
     post({ type: 'error', message: err instanceof Error ? err.message : String(err) });
   }

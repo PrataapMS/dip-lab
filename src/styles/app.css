@@ -1907,6 +1907,37 @@ button:disabled {
   margin: 0;
 }
 
+/* Save slots */
+.slot-row + .slot-row {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.slot-summary {
+  gap: 12px;
+}
+
+.slot-choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.slot-choice.on {
+  border-color: var(--accent);
+}
+
+.slot-choice input {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+
+.slot-choice .slot-summary {
+  flex: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .coach-ring {
     transition: none;

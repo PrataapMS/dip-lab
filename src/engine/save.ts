@@ -21,8 +21,8 @@ export interface RunSource {
 }
 
 /**
- * One close. Positions only change on days with a fill, so a close whose positions equal an
- * earlier close's stores that close's index instead of a copy.
+ * One close. Positions only change on days with a fill, so a close whose positions equal the
+ * previous close's stores that close's index instead of a copy.
  */
 export interface SavedSnapshot extends Omit<CloseSnapshot, 'state'> {
   state: Omit<CloseSnapshot['state'], 'positions' | 'settings'>;
@@ -66,19 +66,31 @@ function closesAt(day: number, bar: number): number {
   return bar >= BARS_PER_DAY ? day + 1 : day;
 }
 
-export function saveRun(run: Run, source: RunSource): RunSave {
-  let lastIndex = -1;
-  let last: Record<string, Position> | null = null;
-  const snapshots = run.snapshots.map((s, i): SavedSnapshot => {
+/**
+ * Closes `from` to `to` (exclusive) as stored: a close whose positions equal the close
+ * before it stores that close's index, so encoding a range needs nothing outside it.
+ */
+export function encodeSnapshots(
+  snapshots: readonly CloseSnapshot[],
+  from = 0,
+  to = snapshots.length,
+): SavedSnapshot[] {
+  const out: SavedSnapshot[] = [];
+  for (let i = from; i < to; i++) {
+    const s = snapshots[i] as CloseSnapshot;
     const { positions, settings: _settings, ...state } = s.state;
-    let stored: SavedSnapshot['positions'] = positions;
-    if (last && samePositions(last, positions)) stored = lastIndex;
-    else {
-      last = positions;
-      lastIndex = i;
-    }
-    return { ...s, state, positions: stored };
-  });
+    const prev = snapshots[i - 1]?.state.positions;
+    out.push({
+      ...s,
+      state,
+      positions: prev && samePositions(prev, positions) ? i - 1 : positions,
+    });
+  }
+  return out;
+}
+
+/** The run as plain data. `withSnapshots: false` leaves the closes out (saved separately). */
+export function saveRun(run: Run, source: RunSource, withSnapshots = true): RunSave {
   const { day, bar, dayLengthMs } = run.clock;
   return {
     format: SAVE_FORMAT,
@@ -91,7 +103,7 @@ export function saveRun(run: Run, source: RunSource): RunSave {
     alerts: [...run.alerts],
     endReason: run.endReason,
     branchOf: run.branchOf,
-    snapshots,
+    snapshots: withSnapshots ? encodeSnapshots(run.snapshots) : [],
   };
 }
 

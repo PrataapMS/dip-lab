@@ -6,7 +6,7 @@ import { BARS_PER_DAY } from './intraday';
 import { buildMarket } from './market';
 import type { OrderDraft } from './orders';
 import { Run } from './run';
-import { type RunSave, restoreRun, SAVE_FORMAT, SaveError, saveRun } from './save';
+import { encodeSnapshots, type RunSave, restoreRun, SAVE_FORMAT, SaveError, saveRun } from './save';
 import { getScenario } from './scenarios';
 
 const first = buildMarket(getScenario('first-steps'), 7, UNIVERSE);
@@ -126,6 +126,19 @@ describe('run saves', () => {
     // One copy per change of holdings, not one per close.
     expect(copies).toBeLessThan(10);
     expect(save.snapshots.length).toBe(first.dates.length);
+  });
+
+  it('encodes any range of closes on its own, matching the whole', () => {
+    const all = encodeSnapshots(original.snapshots);
+    const parts = [0, 10, 20, 40, original.snapshots.length];
+    const joined = parts
+      .slice(1)
+      .flatMap((to, i) => encodeSnapshots(original.snapshots, parts[i], to));
+    expect(joined).toEqual(all);
+    const save = { ...saveRun(original, SOURCE, false), snapshots: joined };
+    expect(restoreRun(first, viaJson(save)).accountAtClose(30)).toEqual(
+      original.accountAtClose(30),
+    );
   });
 
   it('is deterministic', () => {

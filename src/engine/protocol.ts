@@ -10,6 +10,7 @@ import type { Order, OrderDraft } from './orders';
 import type { CustomOptions } from './scenarios';
 import type { AccountView, BranchOf, EndReason, RunAlert } from './run';
 import type { DaySummary } from './summary';
+import type { SlotConfig, SlotHeader } from '../storage/slots';
 
 export type { AccountView } from './run';
 export type { Activity, HoldingFact } from './activity';
@@ -18,6 +19,7 @@ export type { BranchOf, EndReason, RunAlert } from './run';
 export type { CustomOptions } from './scenarios';
 export type { DaySummary } from './summary';
 export type { Debrief, Moment, TradeStat } from './debrief';
+export type { SlotConfig, SlotHeader } from '../storage/slots';
 
 export type Command =
   | {
@@ -29,7 +31,20 @@ export type Command =
       targetReturn?: number;
       /** Required when scenarioId is 'custom'. */
       custom?: CustomOptions;
+      /** Set when the run is a challenge from the Learn tab. */
+      challenge?: string;
+      /** Save slot the run autosaves into; without one it lives in memory only. */
+      slot?: number;
     }
+  /** Read the save slots (answered with `slots`). */
+  | { type: 'listSlots' }
+  /** Open the run saved in a slot, paused where it was. */
+  | { type: 'loadSlot'; slot: number }
+  | { type: 'deleteSlot'; slot: number }
+  /** Save the current run now (the page is being hidden or closed); answered with `flushed`. */
+  | { type: 'flush' }
+  /** Another tab took over: pause and stop saving, so this tab never overwrites its saves. */
+  | { type: 'detach' }
   | { type: 'play' }
   | { type: 'pause' }
   | { type: 'speed'; dayLengthMs: number }
@@ -93,6 +108,12 @@ export type WorkerEvent =
       indexInstrument: number;
       /** Set when this run replays a moment of an earlier one. */
       branchOf: BranchOf | null;
+      /** Save slot, null when the run isn't saved. */
+      slot: number | null;
+      /** How the run was started, to replay it. */
+      config: SlotConfig;
+      /** Opened from a save rather than started or branched now. */
+      restored: boolean;
     }
   | {
       type: 'day';
@@ -127,7 +148,17 @@ export type WorkerEvent =
   /** Sent at each close. */
   | { type: 'dayEnd'; summary: DaySummary }
   /** The run is over: why, and the end-of-run report. */
-  | { type: 'ended'; reason: EndReason; debrief: Debrief }
+  | {
+      type: 'ended';
+      reason: EndReason;
+      debrief: Debrief;
+      /** The run was already over when it was opened from a save: nothing new to reward. */
+      restored: boolean;
+    }
+  /** What each save slot holds (null for empty), after it changes. */
+  | { type: 'slots'; headers: (SlotHeader | null)[] }
+  /** Everything asked for so far is written. */
+  | { type: 'flushed' }
   | { type: 'account'; account: AccountView }
   | {
       type: 'history';
@@ -141,7 +172,12 @@ export type WorkerEvent =
       upcoming: Upcoming;
     }
   /** New lines for the news feed, oldest first. */
-  | { type: 'news'; items: NewsItem[] }
+  | {
+      type: 'news';
+      items: NewsItem[];
+      /** Earlier lines, resent when a saved run is opened: no pop-up notices. */
+      earlier?: boolean;
+    }
   /** Answer to placeOrder or cancelOrder. */
   | { type: 'orderResult'; ok: boolean; order: Order | null; message: string }
   /** What the player did, for quests, streaks and badges. */

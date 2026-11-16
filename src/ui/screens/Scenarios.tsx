@@ -193,7 +193,9 @@ export function Scenarios({ market }: { market: Market }) {
 
   const go = () => {
     const name = custom ? 'a Custom run' : def?.name;
-    if (running && !confirm(`Leave ${running.name} and start ${name}?`)) return;
+    // A saved run stays in its slot; only an unsaved one would be lost.
+    if (running && view.slot === null && !confirm(`Leave ${running.name} and start ${name}?`))
+      return;
     const config: RunConfig = {
       scenarioId: picked,
       seed: custom ? seed : newSeed(),

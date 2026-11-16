@@ -79,7 +79,8 @@ export function Debrief({ market }: { market: Market }) {
   const spyCurve = d.spy.map((v) => (v / d.startValue) * 100);
   const replay = () => {
     if (!view.config) return;
-    startRun(view.config);
+    // The same market again, in the same save slot.
+    startRun({ ...view.config, ...(view.slot !== null ? { slot: view.slot } : {}) });
     navigate({ name: 'market' });
   };
   const replayMoment = (day: number) => {

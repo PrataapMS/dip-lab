@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { latestUnfinished } from './storage/slots';
 import { DEFAULT_ACCOUNT_SETTINGS } from './engine/account';
 import { Coach } from './ui/Coach';
 import { HOME, type Route, useRoute } from './ui/router';
@@ -12,6 +13,8 @@ import { Portfolio } from './ui/screens/Portfolio';
 import { newSeed, Scenarios } from './ui/screens/Scenarios';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
+import { SlotPicker } from './ui/Slots';
+import { useTabLock } from './ui/tabLock';
 import { UpdateBanner } from './ui/UpdateBanner';
 import { type Market, useMarket } from './ui/useMarket';
 import { ProgressProvider } from './ui/useProgress';
@@ -56,9 +59,45 @@ function Screen({
   }
 }
 
+/** Shown when Dip Lab is already open in another tab or window. */
+function OpenElsewhere({ takeOver }: { takeOver: () => void }) {
+  return (
+    <main class="screen">
+      <section class="panel stack gap-8" aria-labelledby="elsewhere-title">
+        <span class="mono tiny accent">// ALREADY OPEN</span>
+        <h1 id="elsewhere-title" class="title">
+          Dip Lab is open in another tab or window
+        </h1>
+        <p class="small dim">
+          Playing in two places at once could overwrite your saves and progress. Close the other
+          one, or carry on here (the other one stops).
+        </p>
+        <button type="button" class="primary" onClick={takeOver}>
+          Use Dip Lab here
+        </button>
+      </section>
+    </main>
+  );
+}
+
 export function App() {
   const market = useMarket();
   const { view } = market;
+  const { lock, takeOver } = useTabLock();
+
+  // Another tab took over: stop playing and saving here.
+  useEffect(() => {
+    if (lock === 'elsewhere') market.send({ type: 'detach' });
+  }, [lock, market.send]);
+
+  // On start, reopen the run played last (paused), so Resume is one tap.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (resumed.current || lock !== 'ok' || !view.slots) return;
+    resumed.current = true;
+    const last = latestUnfinished(view.slots);
+    if (last && !view.ready && !view.starting) market.loadSlot(last.slot);
+  }, [lock, view.slots, view.ready, view.starting, market.loadSlot]);
   const asked = useRoute();
   // Without a run (fresh start or reload), in-run screens fall back to Home.
   const route = needsRun(asked) && !view.ready && !view.starting ? HOME : asked;
@@ -83,6 +122,9 @@ export function App() {
     if (view.debrief) navigate({ name: 'debrief' });
   }, [view.debrief]);
 
+  if (lock === 'elsewhere') return <OpenElsewhere takeOver={takeOver} />;
+  if (lock === 'checking') return null;
+
   return (
     <ProgressProvider market={market}>
       <div class="app">
@@ -90,10 +132,11 @@ export function App() {
           <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>
         )}
         <main class="screen">
-          <UpdateBanner hasRun={view.ready && !view.finished} />
+          <UpdateBanner hasRun={view.ready && !view.finished} beforeUpdate={market.saveNow} />
           <Screen route={route} market={market} startTutorial={startTutorial} />
         </main>
         <Notices market={market} />
+        <SlotPicker market={market} />
         {coaching && view.ready && (
           <Coach route={route} market={market} onClose={() => setCoaching(false)} />
         )}

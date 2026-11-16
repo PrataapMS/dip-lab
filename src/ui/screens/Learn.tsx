@@ -164,7 +164,9 @@ function Challenges({ market }: { market: Market }) {
   const { progress } = useProgress();
   const level = levelFor(progress.xp).level;
   const start = (c: Challenge) => {
-    const running = market.view.ready && !market.view.finished ? market.view.scenario : null;
+    // A saved run stays in its slot; only an unsaved one would be lost.
+    const v = market.view;
+    const running = v.ready && !v.finished && v.slot === null ? v.scenario : null;
     if (running && !confirm(`Leave ${running.name} and start the challenge?`)) return;
     market.startRun({
       scenarioId: c.scenarioId,

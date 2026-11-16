@@ -18,7 +18,14 @@ function watchForUpdates(reg: ServiceWorkerRegistration) {
 }
 
 /** "A new version is ready" with an Update button; the app keeps running until tapped. */
-export function UpdateBanner({ hasRun }: { hasRun: boolean }) {
+export function UpdateBanner({
+  hasRun,
+  beforeUpdate,
+}: {
+  hasRun: boolean;
+  /** Pause and save the run first, so the reload resumes it. */
+  beforeUpdate?: () => Promise<void>;
+}) {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -32,11 +39,17 @@ export function UpdateBanner({ hasRun }: { hasRun: boolean }) {
     <section class="panel update-banner" role="status" aria-live="polite">
       <span class="mono tiny accent">// UPDATE READY</span>
       <p class="small">
-        A new version of Dip Lab is ready. Your XP and badges are kept
-        {hasRun ? ', but updating now ends the current run (it is not saved yet).' : '.'}
+        A new version of Dip Lab is ready. Your XP, badges and saved runs are kept
+        {hasRun ? '; the current run is paused and saved first.' : '.'}
       </p>
       <div class="row gap-8">
-        <button type="button" class="primary" onClick={() => updateServiceWorker(true)}>
+        <button
+          type="button"
+          class="primary"
+          onClick={() =>
+            void (beforeUpdate?.() ?? Promise.resolve()).then(() => updateServiceWorker(true))
+          }
+        >
           Update now
         </button>
         <button type="button" class="ghost" onClick={() => setNeedRefresh(false)}>

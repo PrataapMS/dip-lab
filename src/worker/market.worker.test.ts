@@ -331,4 +331,19 @@ describe('market worker', () => {
     send({ type: 'newRun', scenarioId: 'nope', seed: 1 });
     expect(last('error').message).toMatch(/Unknown scenario/);
   });
+
+  it('lists empty slots and answers flush when nothing can be stored', async () => {
+    send({ type: 'listSlots' });
+    await vi.waitFor(() => expect(last('slots').headers).toEqual([null, null, null]));
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 2, slot: 1, challenge: 'x' });
+    const loaded = last('loaded');
+    expect([loaded.slot, loaded.restored, loaded.config.challenge]).toEqual([1, false, 'x']);
+    send({ type: 'flush' });
+    await vi.waitFor(() => last('flushed'));
+  });
+
+  it('says so when a slot is empty', async () => {
+    send({ type: 'loadSlot', slot: 2 });
+    await vi.waitFor(() => expect(last('error').message).toMatch(/empty/));
+  });
 });

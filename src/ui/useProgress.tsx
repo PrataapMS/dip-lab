@@ -15,7 +15,7 @@ import {
 } from '../game/progress';
 import { challengeById } from '../learn/challenges';
 import { type Lesson, LESSONS } from '../learn/lessons';
-import { load, save } from './storage';
+import { load, save } from '../storage/db';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
@@ -129,10 +129,11 @@ export function ProgressProvider({
         const p = progressRef.current;
         if (e.type === 'loaded') {
           setRun({ levelBefore: levelFor(p?.xp ?? 0).level, rewards: [] });
-          if (e.branchOf) record({ kind: 'replay', day: e.branchOf.day });
+          if (e.branchOf && !e.restored) record({ kind: 'replay', day: e.branchOf.day });
         }
         if (e.type === 'activity') for (const a of e.items) record(a);
-        if (e.type === 'ended') {
+        // A run opened already finished was rewarded when it ended (or was imported).
+        if (e.type === 'ended' && !e.restored) {
           const v = viewRef.current;
           const d = e.debrief;
           const result: RunResult = {

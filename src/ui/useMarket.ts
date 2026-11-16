@@ -14,9 +14,11 @@ import type {
   InstrumentInfo,
   NewsItem,
   ScenarioInfo,
+  SlotHeader,
   Upcoming,
   WorkerEvent,
 } from '../engine/protocol';
+import { freeSlot } from '../storage/slots';
 
 export interface Notice {
   id: number;
@@ -41,6 +43,8 @@ export interface RunConfig {
   custom?: CustomOptions;
   /** Set when the run is a challenge from the Learn tab. */
   challenge?: string;
+  /** Save slot; chosen automatically (or by asking) when left out. */
+  slot?: number;
 }
 
 export interface MarketView {
@@ -90,6 +94,12 @@ export interface MarketView {
   config: RunConfig | null;
   /** Set when this run replays a moment of an earlier one. */
   branchOf: BranchOf | null;
+  /** Save slot of the current run, null when it isn't saved. */
+  slot: number | null;
+  /** What each save slot holds; null until read. */
+  slots: (SlotHeader | null)[] | null;
+  /** A run waiting for the player to pick a slot to replace (all are full). */
+  slotPick: RunConfig | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -128,6 +138,9 @@ export const initialView: MarketView = {
   debrief: null,
   config: null,
   branchOf: null,
+  slot: null,
+  slots: null,
+  slotPick: null,
 };
 
 /** News lines kept for the feed. */
@@ -186,7 +199,9 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
             ])
           : [],
         dayLengthMs: state.dayLengthMs,
-        config: state.config,
+        config: e.config,
+        slot: e.slot,
+        slots: state.slots,
       };
     case 'day': {
       const watch: Record<string, number[]> = {};
@@ -237,7 +252,7 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       return {
         ...state,
         news: [...state.news, ...e.items].slice(-NEWS_KEPT),
-        notices: addNotices(state, newsNotices(e.items)),
+        notices: e.earlier ? state.notices : addNotices(state, newsNotices(e.items)),
       };
     case 'orderResult':
       return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
@@ -257,8 +272,12 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       return { ...state, daySummary: e.summary };
     case 'ended':
       return { ...state, endReason: e.reason, debrief: e.debrief, finished: true, playing: false };
+    case 'slots':
+      return { ...state, slots: e.headers };
+    case 'flushed':
+      return state;
     case 'error':
-      return { ...state, error: e.message };
+      return { ...state, error: e.message, starting: false };
   }
 }
 
@@ -277,20 +296,67 @@ export function useMarket() {
       for (const fn of listeners.current) fn(e.data);
     };
     worker.current = w;
+    w.postMessage({ type: 'listSlots' } satisfies Command);
+    // Save when the page is hidden: on phones that may be the last chance before it is killed.
+    const flush = () => {
+      if (document.visibilityState === 'hidden') w.postMessage({ type: 'flush' } satisfies Command);
+    };
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
     return () => {
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
       w.terminate();
       worker.current = null;
     };
   }, []);
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const send = useCallback((cmd: Command) => worker.current?.postMessage(cmd), []);
   const startRun = useCallback(
     (config: RunConfig) => {
-      setView((s) => ({ ...s, ready: false, starting: true, error: null, config }));
-      const { challenge: _challenge, ...run } = config;
-      send({ type: 'newRun', ...run });
+      const slots = viewRef.current.slots;
+      const slot = config.slot ?? (slots ? freeSlot(slots) : undefined);
+      if (slot === null) {
+        // Every slot is taken: ask which run to replace.
+        setView((s) => ({ ...s, slotPick: config }));
+        return;
+      }
+      setView((s) => ({ ...s, ready: false, starting: true, error: null, slotPick: null }));
+      send({ type: 'newRun', ...config, ...(slot !== undefined ? { slot } : {}) });
     },
     [send],
+  );
+  const cancelSlotPick = useCallback(() => setView((s) => ({ ...s, slotPick: null })), []);
+  const loadSlot = useCallback(
+    (slot: number) => {
+      setView((s) => ({ ...s, ready: false, starting: true, error: null }));
+      send({ type: 'loadSlot', slot });
+    },
+    [send],
+  );
+  const deleteSlot = useCallback((slot: number) => send({ type: 'deleteSlot', slot }), [send]);
+  /** Pause and save now; resolves once written (or after a second at most). */
+  const saveNow = useCallback(
+    () =>
+      new Promise<void>((resolve) => {
+        const w = worker.current;
+        if (!w) return resolve();
+        const done = () => {
+          clearTimeout(timer);
+          listeners.current.delete(onEvent);
+          resolve();
+        };
+        const onEvent = (e: WorkerEvent) => {
+          if (e.type === 'flushed') done();
+        };
+        const timer = setTimeout(done, 1000);
+        listeners.current.add(onEvent);
+        if (viewRef.current.playing) w.postMessage({ type: 'pause' } satisfies Command);
+        w.postMessage({ type: 'flush' } satisfies Command);
+      }),
+    [],
   );
   const replayFrom = useCallback(
     (day: number) => {
@@ -317,7 +383,20 @@ export function useMarket() {
       setView((s) => ({ ...s, notices: addNotices(s, [{ ok, message }]) })),
     [],
   );
-  return { view, send, startRun, replayFrom, dismissNotice, dismissSummary, subscribe, notify };
+  return {
+    view,
+    send,
+    startRun,
+    cancelSlotPick,
+    loadSlot,
+    deleteSlot,
+    saveNow,
+    replayFrom,
+    dismissNotice,
+    dismissSummary,
+    subscribe,
+    notify,
+  };
 }
 
 export type Market = ReturnType<typeof useMarket>;
