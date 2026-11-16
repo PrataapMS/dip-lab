@@ -1,6 +1,6 @@
 {
   "name": "dip-lab",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Dip Lab: an offline, gamified US stock market simulator for learning by replaying markets.",
   "type": "module",

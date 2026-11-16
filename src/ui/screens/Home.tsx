@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { money, signedPct, upDown } from '../format';
 import { PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
@@ -11,7 +12,7 @@ export function Home({ market }: { market: Market }) {
     <>
       <header class="home-head">
         <h1 class="logo">DIP_LAB</h1>
-        <span class="mono small dim">v0.2</span>
+        <span class="mono small dim">v{version.split('.').slice(0, 2).join('.')}</span>
       </header>
 
       {hasRun && (

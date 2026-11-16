@@ -60,8 +60,8 @@ real price data.
 | 0 | Project setup, app shell, seeded random market paths | Done |
 | 1 | Simulated market engine: market moods, sectors, intraday prices, trading calendar, stock list | Done |
 | 2 | Core trading screens: market, stock, order sheet, portfolio | Done |
-| 3 | All scenarios, news and events, dividends, end-of-run debrief | Next |
-| 4 | Tutorial, glossary, lessons, challenges, XP and badges, margin and shorts | Planned |
+| 3 | All scenarios, news and events, dividends, end-of-run debrief | Done |
+| 4 | Tutorial, glossary, lessons, challenges, XP and badges, margin and shorts | Next |
 | 5 | Offline polish, install prompt, saves, settings, performance | Planned |
 
 ## Later ideas
