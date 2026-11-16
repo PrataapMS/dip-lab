@@ -156,9 +156,10 @@ function BadgeShelf() {
   );
 }
 
-export function Home({ market }: { market: Market }) {
+export function Home({ market, startTutorial }: { market: Market; startTutorial: () => void }) {
   const { view } = market;
-  const { progress } = useProgress();
+  const { progress, update } = useProgress();
+  const newcomer = !progress.tutorialDone && !progress.badges['first-trade'];
   const hasRun = view.ready && !!view.scenario;
   const run = runChange(view);
   const streak = currentStreak(progress.streak, today());
@@ -171,6 +172,22 @@ export function Home({ market }: { market: Market }) {
           <FlameIcon /> {streak} day streak
         </span>
       </header>
+
+      {newcomer && (
+        <section class="panel welcome" aria-labelledby="welcome-title">
+          <span class="mono tiny accent">// NEW HERE?</span>
+          <h2 id="welcome-title" class="title">
+            Make your first trade in under a minute
+          </h2>
+          <p class="small dim">Four taps with a guide: open the market, pick a stock, buy $1,000 of it. Simulated money, simulated prices.</p>
+          <button type="button" class="primary" onClick={startTutorial}>
+            <PlayIcon /> Make your first trade
+          </button>
+          <button type="button" class="link small" onClick={() => update((p) => ({ progress: { ...p, tutorialDone: true } }))}>
+            Skip, I know this
+          </button>
+        </section>
+      )}
 
       <PlayerCard />
 
@@ -201,7 +218,7 @@ export function Home({ market }: { market: Market }) {
       <Quests />
       <BadgeShelf />
 
-      <a class={`button ${hasRun ? 'ghost' : 'primary'}`} href="#/new">
+      <a class={`button ${hasRun || newcomer ? 'ghost' : 'primary'}`} href="#/new">
         {hasRun ? <PlusIcon /> : <PlayIcon />} {hasRun ? 'Start a new run' : 'Pick your first run'}
       </a>
 

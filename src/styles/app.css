@@ -1797,3 +1797,67 @@ button:disabled {
 .challenge-result p {
   margin: 0;
 }
+
+/* ---------- Guided first trade ---------- */
+.welcome {
+  border: 2px solid var(--accent);
+  gap: 10px;
+}
+
+.welcome p,
+.welcome h2 {
+  margin: 0;
+}
+
+.coach {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.coach-ring {
+  position: fixed;
+  border: 3px solid var(--accent);
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.coach-ring.dim {
+  box-shadow: 0 0 0 9999px rgb(5 6 12 / 0.45);
+}
+
+.coach-card {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 448px;
+  padding: 12px 14px;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+
+.coach-card.bottom {
+  bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+.coach-card.top {
+  top: calc(12px + env(safe-area-inset-top));
+}
+
+.coach-card p {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-ring {
+    transition: none;
+  }
+}

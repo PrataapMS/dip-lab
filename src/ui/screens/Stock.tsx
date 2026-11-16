@@ -125,7 +125,7 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
       </section>
 
       <div class="actions">
-        <button type="button" class="primary" onClick={() => setSheet('buy')}>
+        <button type="button" class="primary" data-coach="buy" onClick={() => setSheet('buy')}>
           {held && held.shares < 0 ? 'Buy to cover' : 'Buy'}
         </button>
         <button type="button" class="ghost" disabled={!(held && held.shares > 0) && !canShort} onClick={() => setSheet('sell')}>

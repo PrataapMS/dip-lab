@@ -20,7 +20,7 @@ function QuoteRow({ inst, view }: { inst: InstrumentInfo; view: MarketView }) {
   const spark = view.watch[inst.ticker];
   return (
     <li>
-      <a class="quote-row" href={formatRoute({ name: 'stock', ticker: inst.ticker })}>
+      <a class="quote-row" href={formatRoute({ name: 'stock', ticker: inst.ticker })} data-coach={`quote-${inst.ticker}`}>
         <span class="stack who">
           <span class="ticker">{inst.ticker}</span>
           <span class="tiny dim ellipsis">{inst.name}</span>
