@@ -2,19 +2,34 @@
  * Messages between the UI and the engine worker. Everything here must survive
  * structured cloning: plain objects, arrays and typed arrays only.
  */
+import type { AccountSettings } from './account';
+import type { Order, OrderDraft } from './orders';
+import type { AccountView } from './run';
+
+export type { AccountView } from './run';
 
 export type Command =
-  | { type: 'load'; scenarioId: string; seed: number }
+  | { type: 'newRun'; scenarioId: string; seed: number; settings?: AccountSettings }
   | { type: 'play' }
   | { type: 'pause' }
   | { type: 'speed'; dayLengthMs: number }
-  | { type: 'stepDay' };
+  | { type: 'stepDay' }
+  | { type: 'placeOrder'; draft: OrderDraft }
+  | { type: 'cancelOrder'; id: number }
+  /** Tickers whose recent closes come with each `day` event (watchlist sparklines). */
+  | { type: 'watch'; tickers: string[] }
+  /** The ticker on screen: its full history now, and its intraday points with every tick. */
+  | { type: 'inspect'; ticker: string | null };
 
 export interface InstrumentInfo {
   ticker: string;
   name: string;
   sector: string | null;
   kind: 'stock' | 'etf';
+  beta: number;
+  /** Annualised volatility at normal market conditions. */
+  vol: number;
+  divYield: number;
 }
 
 export interface ScenarioInfo {
@@ -24,11 +39,20 @@ export interface ScenarioInfo {
   fictional: boolean;
 }
 
+export interface Series {
+  ticker: string;
+  values: number[];
+}
+
+/** Closes kept for each watchlist sparkline. */
+export const SPARK_DAYS = 30;
+
 export type WorkerEvent =
   | {
       type: 'loaded';
       scenario: ScenarioInfo;
       seed: number;
+      settings: AccountSettings;
       dates: string[];
       instruments: InstrumentInfo[];
       /** Index of the instrument used as "the market" (SPY), -1 if absent. */
@@ -41,6 +65,8 @@ export type WorkerEvent =
       prevCloses: Float32Array;
       /** Market index closes from the start up to the previous close (day + 1 values). */
       indexHistory: number[];
+      /** Recent closes (up to the previous close) for each watched ticker. */
+      watch: Series[];
     }
   | {
       type: 'tick';
@@ -50,8 +76,23 @@ export type WorkerEvent =
       prices: Float32Array;
       /** Market index price at each bar so far today (bar + 1 values). */
       indexToday: number[];
+      /** The inspected ticker's price at each bar so far today. */
+      focus: Series | null;
       playing: boolean;
       finished: boolean;
       dayLengthMs: number;
     }
+  | { type: 'account'; account: AccountView }
+  | {
+      type: 'history';
+      ticker: string;
+      /** Price before the first day, then each close up to the previous close (day + 1 values). */
+      closes: number[];
+      /** Price at each bar so far today. */
+      today: number[];
+    }
+  /** Answer to placeOrder or cancelOrder. */
+  | { type: 'orderResult'; ok: boolean; order: Order | null; message: string }
+  /** Orders that filled, expired or were rejected while the clock ran. */
+  | { type: 'orderUpdates'; orders: Order[] }
   | { type: 'error'; message: string };

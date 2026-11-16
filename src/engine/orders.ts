@@ -224,3 +224,24 @@ export function describeOrder(d: OrderDraft): string {
         : `${verb} ${amount} if it rises to ${usd(d.stopPrice ?? 0)}`;
   }
 }
+
+function sharesWord(shares: number): string {
+  const n = Number(shares.toFixed(6));
+  return `${n} ${n === 1 ? 'share' : 'shares'}`;
+}
+
+/** Plain-English status line for an order, e.g. "Bought 1.2 shares of NVDA at $812.40." */
+export function orderMessage(o: Order): string {
+  switch (o.status) {
+    case 'filled':
+      return `${o.side === 'buy' ? 'Bought' : 'Sold'} ${sharesWord(o.filledShares ?? 0)} of ${o.ticker} at ${usd(o.fillPrice ?? 0)}.`;
+    case 'open':
+      return o.type === 'market' ? `Market closed. ${describeOrder(o)} at the next open.` : `Order placed: ${describeOrder(o)}.`;
+    case 'cancelled':
+      return `Cancelled: ${describeOrder(o)}.`;
+    case 'expired':
+      return `Expired at the close: ${describeOrder(o)}.`;
+    case 'rejected':
+      return o.reason ?? 'Order rejected.';
+  }
+}

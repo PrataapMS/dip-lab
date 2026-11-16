@@ -1,17 +1,12 @@
-import { useMemo, useState } from 'preact/hooks';
-import { DAY_LENGTHS, type DayLength } from './engine/clock';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { type Speed, SPEEDS as SPEED_MS, speedOf } from './engine/clock';
 import { barTime, POINTS_PER_DAY } from './engine/intraday';
 import { SCENARIOS } from './engine/scenarios';
 import { longDate, price, signedPct, upDown } from './ui/format';
 import { LineChart } from './ui/LineChart';
 import { useMarket } from './ui/useMarket';
 
-const SPEEDS: { key: DayLength; label: string }[] = [
-  { key: '5s', label: '5s' },
-  { key: '15s', label: '15s' },
-  { key: '30s', label: '30s' },
-  { key: '1m', label: '1m' },
-];
+const SPEEDS: { key: Speed; label: string }[] = (Object.keys(SPEED_MS) as Speed[]).map((key) => ({ key, label: key }));
 
 function newSeed(): number {
   const buf = new Uint32Array(1);
@@ -26,7 +21,8 @@ function newSeed(): number {
 export function App() {
   const [scenarioId, setScenarioId] = useState('covid-2020');
   const [seed, setSeed] = useState(2008);
-  const { view, send } = useMarket(scenarioId, seed);
+  const { view, send, startRun } = useMarket();
+  useEffect(() => startRun(scenarioId, seed), [scenarioId, seed, startRun]);
 
   const idx = view.indexInstrument;
   const now = view.prices[idx] ?? 0;
@@ -49,7 +45,7 @@ export function App() {
   }, [view.instruments, view.prices, view.prevCloses]);
 
   const date = view.dates[view.day] ?? '';
-  const speedKey = (Object.keys(DAY_LENGTHS) as DayLength[]).find((k) => DAY_LENGTHS[k] === view.dayLengthMs);
+  const speedKey = speedOf(view.dayLengthMs);
 
   return (
     <main class="screen">
@@ -135,7 +131,7 @@ export function App() {
                   type="button"
                   class={`chip ${speedKey === s.key ? 'on' : ''}`}
                   aria-pressed={speedKey === s.key}
-                  onClick={() => send({ type: 'speed', dayLengthMs: DAY_LENGTHS[s.key] })}
+                  onClick={() => send({ type: 'speed', dayLengthMs: SPEED_MS[s.key] })}
                 >
                   {s.label}
                 </button>

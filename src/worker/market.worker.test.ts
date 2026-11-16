@@ -29,8 +29,8 @@ afterEach(() => {
 
 describe('market worker', () => {
   it('loads a scenario and posts the first day and tick', () => {
-    send({ type: 'load', scenarioId: 'covid-2020', seed: 7 });
-    expect(events.map((e) => e.type)).toEqual(['loaded', 'day', 'tick']);
+    send({ type: 'newRun', scenarioId: 'covid-2020', seed: 7 });
+    expect(events.map((e) => e.type)).toEqual(['loaded', 'day', 'tick', 'account']);
     const loaded = last('loaded');
     expect(loaded.dates[0]).toBe('2020-02-20');
     expect(loaded.instruments[loaded.indexInstrument]?.ticker).toBe('SPY');
@@ -40,7 +40,7 @@ describe('market worker', () => {
   });
 
   it('ticks while playing and stops when paused', () => {
-    send({ type: 'load', scenarioId: 'covid-2020', seed: 7 });
+    send({ type: 'newRun', scenarioId: 'covid-2020', seed: 7 });
     send({ type: 'speed', dayLengthMs: 5_000 });
     send({ type: 'play' });
     vi.advanceTimersByTime(5_000 / 79 * 10 + 50);
@@ -55,16 +55,16 @@ describe('market worker', () => {
   });
 
   it('replays the same prices for the same seed', () => {
-    send({ type: 'load', scenarioId: 'gfc-2008', seed: 3 });
+    send({ type: 'newRun', scenarioId: 'gfc-2008', seed: 3 });
     send({ type: 'stepDay' });
     const a = Array.from(last('tick').prices);
-    send({ type: 'load', scenarioId: 'gfc-2008', seed: 3 });
+    send({ type: 'newRun', scenarioId: 'gfc-2008', seed: 3 });
     send({ type: 'stepDay' });
     expect(Array.from(last('tick').prices)).toEqual(a);
   });
 
   it('moves to the next day and sends its previous closes', () => {
-    send({ type: 'load', scenarioId: 'first-steps', seed: 1 });
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 1 });
     send({ type: 'stepDay' });
     const close = last('tick').prices;
     send({ type: 'stepDay' });
@@ -74,8 +74,79 @@ describe('market worker', () => {
     expect(day.indexHistory).toHaveLength(2);
   });
 
+  it('fills a market buy and reports it in the account', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'placeOrder', draft: { ticker: 'NVDA', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 1_000 } } });
+    const result = last('orderResult');
+    expect(result.ok).toBe(true);
+    expect(result.message).toMatch(/^Bought [\d.]+ shares of NVDA at \$/);
+    const account = last('account').account;
+    expect(account.cash).toBeCloseTo(9_000, 2);
+    expect(account.positions.map((p) => p.ticker)).toEqual(['NVDA']);
+    expect(account.recentFills).toHaveLength(1);
+  });
+
+  it('fills a resting limit while playing and posts the update', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    const loaded = last('loaded');
+    const i = loaded.instruments.findIndex((x) => x.ticker === 'KO');
+    const price = last('tick').prices[i] ?? 0;
+    send({
+      type: 'placeOrder',
+      draft: { ticker: 'KO', side: 'buy', type: 'limit', limitPrice: price * 0.999, tif: 'gtc', amount: { kind: 'shares', value: 2 } },
+    });
+    expect(last('orderResult').message).toMatch(/^Order placed: Buy 2 shares of KO at \$[\d.]+ or less\.$/);
+    expect(last('account').account.openOrders).toHaveLength(1);
+    send({ type: 'speed', dayLengthMs: 7_500 });
+    send({ type: 'play' });
+    for (let t = 0; t < 300 && !events.some((e) => e.type === 'orderUpdates'); t++) vi.advanceTimersByTime(1_000);
+    send({ type: 'pause' });
+    const update = last('orderUpdates').orders[0];
+    expect(update?.status).toBe('filled');
+    expect(update?.fillPrice).toBeLessThanOrEqual(price * 0.999);
+    expect(last('account').account.openOrders).toHaveLength(0);
+  });
+
+  it('cancels an open order', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'placeOrder', draft: { ticker: 'KO', side: 'buy', type: 'limit', limitPrice: 1, amount: { kind: 'shares', value: 1 } } });
+    const id = last('orderResult').order?.id ?? -1;
+    send({ type: 'cancelOrder', id });
+    expect(last('orderResult')).toMatchObject({ ok: true, message: 'Cancelled: Buy 1 share of KO at $1.00 or less.' });
+    send({ type: 'cancelOrder', id });
+    expect(last('orderResult').ok).toBe(false);
+  });
+
+  it('sends watchlist sparklines and the inspected ticker', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'watch', tickers: ['AAPL', 'NOPE'] });
+    send({ type: 'inspect', ticker: 'AAPL' });
+    for (let d = 0; d < 3; d++) send({ type: 'stepDay' });
+    const day = last('day');
+    expect(day.watch.map((w) => w.ticker)).toEqual(['AAPL']);
+    expect(day.watch[0]?.values).toHaveLength(day.day + 1);
+    const history = last('history');
+    expect(history.ticker).toBe('AAPL');
+    expect(history.closes).toHaveLength(day.day + 1);
+    expect(last('tick').focus?.values).toHaveLength(79);
+    send({ type: 'inspect', ticker: null });
+  });
+
+  it('replays the same account for the same seed and orders', () => {
+    const play = () => {
+      send({ type: 'newRun', scenarioId: 'covid-2020', seed: 9 });
+      send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 5_000 } } });
+      send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'sell', type: 'stop', stopPrice: 300, tif: 'gtc', amount: { kind: 'shares', value: 5 } } });
+      for (let d = 0; d < 15; d++) send({ type: 'stepDay' });
+      return last('account').account;
+    };
+    const a = play();
+    expect(a.equityByDay).toHaveLength(15);
+    expect(play()).toEqual(a);
+  });
+
   it('reports errors instead of throwing', () => {
-    send({ type: 'load', scenarioId: 'nope', seed: 1 });
+    send({ type: 'newRun', scenarioId: 'nope', seed: 1 });
     expect(last('error').message).toMatch(/Unknown scenario/);
   });
 });

@@ -7,6 +7,7 @@ import {
   expireDayOrders,
   type Order,
   type OrderDraft,
+  orderMessage,
   placeOrder,
   processOrders,
   type SegmentQuote,
@@ -174,5 +175,16 @@ describe('orders', () => {
     const a = run();
     expect(a.orders.map((o) => o.status)).toEqual(['filled', 'filled', 'filled']);
     expect(run()).toEqual(a);
+  });
+});
+
+describe('order messages', () => {
+  it('says what happened in plain words', () => {
+    const filled = place(noSpread, { ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'shares', value: 2 } }, 50, 10, 0, 0).order;
+    expect(orderMessage(filled)).toBe('Bought 2 shares of KO at $50.00.');
+    const queued = place(noSpread, { ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 500 } }, 50, BARS_PER_DAY).order;
+    expect(orderMessage(queued)).toBe('Market closed. Buy $500 of KO at the next open.');
+    const limit = place(noSpread, { ticker: 'KO', side: 'buy', type: 'limit', limitPrice: 45, amount: { kind: 'shares', value: 1 } }, 50).order;
+    expect(orderMessage(limit)).toBe('Order placed: Buy 1 share of KO at $45.00 or less.');
   });
 });

@@ -13,9 +13,10 @@ import {
 import {
   advanceClock,
   createClock,
-  DAY_LENGTHS,
   isFinished,
   setPlaying,
+  speedOf,
+  SPEEDS,
   stepClock,
   stepDay,
   STEPS_PER_DAY,
@@ -75,13 +76,20 @@ describe('clock', () => {
   });
 
   it('advances by real time at the chosen day length', () => {
-    let c = setPlaying(createClock(10, DAY_LENGTHS['5s']), true);
-    c = advanceClock(c, 5_000);
+    let c = setPlaying(createClock(10, SPEEDS['8x']), true);
+    c = advanceClock(c, 7_500);
     expect([c.day, c.bar]).toEqual([1, 0]);
-    const stepMs = 5_000 / STEPS_PER_DAY;
+    const stepMs = 7_500 / STEPS_PER_DAY;
     c = advanceClock(c, stepMs * 2.5);
     expect(c.bar).toBe(2);
     expect(c.carry).toBeCloseTo(stepMs / 2, 6);
+  });
+
+  it('maps speed chips to day lengths, 2x by default', () => {
+    expect(SPEEDS).toEqual({ '1x': 60_000, '2x': 30_000, '4x': 15_000, '8x': 7_500 });
+    expect(createClock(5).dayLengthMs).toBe(30_000);
+    expect(speedOf(15_000)).toBe('4x');
+    expect(speedOf(300_000)).toBeNull();
   });
 
   it('does not move while paused', () => {
@@ -90,7 +98,7 @@ describe('clock', () => {
   });
 
   it('stops at the final close', () => {
-    let c = setPlaying(createClock(2, DAY_LENGTHS['5s']), true);
+    let c = setPlaying(createClock(2, SPEEDS['8x']), true);
     c = advanceClock(c, 60_000);
     expect(isFinished(c)).toBe(true);
     expect(c.playing).toBe(false);
