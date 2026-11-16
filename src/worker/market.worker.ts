@@ -9,7 +9,7 @@ import { type Order, orderMessage } from '../engine/orders';
 import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engine/protocol';
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
-import { getScenario } from '../engine/scenarios';
+import { customScenario, getScenario } from '../engine/scenarios';
 import { daySummary } from '../engine/summary';
 
 /**
@@ -186,7 +186,7 @@ function handle(cmd: Command): void {
   switch (cmd.type) {
     case 'newRun': {
       stopLoop();
-      const def = getScenario(cmd.scenarioId);
+      const def = cmd.scenarioId === 'custom' && cmd.custom ? customScenario(cmd.custom) : getScenario(cmd.scenarioId);
       const market = buildMarket(def, cmd.seed, UNIVERSE);
       run = new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn });
       postedDay = -1;

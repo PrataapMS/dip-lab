@@ -6,6 +6,7 @@ import type { Order } from '../engine/orders';
 import type {
   AccountView,
   Command,
+  CustomOptions,
   DaySummary,
   Debrief,
   EndReason,
@@ -36,6 +37,7 @@ export interface RunConfig {
   seed: number;
   settings?: AccountSettings;
   targetReturn?: number;
+  custom?: CustomOptions;
 }
 
 export interface MarketView {

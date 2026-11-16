@@ -124,7 +124,7 @@ const TABS:{ route: Route; label: string; icon: () => preact.JSX.Element }[] = [
 ];
 
 export function TabBar({ route, hasRun }: { route: Route; hasRun: boolean }) {
-  const current = route.name === 'stock' ? 'market' : route.name;
+  const current = route.name === 'stock' ? 'market' : route.name === 'new' || route.name === 'debrief' ? 'home' : route.name;
   return (
     <nav class="tabbar" aria-label="Main">
       {TABS.map(({ route: r, label, icon: Icon }) => {

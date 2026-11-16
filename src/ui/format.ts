@@ -54,3 +54,15 @@ export function weekdayShort(iso: string): string {
   if (!y || !m || !d) return '';
   return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()] ?? '';
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Feb–Dec 2020", "Oct 2007–Mar 2009" or "2010–2019" for whole years. */
+export function dateRange(start: string, end: string): string {
+  const [y0, m0] = start.split('-').map(Number);
+  const [y1, m1] = end.split('-').map(Number);
+  if (!y0 || !m0 || !y1 || !m1) return `${start}–${end}`;
+  if (m0 === 1 && m1 === 12 && y1 > y0) return `${y0}–${y1}`;
+  if (y0 === y1) return m0 === m1 ? `${MONTHS[m0 - 1]} ${y0}` : `${MONTHS[m0 - 1]}–${MONTHS[m1 - 1]} ${y0}`;
+  return `${MONTHS[m0 - 1]} ${y0}–${MONTHS[m1 - 1]} ${y1}`;
+}

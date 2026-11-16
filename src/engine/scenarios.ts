@@ -412,11 +412,23 @@ export interface CustomOptions {
   days: number;
   startRegime?: Regime;
   volScale?: number;
+  news?: NewsLevel;
 }
+
+/** Limits for the Custom setup. */
+export const CUSTOM_LIMITS = { from: '1998-01-02', to: '2024-12-31', maxDays: 756 } as const;
+
+const CUSTOM_INTRO: Record<Regime, string> = {
+  calm: 'A quiet market with no big story yet',
+  bull: 'Optimism is running high on Wall Street',
+  bear: 'Investors are nervous as prices slide',
+  crash: 'Panic: sellers rush for the exits',
+};
 
 /** Free-running market: no waypoints, the regime chain decides what happens. */
 export function customScenario(opts: CustomOptions): ScenarioDef {
-  const dates = tradingDaysFrom(opts.start, opts.days);
+  const dates = tradingDaysFrom(opts.start, Math.max(1, Math.min(opts.days, CUSTOM_LIMITS.maxDays)));
+  const mood = opts.startRegime ?? 'calm';
   return {
     id: 'custom',
     name: 'Custom',
@@ -426,8 +438,10 @@ export function customScenario(opts: CustomOptions): ScenarioDef {
     start: dates[0] ?? opts.start,
     end: dates[dates.length - 1] ?? opts.start,
     market: [],
-    startRegime: opts.startRegime ?? 'calm',
+    startRegime: mood,
     volScale: opts.volScale ?? 1,
+    news: opts.news ?? 'normal',
+    headlines: [{ date: dates[0] ?? opts.start, text: CUSTOM_INTRO[mood], tone: 'flat', at: 'open' }],
   };
 }
 

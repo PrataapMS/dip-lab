@@ -116,6 +116,14 @@ describe('scenarios', () => {
     expect(m.regimes).toContain('bear');
   });
 
+  it('gives a custom run an intro headline and its news level', () => {
+    const def = customScenario({ start: '2016-06-04', days: 21, startRegime: 'bear', news: 'busy' });
+    expect(def.start).toBe('2016-06-06');
+    expect(def.news).toBe('busy');
+    expect(def.headlines?.[0]).toMatchObject({ date: '2016-06-06', at: 'open', tone: 'flat' });
+    expect(customScenario({ start: '2016-06-06', days: 5000 }).end <= '2019-06-06').toBe(true);
+  });
+
   it('builds a free-running custom market of the requested length', () => {
     const def = customScenario({ start: '2026-01-02', days: 100 });
     const m = buildScenarioMarket(def, 4);

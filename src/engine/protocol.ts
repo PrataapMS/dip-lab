@@ -6,12 +6,14 @@ import type { AccountSettings } from './account';
 import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
+import type { CustomOptions } from './scenarios';
 import type { AccountView, EndReason } from './run';
 import type { DaySummary } from './summary';
 
 export type { AccountView } from './run';
 export type { NewsItem, Upcoming } from './news';
 export type { EndReason } from './run';
+export type { CustomOptions } from './scenarios';
 export type { DaySummary } from './summary';
 export type { Debrief, Moment, TradeStat } from './debrief';
 
@@ -23,6 +25,8 @@ export type Command =
       settings?: AccountSettings;
       /** End at a close once the account is up this much. */
       targetReturn?: number;
+      /** Required when scenarioId is 'custom'. */
+      custom?: CustomOptions;
     }
   | { type: 'play' }
   | { type: 'pause' }

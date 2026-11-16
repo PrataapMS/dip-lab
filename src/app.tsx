@@ -6,6 +6,7 @@ import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
 import { Market as MarketScreen } from './ui/screens/Market';
 import { Portfolio } from './ui/screens/Portfolio';
+import { Scenarios } from './ui/screens/Scenarios';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { type Market, useMarket } from './ui/useMarket';
@@ -27,6 +28,8 @@ function Screen({ route, market }: { route: Route; market: Market }) {
       return <Learn />;
     case 'debrief':
       return <Debrief market={market} />;
+    case 'new':
+      return <Scenarios market={market} />;
     case 'market':
       return <MarketScreen market={market} />;
     case 'portfolio':

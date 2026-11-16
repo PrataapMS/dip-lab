@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { longDate, MINUS, money, price, shares, signedMoney, signedPct, weekdayShort } from './format';
+import { dateRange, longDate, MINUS, money, price, shares, signedMoney, signedPct, weekdayShort } from './format';
 
 describe('format', () => {
   it('always signs moves', () => {
@@ -20,5 +20,13 @@ describe('format', () => {
     expect(shares(3)).toBe('3');
     expect(longDate('2020-03-23')).toBe('Mon 23 Mar 2020');
     expect(weekdayShort('2020-03-24')).toBe('tue');
+  });
+});
+
+describe('dateRange', () => {
+  it('reads like the scenario cards', () => {
+    expect(dateRange('2020-02-20', '2020-12-31')).toBe('Feb–Dec 2020');
+    expect(dateRange('2007-10-10', '2009-03-09')).toBe('Oct 2007–Mar 2009');
+    expect(dateRange('2010-01-04', '2019-12-31')).toBe('2010–2019');
   });
 });

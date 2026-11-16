@@ -185,6 +185,15 @@ describe('market worker', () => {
     expect(events.filter((e) => e.type === 'ended')).toHaveLength(1);
   });
 
+  it('starts a custom run from its options', () => {
+    send({ type: 'newRun', scenarioId: 'custom', seed: 3, custom: { start: '2012-03-01', days: 63, startRegime: 'bull', news: 'off' } });
+    const loaded = last('loaded');
+    expect(loaded.scenario.id).toBe('custom');
+    expect(loaded.dates).toHaveLength(63);
+    expect(loaded.dates[0]).toBe('2012-03-01');
+    expect(last('news').items).toHaveLength(1);
+  });
+
   it('reports errors instead of throwing', () => {
     send({ type: 'newRun', scenarioId: 'nope', seed: 1 });
     expect(last('error').message).toMatch(/Unknown scenario/);

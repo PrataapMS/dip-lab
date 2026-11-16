@@ -89,8 +89,8 @@ describe('events', () => {
   });
 
   it('turns news and earnings off for a quiet custom run', () => {
-    const quiet = buildMarket({ ...customScenario({ start: '2019-01-02', days: 120 }), news: 'off' }, 1, UNIVERSE);
-    expect(quiet.events).toHaveLength(0);
+    const quiet = buildMarket(customScenario({ start: '2019-01-02', days: 120, news: 'off' }), 1, UNIVERSE);
+    expect(quiet.events.map((e) => e.kind)).toEqual(['headline']);
   });
 
   it('writes plain headlines with a signed move', () => {
