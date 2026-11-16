@@ -9,6 +9,8 @@ const base = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({
   base,
+  // The engine worker is an ES module, like the app.
+  worker: { format: 'es' },
   plugins: [
     preact(),
     VitePWA({

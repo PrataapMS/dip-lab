@@ -5,6 +5,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/700.css';
 import '@fontsource/silkscreen/400.css';
 import './styles/tokens.css';
+import './styles/app.css';
 import { App } from './app';
 
 const root = document.getElementById('app');

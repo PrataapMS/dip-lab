@@ -1,63 +1,171 @@
 import { useMemo, useState } from 'preact/hooks';
-import { generateDailyCloses } from './engine/synthetic';
+import { DAY_LENGTHS, type DayLength } from './engine/clock';
+import { barTime, POINTS_PER_DAY } from './engine/intraday';
+import { SCENARIOS } from './engine/scenarios';
+import { longDate, price, signedPct, upDown } from './ui/format';
+import { LineChart } from './ui/LineChart';
+import { useMarket } from './ui/useMarket';
 
-const W = 320;
-const H = 120;
+const SPEEDS: { key: DayLength; label: string }[] = [
+  { key: '5s', label: '5s' },
+  { key: '15s', label: '15s' },
+  { key: '30s', label: '30s' },
+  { key: '1m', label: '1m' },
+];
 
-function toPoints(values: number[]): string {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  return values
-    .map((v, i) => `${((i / (values.length - 1)) * W).toFixed(1)},${(H - ((v - min) / span) * H).toFixed(1)}`)
-    .join(' ');
+function newSeed(): number {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] ?? 1) % 1_000_000;
 }
 
 /**
- * Phase 0 placeholder: proves the engine, fonts, tokens and offline shell work end to end.
- * Replace with the Home hub from the design canvas in phase 2.
+ * Phase 1 screen: a live, ticking market from the engine worker. Replaced by the Home hub
+ * and Market HUD in phase 2.
  */
 export function App() {
+  const [scenarioId, setScenarioId] = useState('covid-2020');
   const [seed, setSeed] = useState(2008);
-  const closes = useMemo(
-    () => generateDailyCloses({ seed, start: 100, days: 63, annualDrift: 0.08, annualVol: 0.3 }),
-    [seed],
-  );
-  const last = closes.at(-1) ?? 100;
-  const change = (last / 100 - 1) * 100;
-  const up = change >= 0;
+  const { view, send } = useMarket(scenarioId, seed);
+
+  const idx = view.indexInstrument;
+  const now = view.prices[idx] ?? 0;
+  const prev = view.prevCloses[idx] ?? now;
+  const first = view.indexHistory[0] ?? now;
+  const runChange = first ? now / first - 1 : 0;
+  const dayChange = prev ? now / prev - 1 : 0;
+  const history = useMemo(() => [...view.indexHistory, now], [view.indexHistory, now]);
+
+  const movers = useMemo(() => {
+    const rows = view.instruments
+      .map((inst, i) => {
+        const p = view.prices[i] ?? 0;
+        const pc = view.prevCloses[i] ?? 0;
+        return { ...inst, price: p, change: pc ? p / pc - 1 : 0 };
+      })
+      .filter((r) => r.kind === 'stock' && r.price > 0);
+    rows.sort((a, b) => b.change - a.change);
+    return { up: rows.slice(0, 4), down: rows.slice(-4).reverse() };
+  }, [view.instruments, view.prices, view.prevCloses]);
+
+  const date = view.dates[view.day] ?? '';
+  const speedKey = (Object.keys(DAY_LENGTHS) as DayLength[]).find((k) => DAY_LENGTHS[k] === view.dayLengthMs);
 
   return (
-    <main style={{ maxWidth: 420, margin: '0 auto', padding: '32px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <header style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <h1 style={{ margin: 0, fontFamily: 'var(--font-pixel)', fontWeight: 400, fontSize: 28, color: 'var(--accent)' }}>DIP_LAB</h1>
-        <span style={{ fontFamily: 'var(--font-data)', fontSize: 12, color: 'var(--text-dim)' }}>v0.1 · phase 0</span>
+    <main class="screen">
+      <header class="top">
+        <h1 class="logo">DIP_LAB</h1>
+        <span class="dim mono">v0.1 · phase 1</span>
       </header>
 
-      <section
-        style={{ padding: 16, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: 12 }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-data)' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>seed={seed} · 63 days</span>
-          <span style={{ fontWeight: 700, color: up ? 'var(--accent)' : 'var(--down)' }}>
-            {up ? '+' : '−'}
-            {Math.abs(change).toFixed(1)}%
-          </span>
-        </div>
-        <svg role="img" aria-label={`Simulated price path, ${up ? 'up' : 'down'} ${Math.abs(change).toFixed(1)} percent`} viewBox={`0 0 ${W} ${H}`} width="100%">
-          <polyline points={toPoints(closes)} fill="none" stroke={up ? 'var(--accent)' : 'var(--down)'} stroke-width="2" stroke-linejoin="round" />
-        </svg>
-        <button
-          type="button"
-          onClick={() => setSeed((s) => s + 1)}
-          style={{ height: 44, border: 0, borderRadius: 'var(--radius-md)', background: 'var(--accent)', color: 'var(--on-accent)', font: 'inherit', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
-        >
-          New market (seed +1)
+      <section class="panel controls">
+        <label class="field">
+          <span class="label">Scenario</span>
+          <select value={scenarioId} onChange={(e) => setScenarioId((e.target as HTMLSelectElement).value)}>
+            {SCENARIOS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" class="ghost" onClick={() => setSeed(newSeed())}>
+          New market
         </button>
       </section>
 
-      <p style={{ margin: 0, fontSize: 13, lineHeight: '19px', color: 'var(--text-dim)' }}>
-        Simulated prices. Works offline once installed. The full game is built phase by phase; see docs/SPEC.md.
+      <section class="panel">
+        {!view.ready ? (
+          <p class="dim mono">&gt; building market…</p>
+        ) : (
+          <>
+            <div class="row mono dim small">
+              <span>
+                {longDate(date)} · {barTime(view.bar)} ET
+              </span>
+              <span>
+                day {view.day + 1}/{view.dates.length}
+              </span>
+            </div>
+            <div class="quote">
+              <span class="ticker">SPY</span>
+              <span class="mono big">{price(now)}</span>
+              <span class={`mono ${upDown(dayChange)}`}>{signedPct(dayChange)} today</span>
+            </div>
+            <p class="small dim">{view.scenario?.teaches}</p>
+
+            <h2 class="section">Today</h2>
+            <LineChart
+              values={view.indexToday}
+              capacity={POINTS_PER_DAY}
+              baseline={prev}
+              up={dayChange >= 0}
+              label={`SPY today, ${signedPct(dayChange)}`}
+              height={90}
+            />
+
+            <h2 class="section">
+              Run so far <span class={`mono ${upDown(runChange)}`}>{signedPct(runChange)}</span>
+            </h2>
+            <LineChart
+              values={history}
+              capacity={view.dates.length + 1}
+              baseline={first}
+              up={runChange >= 0}
+              label={`SPY since the start, ${signedPct(runChange)}`}
+            />
+
+            <div class="buttons">
+              <button
+                type="button"
+                class="primary"
+                disabled={view.finished}
+                onClick={() => send({ type: view.playing ? 'pause' : 'play' })}
+              >
+                {view.finished ? 'Run complete' : view.playing ? 'Pause' : 'Play'}
+              </button>
+              <button type="button" class="ghost" disabled={view.finished} onClick={() => send({ type: 'stepDay' })}>
+                Skip to close
+              </button>
+            </div>
+            <div class="speeds" role="group" aria-label="Day length">
+              {SPEEDS.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  class={`chip ${speedKey === s.key ? 'on' : ''}`}
+                  aria-pressed={speedKey === s.key}
+                  onClick={() => send({ type: 'speed', dayLengthMs: DAY_LENGTHS[s.key] })}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <p class="small dim">1 trading day = {(view.dayLengthMs / 1000).toFixed(0)} s</p>
+          </>
+        )}
+        {view.error && <p class="down mono small">&gt; error: {view.error}</p>}
+      </section>
+
+      {view.ready && (
+        <section class="panel">
+          <h2 class="section">Top movers today</h2>
+          <ul class="movers">
+            {[...movers.up, ...movers.down].map((m) => (
+              <li key={m.ticker}>
+                <span class="ticker">{m.ticker}</span>
+                <span class="name dim">{m.name}</span>
+                <span class="mono">{price(m.price)}</span>
+                <span class={`mono ${upDown(m.change)}`}>{signedPct(m.change)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <p class="small dim">
+        Prices are simulated{view.scenario && !view.scenario.fictional ? ', shaped on the real period' : ''}. Not
+        investment advice. Seed {seed}.
       </p>
     </main>
   );
