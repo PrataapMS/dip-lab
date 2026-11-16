@@ -41,5 +41,15 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.ts'],
+      reporter: ['text-summary', 'json-summary'],
+      // The engine is the part that must stay correct; the UI is checked by the e2e smoke test.
+      thresholds: {
+        'src/engine/**': { statements: 90, branches: 75, functions: 95, lines: 95 },
+      },
+    },
   },
 });
