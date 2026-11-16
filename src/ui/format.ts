@@ -10,7 +10,10 @@ export function signedPct(fraction: number, digits = 2): string {
 
 // Built once: `toLocaleString` with options creates a formatter on every call, which shows up
 // when a screen formats hundreds of numbers ten times a second.
-const CENTS = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const CENTS = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const WHOLE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 const SHARES = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 });
 
