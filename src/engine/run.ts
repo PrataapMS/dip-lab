@@ -112,6 +112,9 @@ export interface CloseSnapshot {
   openOrders: Order[];
 }
 
+/** Why "Next event" stopped: at the close it aimed for, or early. */
+export type SkipStop = 'close' | 'fill' | 'marginCall' | 'end';
+
 /** Why a run ended: its last day, the player pressed End, the account went bust, or hit its target. */
 export type EndReason = 'lastDay' | 'ended' | 'bust' | 'target';
 
@@ -502,6 +505,28 @@ export class Run {
       changed.push(...this.step());
     if (!this.finished && this.clock.playing) this.clock = { ...this.clock, carry };
     return changed;
+  }
+
+  /**
+   * Walk bar by bar to the close of `day` (as play would, so orders fill exactly the same),
+   * stopping early right after a fill or a margin call, or when the run ends. Leaves the clock
+   * paused.
+   */
+  skipTo(day: number): { changed: Order[]; stop: SkipStop } {
+    const changed: Order[] = [];
+    const fills = this.account.fills.length;
+    const calls = this.account.marginCalls.length;
+    let stop: SkipStop = this.finished ? 'end' : 'close';
+    while (!(this.clock.day === day && this.clock.bar === BARS_PER_DAY)) {
+      if (this.finished || this.clock.day > day) break;
+      changed.push(...this.step());
+      if (this.finished) stop = 'end';
+      else if (this.account.marginCalls.length > calls) stop = 'marginCall';
+      else if (this.account.fills.length > fills) stop = 'fill';
+      if (stop !== 'close') break;
+    }
+    this.clock = { ...this.clock, playing: false, carry: 0 };
+    return { changed, stop };
   }
 
   /** Walk to today's close, or to the next day's close if already there. */

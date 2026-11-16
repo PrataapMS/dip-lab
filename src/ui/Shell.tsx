@@ -3,6 +3,7 @@ import { dayLengthOf } from '../game/settings';
 import { useEffect } from 'preact/hooks';
 import { type Speed, SPEEDS, speedOf } from '../engine/clock';
 import { BARS_PER_DAY, barTime } from '../engine/intraday';
+import { nextEventLabel, SKIP_MAX_DAYS } from '../engine/nextEvent';
 import { money, signedMoney, signedPct, upDown, weekdayShort } from './format';
 import {
   HomeIcon,
@@ -82,6 +83,32 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
   );
 }
 
+/** Plays ahead to the close before the next earnings, dividend or headline. */
+function NextEventButton({ market }: { market: Market }) {
+  const { view, send } = market;
+  const next = view.next;
+  if (view.finished) return null;
+  if (!next)
+    return (
+      <span class="mono tiny dim" title={`Nothing scheduled in the next ${SKIP_MAX_DAYS} days`}>
+        next: none soon
+      </span>
+    );
+  const closes = next.stopDay - view.day;
+  const when = closes <= 0 ? 'today' : closes === 1 ? '1 day' : `${closes} days`;
+  const label = nextEventLabel(next);
+  return (
+    <button
+      type="button"
+      class="link tiny next-event"
+      aria-label={`Play ahead to the close before ${label}, ${when} away`}
+      onClick={() => send({ type: 'skipToEvent' })}
+    >
+      next: {label} · {when} ›
+    </button>
+  );
+}
+
 /** Play/pause, speed chips and skip-to-close. */
 export function RunControls({ market }: { market: Market }) {
   const { view, send } = market;
@@ -131,7 +158,10 @@ export function RunControls({ market }: { market: Market }) {
           <SkipIcon /> skip
         </button>
       </div>
-      <span class="mono tiny dim">{note}</span>
+      <div class="row control-notes">
+        <span class="mono tiny dim">{note}</span>
+        <NextEventButton market={market} />
+      </div>
     </>
   );
 }

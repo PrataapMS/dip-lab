@@ -13,6 +13,7 @@ import type {
   EndReason,
   InstrumentInfo,
   NewsItem,
+  NextEvent,
   ScenarioInfo,
   SlotHeader,
   Upcoming,
@@ -102,6 +103,8 @@ export interface MarketView {
   slots: (SlotHeader | null)[] | null;
   /** A run waiting for the player to pick a slot to replace (all are full). */
   slotPick: RunConfig | null;
+  /** Where "Next event" would stop now. */
+  next: NextEvent | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -143,6 +146,7 @@ export const initialView: MarketView = {
   slot: null,
   slots: null,
   slotPick: null,
+  next: null,
 };
 
 /** News lines kept for the feed. */
@@ -287,6 +291,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'exported':
     case 'imported':
       return state;
+    case 'nextEvent':
+      return { ...state, next: e.next };
     case 'notice':
       return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
     case 'error':

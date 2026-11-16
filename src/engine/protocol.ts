@@ -6,6 +6,7 @@ import type { AccountSettings } from './account';
 import type { Activity } from './activity';
 import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
+import type { NextEvent } from './nextEvent';
 import type { Order, OrderDraft } from './orders';
 import type { CustomOptions } from './scenarios';
 import type { AccountView, BranchOf, EndReason, RunAlert } from './run';
@@ -15,6 +16,7 @@ import type { SlotBody, SlotConfig, SlotHeader } from '../storage/slots';
 export type { AccountView } from './run';
 export type { Activity, HoldingFact } from './activity';
 export type { NewsItem, Upcoming } from './news';
+export type { NextEvent } from './nextEvent';
 export type { BranchOf, EndReason, RunAlert } from './run';
 export type { CustomOptions } from './scenarios';
 export type { DaySummary } from './summary';
@@ -57,6 +59,10 @@ export type Command =
   | { type: 'pause' }
   | { type: 'speed'; dayLengthMs: number }
   | { type: 'stepDay' }
+  /** Play ahead to the close before the next event (see \`nextEvent\`), paused. */
+  | { type: 'skipToEvent' }
+  /** The player's watchlist, whose earnings and dividends "Next event" stops for. */
+  | { type: 'watchlist'; tickers: string[] }
   /** Finish the run now and go to the debrief. */
   | { type: 'end' }
   | { type: 'pauseAtClose'; on: boolean }
@@ -200,6 +206,8 @@ export type WorkerEvent =
   | { type: 'alerts'; alerts: RunAlert[] }
   /** Orders that filled, expired or were rejected while the clock ran. */
   | { type: 'orderUpdates'; orders: Order[] }
+  /** Where "Next event" would stop now (null: nothing within its reach). */
+  | { type: 'nextEvent'; next: NextEvent | null }
   /** A one-off message for the notice stack. */
   | { type: 'notice'; ok: boolean; message: string }
   | { type: 'error'; message: string };

@@ -128,6 +128,11 @@ export function ProgressProvider({
     if (dayLengthMs === undefined || pauseRule === undefined) return;
     send({ type: 'defaults', dayLengthMs, pauseAtClose: pauseAtCloseFor(pauseRule) ?? null });
   }, [send, dayLengthMs, pauseRule]);
+  // "Next event" stops for the watchlist's earnings and dividends.
+  const watchlist = settings?.watchlist;
+  useEffect(() => {
+    if (watchlist) send({ type: 'watchlist', tickers: watchlist });
+  }, [send, watchlist]);
   const update = useCallback(
     (fn: (p: Progress) => { progress: Progress; rewards?: Reward[] }) => {
       const current = progressRef.current;

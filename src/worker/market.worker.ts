@@ -6,6 +6,7 @@ import { debrief } from '../engine/debrief';
 import { BARS_PER_DAY } from '../engine/intraday';
 import { buildMarket } from '../engine/market';
 import { dividendItem, selectNews, tickerNews, upcomingFor } from '../engine/news';
+import { nextEvent, nextEventLabel, SKIP_MAX_DAYS } from '../engine/nextEvent';
 import { type Order, orderMessage } from '../engine/orders';
 import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engine/protocol';
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
@@ -50,6 +51,10 @@ let dayLengthMs = DEFAULT_DAY_LENGTH_MS;
 let pauseDefault: boolean | null = null;
 let postedDay = -1;
 let watched: string[] = [];
+/** The player's watchlist ("Next event" follows it and the holdings). */
+let watchlist: string[] = [];
+/** What the last `nextEvent` was worked out from, to send it only when that changes. */
+let nextKey = '';
 let inspected: string | null = null;
 let lastNow = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -162,6 +167,62 @@ function emitNews(r: Run): void {
   if (items.length) post({ type: 'news', items });
 }
 
+/** Holdings (long or short) and the watchlist. */
+function followed(r: Run): Set<string> {
+  const held = Object.entries(r.account.positions).filter(([, p]) => p.shares !== 0);
+  return new Set([...held.map(([t]) => t), ...watchlist]);
+}
+
+/** Send where "Next event" would stop, when the clock or what is followed has changed. */
+function emitNext(r: Run): void {
+  const atClose = r.clock.bar === BARS_PER_DAY;
+  const follow = followed(r);
+  const key = `${r.clock.day}:${atClose}:${r.finished}:${[...follow].sort().join(',')}`;
+  if (key === nextKey) return;
+  nextKey = key;
+  post({
+    type: 'nextEvent',
+    next: r.finished ? null : nextEvent(r.market, r.clock.day, atClose, follow),
+  });
+}
+
+function signedPctText(x: number): string {
+  return `${x < 0 ? '−' : '+'}${Math.abs(x * 100).toFixed(1)}%`;
+}
+
+/** Play ahead to the close before the next event and say what happened on the way. */
+function skipToEvent(r: Run): void {
+  stopLoop();
+  r.play(false);
+  const next = nextEvent(r.market, r.clock.day, r.clock.bar === BARS_PER_DAY, followed(r));
+  if (!next) {
+    emitTick();
+    post({
+      type: 'notice',
+      ok: true,
+      message: `Nothing scheduled in the next ${SKIP_MAX_DAYS} trading days. Use play or skip.`,
+    });
+    return;
+  }
+  const from = { day: r.clock.day, value: r.marks().value };
+  const { changed, stop } = r.skipTo(next.stopDay);
+  emitUpdates(changed);
+  emitTick();
+  autosave();
+  if (stop === 'end') return;
+  const days = r.clock.day - from.day;
+  const moved = `${days} day${days === 1 ? '' : 's'} ahead, ${signedPctText(r.marks().value / from.value - 1)}`;
+  const message =
+    stop === 'fill'
+      ? `Stopped early: an order filled (${moved}).`
+      : stop === 'marginCall'
+        ? `Stopped early: margin call (${moved}).`
+        : next.kind === 'lastDay'
+          ? `At the last close (${moved}).`
+          : `Paused before ${nextEventLabel(next)} tomorrow (${moved}).`;
+  post({ type: 'notice', ok: stop === 'close', message });
+}
+
 /** Report new fills (and anything else passed in) as activity. */
 function emitActivity(r: Run, extra: Activity[] = []): void {
   const fills = r.account.fills;
@@ -225,6 +286,7 @@ function emitTick(): void {
     extra.push(closeActivity(r));
   }
   emitActivity(r, extra);
+  emitNext(r);
   const closed = closes > closesSent;
   closesSent = closes;
   if (r.endReason && !endSent) {
@@ -364,6 +426,7 @@ function load(r: Run, seed: number, restored = false): void {
   fillsSent = r.account.fills.length;
   endSent = false;
   closesPosted = -1;
+  nextKey = '';
   endRestored = restored && r.endReason !== null;
   alertsSent = r.alerts.length;
   lastDebrief = null;
@@ -592,6 +655,9 @@ function handle(cmd: Command): void {
       emitUpdates(requireRun().stepDay());
       emitTick();
       return;
+    case 'skipToEvent':
+      skipToEvent(requireRun());
+      return;
     case 'end': {
       const r = requireRun();
       stopLoop();
@@ -641,6 +707,10 @@ function handle(cmd: Command): void {
       autosave();
       return;
     }
+    case 'watchlist':
+      watchlist = cmd.tickers;
+      if (run) emitNext(run);
+      return;
     case 'watch':
       watched = cmd.tickers;
       if (run) emitDay(run);

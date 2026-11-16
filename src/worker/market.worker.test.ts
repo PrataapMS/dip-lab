@@ -33,7 +33,14 @@ afterEach(() => {
 describe('market worker', () => {
   it('loads a scenario and posts the first day and tick', () => {
     send({ type: 'newRun', scenarioId: 'covid-2020', seed: 7 });
-    expect(events.map((e) => e.type)).toEqual(['loaded', 'day', 'tick', 'news', 'account']);
+    expect(events.map((e) => e.type)).toEqual([
+      'loaded',
+      'day',
+      'tick',
+      'news',
+      'account',
+      'nextEvent',
+    ]);
     const loaded = last('loaded');
     expect(loaded.dates[0]).toBe('2020-02-20');
     expect(loaded.instruments[loaded.indexInstrument]?.ticker).toBe('SPY');
@@ -325,6 +332,21 @@ describe('market worker', () => {
     expect(loaded.dates).toHaveLength(63);
     expect(loaded.dates[0]).toBe('2012-03-01');
     expect(last('news').items).toHaveLength(1);
+  });
+
+  it('plays ahead to the close before the next event of the watchlist', () => {
+    send({ type: 'watchlist', tickers: ['AAPL', 'MSFT', 'NVDA'] });
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 3 });
+    const next = last('nextEvent').next;
+    expect(next).not.toBeNull();
+    events.length = 0;
+    send({ type: 'skipToEvent' });
+    const tick = last('tick');
+    expect([tick.day, tick.bar, tick.playing]).toEqual([next?.stopDay, 78, false]);
+    expect(last('notice').message).toMatch(/^(Paused before|At the last close)/);
+    // The next one is further on.
+    expect(last('nextEvent').next?.stopDay).toBeGreaterThan(next?.stopDay ?? 0);
+    expect(events.filter((e) => e.type === 'dayEnd')).toHaveLength(1);
   });
 
   it('reports errors instead of throwing', () => {
