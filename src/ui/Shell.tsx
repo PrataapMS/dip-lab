@@ -59,7 +59,7 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
           </span>
         </div>
         <div class="stack end mono">
-          <span class="value" aria-label="Account value">
+          <span class="value" role="group" aria-label="Account value">
             {money(run.value)}
           </span>
           <span class={`small ${upDown(run.dollars)}`} title={signedMoney(run.dollars)}>

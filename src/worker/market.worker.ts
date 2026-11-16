@@ -179,7 +179,10 @@ function emitUpdates(changed: Order[]): void {
 }
 
 function loop(): void {
-  if (!run) return stopLoop();
+  if (!run) {
+    stopLoop();
+    return;
+  }
   const now = performance.now();
   const elapsed = Math.min(now - lastNow, MAX_ELAPSED_MS);
   lastNow = now;

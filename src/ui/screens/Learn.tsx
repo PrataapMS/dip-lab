@@ -124,7 +124,7 @@ function Lessons() {
           <a key={l.id} class={`lesson-row ${isDone ? 'done' : ''}`} href={`#/learn/${l.id}`}>
             <span class="quest-check" aria-hidden="true">
               {isDone && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="5 12 10 17 19 7" />
                 </svg>
               )}

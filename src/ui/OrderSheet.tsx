@@ -285,7 +285,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           </div>
         )}
 
-        <div class="terminal mono" aria-label="Order preview">
+        <div class="terminal mono" role="group" aria-label="Order preview">
           <div class="row">
             <span class="dim">&gt; est_shares</span>
             <span>{fmtShares(preview.estShares)}</span>

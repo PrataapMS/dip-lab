@@ -23,7 +23,7 @@ export function newSeed(): number {
 
 function Pips({ level, boss }: { level: number; boss: boolean }) {
   return (
-    <span class="pips" aria-label={`Difficulty ${level} of 5`}>
+    <span class="pips" role="img" aria-label={`Difficulty ${level} of 5`}>
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} class={i <= level ? (boss ? 'on boss' : 'on') : ''} />
       ))}
