@@ -1,0 +1,50 @@
+/* Dip Lab "terminal arcade" tokens — mirror the design canvas. */
+:root {
+  --bg: #0b0d14;
+  --panel: #141826;
+  --panel-2: #1b2033;
+  --line: #2a3150;
+  --text: #e8ecf8;
+  --text-dim: #9aa3c0;
+  --accent: #c6ff3d; /* up moves, primary actions */
+  --down: #ff5c8a; /* down moves, boss runs */
+  --xp: #a08bff; /* XP, levels */
+  --warn: #ffb23d; /* streaks, risk */
+  --on-accent: #0b0d14;
+
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-data: 'JetBrains Mono', ui-monospace, monospace;
+  --font-pixel: 'Silkscreen', var(--font-data);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --grid: 24px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: var(--grid) var(--grid);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

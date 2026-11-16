@@ -1,0 +1,11 @@
+import { render } from 'preact';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/silkscreen/400.css';
+import './styles/tokens.css';
+import { App } from './app';
+
+const root = document.getElementById('app');
+if (root) render(<App />, root);

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+
+# Local-only: planning, decisions, assistant config
+CLAUDE.md
+docs/internal/
+.claude/
