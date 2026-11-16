@@ -1,11 +1,15 @@
 name: CI
 
-# Every push and PR is verified. On main, a major version bump in package.json
-# deploys to GitHub Pages, but only after verify has passed.
+# Pushes to main and PRs are verified (other branches: open a PR or run it by hand).
+# On main, a major version bump in package.json deploys to GitHub Pages, but only after
+# verify and e2e have passed. Docs-only changes skip CI.
 on:
   push:
-    branches: ['**']
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
+  workflow_dispatch:
 
 permissions:
   contents: read
