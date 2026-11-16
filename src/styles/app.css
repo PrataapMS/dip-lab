@@ -1100,3 +1100,123 @@ button:disabled {
 .run-over p {
   margin: 0;
 }
+
+/* ---------- Debrief ---------- */
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+
+.debrief-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.grade-tile {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  border: 3px solid var(--accent);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.grade-tile.grade-c { border-color: var(--warn); }
+.grade-tile.grade-d,
+.grade-tile.grade-f { border-color: var(--down); }
+
+.grade-letter {
+  font-family: var(--font-pixel);
+  font-size: 34px;
+  line-height: 34px;
+  color: var(--accent);
+}
+
+.grade-c .grade-letter { color: var(--warn); }
+.grade-d .grade-letter,
+.grade-f .grade-letter { color: var(--down); }
+
+.debrief-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.vs-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vs-tile {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vs-tile.you { border: 2px solid var(--accent); }
+
+.vs-big {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stat {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stat-value {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.moment {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-radius: 10px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.moment-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.moment-text {
+  line-height: 19px;
+  color: #c4cbe0;
+}
+
+.debrief-actions .button,
+.debrief-actions button {
+  width: 100%;
+}

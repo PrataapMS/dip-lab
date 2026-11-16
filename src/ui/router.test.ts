@@ -3,7 +3,7 @@ import { formatRoute, parseRoute, type Route } from './router';
 
 describe('router', () => {
   it('round-trips every route through the hash', () => {
-    const routes: Route[] = [{ name: 'home' }, { name: 'market' }, { name: 'portfolio' }, { name: 'learn' }, { name: 'stock', ticker: 'BRK.B' }];
+    const routes: Route[] = [{ name: 'home' }, { name: 'market' }, { name: 'portfolio' }, { name: 'learn' }, { name: 'debrief' }, { name: 'stock', ticker: 'BRK.B' }];
     for (const r of routes) expect(parseRoute(formatRoute(r))).toEqual(r);
   });
 

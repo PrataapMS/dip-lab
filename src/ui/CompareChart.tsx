@@ -6,12 +6,14 @@ interface Props {
   capacity: number;
   label: string;
   height?: number;
+  /** Points to circle on the account line, e.g. flagged moments. */
+  markers?: readonly { index: number; color: string }[];
 }
 
 const W = 320;
 
 /** Two lines rebased to 100: the account (solid accent) against SPY (dashed, dim). */
-export function CompareChart({ you, spy, capacity, label, height = 140 }: Props) {
+export function CompareChart({ you, spy, capacity, label, height = 140, markers = [] }: Props) {
   const H = height;
   const slots = Math.max(capacity, 2) - 1;
   const all = [...you, ...spy, 100];
@@ -46,6 +48,11 @@ export function CompareChart({ you, spy, capacity, label, height = 140 }: Props)
         />
       )}
       {last !== undefined && <circle cx={x(you.length - 1)} cy={y(last)} r="3" fill="var(--accent)" />}
+      {markers
+        .filter((m) => m.index >= 0 && m.index < you.length)
+        .map((m) => (
+          <circle key={m.index} cx={x(m.index)} cy={y(you[m.index] ?? 100)} r="5" fill="var(--bg)" stroke={m.color} stroke-width="2.5" />
+        ))}
     </svg>
   );
 }

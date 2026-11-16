@@ -30,6 +30,14 @@ export interface History {
   upcoming: Upcoming;
 }
 
+/** Everything needed to start (or replay) a run. */
+export interface RunConfig {
+  scenarioId: string;
+  seed: number;
+  settings?: AccountSettings;
+  targetReturn?: number;
+}
+
 export interface MarketView {
   ready: boolean;
   /** A new run was asked for and the worker is building it. */
@@ -73,6 +81,8 @@ export interface MarketView {
   daySummary: DaySummary | null;
   /** End-of-run report, once the run is over. */
   debrief: Debrief | null;
+  /** How the current run was started, so it can be replayed. */
+  config: RunConfig | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -109,6 +119,7 @@ export const initialView: MarketView = {
   pauseAtClose: false,
   daySummary: null,
   debrief: null,
+  config: null,
 };
 
 /** News lines kept for the feed. */
@@ -153,6 +164,7 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
         tickerIndex: new Map(e.instruments.map((inst, i) => [inst.ticker, i])),
         indexInstrument: e.indexInstrument,
         dayLengthMs: state.dayLengthMs,
+        config: state.config,
       };
     case 'day': {
       const watch: Record<string, number[]> = {};
@@ -216,9 +228,9 @@ export function useMarket() {
 
   const send = useCallback((cmd: Command) => worker.current?.postMessage(cmd), []);
   const startRun = useCallback(
-    (scenarioId: string, seed: number, settings?: AccountSettings) => {
-      setView((s) => ({ ...s, ready: false, starting: true, error: null }));
-      send({ type: 'newRun', scenarioId, seed, settings });
+    (config: RunConfig) => {
+      setView((s) => ({ ...s, ready: false, starting: true, error: null, config }));
+      send({ type: 'newRun', ...config });
     },
     [send],
   );

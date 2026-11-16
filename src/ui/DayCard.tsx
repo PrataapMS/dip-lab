@@ -93,8 +93,8 @@ export function RunOverCard({ market }: { market: Market }) {
     <section class="panel run-over">
       <span class="mono tiny accent">// RUN COMPLETE</span>
       <p class="small">{endText(view.endReason ?? 'lastDay')}</p>
-      <a class="button primary" href="#/home">
-        Start a new run
+      <a class="button primary" href="#/debrief">
+        See your debrief
       </a>
     </section>
   );

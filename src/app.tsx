@@ -1,5 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import { HOME, type Route, useRoute } from './ui/router';
+import { navigate } from './ui/router';
+import { Debrief } from './ui/screens/Debrief';
 import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
 import { Market as MarketScreen } from './ui/screens/Market';
@@ -23,6 +25,8 @@ function Screen({ route, market }: { route: Route; market: Market }) {
       return <Home market={market} />;
     case 'learn':
       return <Learn />;
+    case 'debrief':
+      return <Debrief market={market} />;
     case 'market':
       return <MarketScreen market={market} />;
     case 'portfolio':
@@ -42,6 +46,11 @@ export function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [route.name]);
+
+  // When a run ends, go straight to its debrief.
+  useEffect(() => {
+    if (view.debrief) navigate({ name: 'debrief' });
+  }, [view.debrief]);
 
   return (
     <div class="app">

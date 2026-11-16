@@ -40,7 +40,7 @@ export function Home({ market }: { market: Market }) {
     if (!scenario) return;
     if (hasRun && !view.finished && !confirm(`Leave ${view.scenario?.name} and start ${scenario.name}?`)) return;
     send({ type: 'speed', dayLengthMs: SPEEDS[DEFAULT_SPEED] });
-    startRun(scenario.id, newSeed(), DEFAULT_ACCOUNT_SETTINGS);
+    startRun({ scenarioId: scenario.id, seed: newSeed(), settings: DEFAULT_ACCOUNT_SETTINGS });
     navigate({ name: 'market' });
   };
 
@@ -52,7 +52,7 @@ export function Home({ market }: { market: Market }) {
       </header>
 
       {hasRun && (
-        <a class="panel run-card" href="#/market">
+        <a class="panel run-card" href={view.finished ? '#/debrief' : '#/market'}>
           <div class="row">
             <span class="mono tiny accent">// {view.finished ? 'RUN COMPLETE' : 'RUN IN PROGRESS'}</span>
             <span class="mono tiny dim">
@@ -70,7 +70,7 @@ export function Home({ market }: { market: Market }) {
             </div>
           </div>
           <span class="button primary">
-            <PlayIcon /> Resume run
+            <PlayIcon /> {view.finished ? 'See your debrief' : 'Resume run'}
           </span>
         </a>
       )}
