@@ -38,6 +38,8 @@ export interface Order extends OrderDraft {
   filledAt?: MarketTime;
   fillPrice?: number;
   filledShares?: number;
+  /** The fill opened or covered a short. */
+  short?: boolean;
 }
 
 /**
@@ -94,7 +96,8 @@ function validate(state: AccountState, draft: OrderDraft): string | null {
   if (!(draft.amount.value > 0) || !Number.isFinite(draft.amount.value)) return 'Enter an amount above zero.';
   if (draft.type === 'limit' && !(draft.limitPrice && draft.limitPrice > 0)) return 'Set a limit price above zero.';
   if (draft.type === 'stop' && !(draft.stopPrice && draft.stopPrice > 0)) return 'Set a stop price above zero.';
-  if (draft.side === 'sell' && !(state.positions[draft.ticker]?.shares ?? 0)) return `You don't own any ${draft.ticker}.`;
+  const canShort = !!state.settings.shorts && !!state.settings.margin;
+  if (draft.side === 'sell' && (state.positions[draft.ticker]?.shares ?? 0) <= 0 && !canShort) return `You don't own any ${draft.ticker}.`;
   return null;
 }
 
@@ -127,6 +130,7 @@ function tryFill(state: AccountState, order: Order, q: SegmentQuote, at: MarketT
     filledAt: at,
     fillPrice: r.fill.price,
     filledShares: r.fill.shares,
+    ...(r.fill.short ? { short: true } : {}),
   };
   return { state: replaceOrder(r.state, filled), order: filled };
 }
@@ -210,13 +214,18 @@ function money(value: number): string {
   return Number.isInteger(value) ? usd(value).replace(/\.00$/, '') : usd(value);
 }
 
-/** One line saying exactly what an order does, e.g. "Buy $1,000 of NVDA". */
-export function describeOrder(d: OrderDraft): string {
+/**
+ * One line saying exactly what an order does, e.g. "Buy $1,000 of NVDA". `held` (shares held
+ * now, negative when short) turns a sell into "Short" and a buy into "Buy to cover".
+ */
+export function describeOrder(d: OrderDraft, held?: number): string {
   const amount =
     d.amount.kind === 'dollars'
       ? `${money(d.amount.value)} of ${d.ticker}`
       : `${Number(d.amount.value.toFixed(4))} ${d.amount.value === 1 ? 'share' : 'shares'} of ${d.ticker}`;
-  const verb = d.side === 'buy' ? 'Buy' : 'Sell';
+  const short = held !== undefined && (d.side === 'sell' ? held <= 0 : held < 0);
+  const verb = d.side === 'buy' ? (short ? 'Buy to cover' : 'Buy') : short ? 'Short' : 'Sell';
+  if (short && d.type === 'stop' && d.side === 'buy') return `Set a stop on your ${d.ticker} short at ${usd(d.stopPrice ?? 0)}`;
   switch (d.type) {
     case 'market':
       return `${verb} ${amount}`;
@@ -238,7 +247,7 @@ function sharesWord(shares: number): string {
 export function orderMessage(o: Order): string {
   switch (o.status) {
     case 'filled':
-      return `${o.side === 'buy' ? 'Bought' : 'Sold'} ${sharesWord(o.filledShares ?? 0)} of ${o.ticker} at ${usd(o.fillPrice ?? 0)}.`;
+      return `${o.side === 'buy' ? (o.short ? 'Covered' : 'Bought') : o.short ? 'Sold short' : 'Sold'} ${sharesWord(o.filledShares ?? 0)} of ${o.ticker} at ${usd(o.fillPrice ?? 0)}.`;
     case 'open':
       return o.type === 'market' ? `Market closed. ${describeOrder(o)} at the next open.` : `Order placed: ${describeOrder(o)}.`;
     case 'cancelled':

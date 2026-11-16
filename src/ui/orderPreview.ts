@@ -17,6 +17,8 @@ export interface PreviewInput {
   commission: number;
   /** Set for a margin account: dollars of new holdings it can take on, borrowing included. */
   buyingPower?: number;
+  /** Selling what you don't own opens a short. */
+  canShort?: boolean;
 }
 
 export interface Preview {
@@ -65,12 +67,17 @@ export function previewOrder(p: PreviewInput): Preview {
   if (!(amount > 0)) problem = 'Enter an amount above zero.';
   else if (p.type === 'limit' && !(p.limitPrice && p.limitPrice > 0)) problem = 'Set a limit price above zero.';
   else if (p.type === 'stop' && !(p.stopPrice && p.stopPrice > 0)) problem = 'Set a stop price above zero.';
-  else if (p.side === 'buy' && p.buyingPower !== undefined && gross + p.commission > p.buyingPower + 1e-9)
+  else if (p.side === 'buy' && p.heldShares < 0) {
+    if (estShares > -p.heldShares + 1e-6) problem = `You're short ${Number((-p.heldShares).toFixed(4))} shares; cover up to that.`;
+  } else if (p.side === 'buy' && p.buyingPower !== undefined && gross + p.commission > p.buyingPower + 1e-9)
     problem = 'Not enough buying power for this order.';
   else if (p.side === 'buy' && p.buyingPower === undefined && cashAfter < -1e-9) problem = 'Not enough cash for this order.';
-  else if (p.side === 'sell' && p.heldShares <= 0) problem = "You don't own any of this stock.";
-  else if (p.side === 'sell' && estShares > p.heldShares + 1e-6) problem = `You only own ${Number(p.heldShares.toFixed(4))} shares.`;
-  const borrowed = p.side === 'buy' && p.buyingPower !== undefined ? Math.max(0, -cashAfter) - Math.max(0, -p.cash) : 0;
+  else if (p.side === 'sell' && p.heldShares <= 0) {
+    if (!p.canShort) problem = "You don't own any of this stock.";
+    else if (gross > (p.buyingPower ?? 0) + 1e-9) problem = 'Not enough buying power to short this much.';
+  } else if (p.side === 'sell' && estShares > p.heldShares + 1e-6)
+    problem = `You only own ${Number(p.heldShares.toFixed(4))} shares.${p.canShort ? ' Sell those first, then short.' : ''}`;
+  const borrowed = p.side === 'buy' && p.heldShares >= 0 && p.buyingPower !== undefined ? Math.max(0, -cashAfter) - Math.max(0, -p.cash) : 0;
   return { estShares, fillPrice: fill, cashAfter, borrowed: Math.max(0, borrowed), fillsNow, problem };
 }
 

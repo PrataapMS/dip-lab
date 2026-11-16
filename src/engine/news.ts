@@ -59,8 +59,11 @@ export function dividendItem(p: DividendPayment): NewsItem {
     bar: p.at.bar,
     kind: 'dividend',
     ticker: p.ticker,
-    tone: 'up',
-    text: `Dividend from ${p.ticker}: +$${p.amount.toFixed(2)} for your ${Number(p.shares.toFixed(6))} shares`,
+    tone: p.amount >= 0 ? 'up' : 'down',
+    text:
+      p.amount >= 0
+        ? `Dividend from ${p.ticker}: +$${p.amount.toFixed(2)} for your ${Number(p.shares.toFixed(6))} shares`
+        : `Dividend owed on your ${p.ticker} short: −$${(-p.amount).toFixed(2)} for ${Number((-p.shares).toFixed(6))} borrowed shares`,
     mine: true,
   };
 }

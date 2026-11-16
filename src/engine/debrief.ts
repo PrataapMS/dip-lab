@@ -21,7 +21,7 @@ export interface TradeStat {
   day: number;
 }
 
-export type MomentKind = 'soldNearLow' | 'stopSlippage' | 'allIn' | 'overtrading' | 'satOut' | 'marginCall' | 'forcedSale';
+export type MomentKind = 'soldNearLow' | 'stopSlippage' | 'allIn' | 'overtrading' | 'satOut' | 'marginCall' | 'forcedSale' | 'shortSqueeze';
 
 export interface Moment {
   kind: MomentKind;
@@ -72,6 +72,9 @@ export interface Debrief {
   dividends: number;
   /** Interest paid on borrowed cash. */
   interest: number;
+  /** Fees for borrowing shares sold short, and dividends owed on them. */
+  borrowFees: number;
+  dividendsOwed: number;
   /** Margin calls received, and opens where the broker sold. */
   marginCalls: number;
   forcedSales: number;
@@ -110,6 +113,8 @@ export const RULES = {
   capC: 0.8,
   /** Average leverage above this costs discipline. */
   leverage: 1.5,
+  /** A short that went this far against you is a squeeze. */
+  squeeze: 0.2,
 } as const;
 
 const LETTERS: [number, Letter][] = [
@@ -204,19 +209,26 @@ export function gradeRun(g: GradeInput): Grade {
   return { letter: letterFor(score), score, performance, risk, discipline, cap };
 }
 
-/** Every sell's return on cost, plus positions still held, valued at the final price. */
+/**
+ * Every sale's return on cost (and every short cover's return on what the short sale brought
+ * in), plus positions still held, valued at the final price.
+ */
 function tradeStats(run: Run, fills: readonly Fill[], finalPrice: (ticker: string) => number, endDay: number): TradeStat[] {
   const out: TradeStat[] = [];
   for (const f of fills) {
-    if (f.side !== 'sell') continue;
-    const proceeds = f.shares * f.price - f.commission;
-    const basis = proceeds - f.realised;
-    out.push({ ticker: f.ticker, pct: basis > 0 ? f.realised / basis : 0, dollars: f.realised, open: false, day: f.at.day });
+    if (f.side === 'sell' && !f.short) {
+      const proceeds = f.shares * f.price - f.commission;
+      const basis = proceeds - f.realised;
+      out.push({ ticker: f.ticker, pct: basis > 0 ? f.realised / basis : 0, dollars: f.realised, open: false, day: f.at.day });
+    } else if (f.side === 'buy' && f.short) {
+      const shortProceeds = f.realised + f.shares * f.price + f.commission;
+      out.push({ ticker: f.ticker, pct: shortProceeds > 0 ? f.realised / shortProceeds : 0, dollars: f.realised, open: false, day: f.at.day });
+    }
   }
   for (const [ticker, pos] of Object.entries(run.account.positions)) {
-    if (pos.shares <= 0 || pos.costBasis <= 0) continue;
+    if (pos.shares === 0 || pos.costBasis === 0) continue;
     const dollars = pos.shares * finalPrice(ticker) - pos.costBasis;
-    out.push({ ticker, pct: dollars / pos.costBasis, dollars, open: true, day: endDay });
+    out.push({ ticker, pct: dollars / Math.abs(pos.costBasis), dollars, open: true, day: endDay });
   }
   return out;
 }
@@ -255,10 +267,21 @@ export function debrief(run: Run): Debrief {
   let maxWeight: Debrief['maxWeight'] = null;
   let investedSum = 0;
   let leverageSum = 0;
+  // Shorts: shares and sale proceeds still open per ticker, and the worst move against each.
+  const shortBook = new Map<string, { shares: number; proceeds: number }>();
+  const squeezes = new Map<string, { against: number; day: number; dollars: number }>();
   for (let d = 0; d < a.equityByDay.length; d++) {
     while (f < fills.length && (fills[f]?.at.day ?? 0) <= d) {
       const x = fills[f];
       if (x) held.set(x.ticker, (held.get(x.ticker) ?? 0) + (x.side === 'buy' ? x.shares : -x.shares));
+      if (x?.short) {
+        const b = shortBook.get(x.ticker) ?? { shares: 0, proceeds: 0 };
+        if (x.side === 'sell') shortBook.set(x.ticker, { shares: b.shares + x.shares, proceeds: b.proceeds + x.shares * x.price });
+        else if (b.shares > 0) {
+          const left = Math.max(0, b.shares - x.shares);
+          shortBook.set(x.ticker, { shares: left, proceeds: (b.proceeds * left) / b.shares });
+        }
+      }
       f++;
     }
     const equity = a.equityByDay[d] ?? 0;
@@ -271,6 +294,14 @@ export function debrief(run: Run): Debrief {
       invested += value;
       const w = value / equity;
       if (!isFund.has(ticker) && (!maxWeight || w > maxWeight.weight)) maxWeight = { ticker, weight: w, day: d };
+    }
+    for (const [ticker, b] of shortBook) {
+      if (b.shares <= 1e-9) continue;
+      const i = run.indexOf(ticker);
+      const close = i === undefined ? 0 : (m.closes[i]?.[d + 1] ?? 0);
+      const avg = b.proceeds / b.shares;
+      const against = avg > 0 ? close / avg - 1 : 0;
+      if (against > (squeezes.get(ticker)?.against ?? 0)) squeezes.set(ticker, { against, day: d, dollars: b.shares * (close - avg) });
     }
     investedSum += Math.min(1, invested / equity);
     leverageSum += invested / equity;
@@ -296,7 +327,7 @@ export function debrief(run: Run): Debrief {
   // Sold near the low: losing sells close to the stock's low that then rebounded.
   const panicGroups = new Map<string, { ticker: string; day: number; shares: number; price: number; realised: number }>();
   for (const x of fills) {
-    if (x.side !== 'sell' || x.realised >= 0) continue;
+    if (x.side !== 'sell' || x.short || x.forced || x.realised >= 0) continue;
     const key = `${x.ticker}:${x.at.day}`;
     const g = panicGroups.get(key) ?? { ticker: x.ticker, day: x.at.day, shares: 0, price: 0, realised: 0 };
     g.price = (g.price * g.shares + x.mid * x.shares) / (g.shares + x.shares);
@@ -356,6 +387,18 @@ export function debrief(run: Run): Debrief {
     });
   }
 
+  // Short squeezes: a short that went well against the player.
+  for (const [ticker, s] of squeezes) {
+    if (s.against < RULES.squeeze) continue;
+    moments.push({
+      kind: 'shortSqueeze',
+      title: 'Short squeeze',
+      lesson: `${ticker} rose ${pct(s.against)} above where you shorted it, ${usd(s.dollars)} against you on day ${s.day + 1}. A falling bet can lose more than you put in: there's no ceiling on a rising price.`,
+      day: s.day,
+      impact: s.dollars,
+    });
+  }
+
   // Margin calls and forced sales.
   const forcedDays = new Map<number, Fill[]>();
   for (const x of fills) if (x.forced) forcedDays.set(x.at.day, [...(forcedDays.get(x.at.day) ?? []), x]);
@@ -385,13 +428,13 @@ export function debrief(run: Run): Debrief {
   }
 
   // Overtrading.
-  const costs = a.feesPaid + a.spreadPaid + a.interestPaid;
+  const costs = a.feesPaid + a.spreadPaid + a.interestPaid + a.borrowFeesPaid;
   const days = Math.max(1, closesSeen + (atClose ? 0 : 1));
   if (costs >= start * RULES.costShare || fills.length / days > RULES.tradesPerDay) {
     moments.push({
       kind: 'overtrading',
       title: 'Costs add up',
-      lesson: `You paid ${usd(costs)} in spreads, fees${a.interestPaid > 0 ? ' and interest' : ''} over ${fills.length} trades (${((costs / start) * 100).toFixed(1)}% of your starting cash). Every trade costs a little.`,
+      lesson: `You paid ${usd(costs)} in spreads, fees${a.interestPaid + a.borrowFeesPaid > 0 ? ', interest and borrow fees' : ''} over ${fills.length} trades (${((costs / start) * 100).toFixed(1)}% of your starting cash). Every trade costs a little.`,
       day: fills[fills.length - 1]?.at.day ?? endDay,
       impact: costs,
     });
@@ -451,6 +494,8 @@ export function debrief(run: Run): Debrief {
     spread: a.spreadPaid,
     dividends: a.dividendsReceived,
     interest: a.interestPaid,
+    borrowFees: a.borrowFeesPaid,
+    dividendsOwed: a.dividendsPaid,
     marginCalls: a.marginCalls.length,
     forcedSales: forcedDays.size,
     avgLeverage,

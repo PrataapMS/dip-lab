@@ -3,6 +3,7 @@ import {
   type AccountSettings,
   type AccountState,
   buyingPower,
+  chargeBorrowFees,
   chargeInterest,
   createAccount,
   type MarginCall,
@@ -57,6 +58,9 @@ export interface AccountView {
   recentFills: Fill[];
   equityByDay: number[];
   interestPaid: number;
+  borrowFeesPaid: number;
+  /** Dividends paid out on shares sold short. */
+  dividendsPaid: number;
   /** Dollars of new holdings the account can take on now (cash without margin). */
   buyingPower: number;
   /** Cash owed to the broker (0 without margin). */
@@ -252,6 +256,8 @@ export class Run {
       recentFills: a.fills.slice(-RECENT_FILLS).reverse(),
       equityByDay: [...a.equityByDay],
       interestPaid: a.interestPaid,
+      borrowFeesPaid: a.borrowFeesPaid,
+      dividendsPaid: a.dividendsPaid,
       buyingPower: buyingPower(a, this.priceOf),
       borrowed: Math.max(0, -m.cash),
       marginRatio: m.positions.length ? Math.min(99, marginRatio(a, this.priceOf)) : null,
@@ -326,7 +332,7 @@ export class Run {
     if (at.bar === BARS_PER_DAY) {
       const e = expireDayOrders(this.account, at.day);
       changed.push(...e.changed);
-      this.account = chargeInterest(e.state);
+      this.account = chargeBorrowFees(chargeInterest(e.state), this.priceOf);
       const value = this.marks().value;
       this.account = recordClose(this.account, value);
       const reason = endAtClose(value, this.account.settings.startingCash, this.targetReturn);

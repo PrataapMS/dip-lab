@@ -120,7 +120,7 @@ export function Portfolio({ market }: { market: Market }) {
                   <span class="stack">
                     <span class="ticker">{p.ticker}</span>
                     <span class="tiny dim mono">
-                      {shares(p.shares)} sh · avg {money(p.avgCost, true)}
+                      {shares(p.shares)} sh{p.shares < 0 ? ' short' : ''} · avg {money(p.avgCost, true)}
                     </span>
                   </span>
                   <span class="stack end mono">

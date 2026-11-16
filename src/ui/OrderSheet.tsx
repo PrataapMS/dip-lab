@@ -42,14 +42,17 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const settings = view.settings;
   const commission = settings?.commission ?? 0;
   const margin = !!settings?.margin;
+  const canShort = margin && !!settings?.shorts;
   const power = margin ? (account?.buyingPower ?? 0) : cash;
   const startAmount = () => String(Math.max(0, Math.min(1_000, Math.floor(power - commission))));
   const half = settings ? halfSpread(inst, view.marketVol, settings) : 0;
 
   const [side, setSide] = useState<Side>(initialSide);
-  const [unit, setUnit] = useState<'dollars' | 'shares'>(initialSide === 'sell' ? 'shares' : 'dollars');
+  // Closing a position starts with all of it; opening one starts with a dollar amount.
+  const closing = (s: Side) => (s === 'sell' ? heldShares > 0 : heldShares < 0);
+  const [unit, setUnit] = useState<'dollars' | 'shares'>(closing(initialSide) ? 'shares' : 'dollars');
   const [amountText, setAmountText] = useState(() =>
-    initialSide === 'sell' ? String(Number(heldShares.toFixed(6))) : startAmount(),
+    closing(initialSide) ? String(Number(Math.abs(heldShares).toFixed(6))) : startAmount(),
   );
   const [type, setType] = useState<OrderType>('market');
   const [tif, setTif] = useState<TimeInForce>('day');
@@ -84,9 +87,9 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
       if (type === 'limit') setLimitText(cents(price * (s === 'buy' ? 0.98 : 1.02)).toFixed(2));
       else setStopText(cents(price * (s === 'sell' ? 0.95 : 1.05)).toFixed(2));
     }
-    if (s === 'sell') {
+    if (closing(s)) {
       setUnit('shares');
-      setAmountText(String(Number(heldShares.toFixed(6))));
+      setAmountText(String(Number(Math.abs(heldShares).toFixed(6))));
     } else {
       setUnit('dollars');
       setAmountText(startAmount());
@@ -109,16 +112,19 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
     heldShares,
     commission,
     ...(margin ? { buyingPower: power } : {}),
+    canShort,
   });
+  const shorting = side === 'sell' && heldShares <= 0;
+  const covering = side === 'buy' && heldShares < 0;
   const risk = riskCheck({
-    side,
+    side: shorting ? 'buy' : covering ? 'sell' : side,
     ticker: inst.ticker,
     kind: inst.kind,
     vol: inst.vol,
     orderValue: preview.estShares * preview.fillPrice,
-    heldValue: held?.value ?? 0,
+    heldValue: Math.abs(held?.value ?? 0),
     accountValue: account?.value ?? cash,
-    closesPosition: side === 'sell' && preview.estShares >= heldShares - 1e-6,
+    closesPosition: closing(side) && preview.estShares >= Math.abs(heldShares) - 1e-6,
   });
   const draft: OrderDraft = useMemo(
     () => ({
@@ -135,12 +141,12 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const closed = view.bar >= BARS_PER_DAY;
 
   const setMax = () => {
-    if (side === 'buy') {
+    if (!closing(side)) {
       setUnit('dollars');
       setAmountText(String(Math.max(0, Math.floor((power - commission) * 100) / 100)));
     } else {
       setUnit('shares');
-      setAmountText(String(Number(heldShares.toFixed(6))));
+      setAmountText(String(Number(Math.abs(heldShares).toFixed(6))));
     }
   };
 
@@ -150,7 +156,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
     onClose();
   };
 
-  const stopLabel = side === 'sell' ? 'Stop-loss' : 'Stop';
+  const stopLabel = (side === 'sell' && !shorting) || covering ? 'Stop-loss' : 'Stop';
   const spreadNote = side === 'buy' ? '(+spread)' : '(−spread)';
 
   return (
@@ -161,7 +167,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         class="sheet"
         role="dialog"
         aria-modal="true"
-        aria-label={`${side === 'buy' ? 'Buy' : 'Sell'} ${inst.ticker}`}
+        aria-label={`${covering ? 'Buy to cover' : side === 'buy' ? 'Buy' : shorting ? 'Short' : 'Sell'} ${inst.ticker}`}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onClose();
         }}
@@ -170,10 +176,10 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
 
         <div class="segmented side" role="group" aria-label="Buy or sell">
           <button type="button" aria-pressed={side === 'buy'} onClick={() => pickSide('buy')}>
-            Buy
+            {heldShares < 0 ? 'Cover' : 'Buy'}
           </button>
-          <button type="button" aria-pressed={side === 'sell'} disabled={heldShares <= 0} onClick={() => pickSide('sell')}>
-            Sell
+          <button type="button" aria-pressed={side === 'sell'} disabled={heldShares <= 0 && !canShort} onClick={() => pickSide('sell')}>
+            {heldShares <= 0 && canShort ? 'Short' : 'Sell'}
           </button>
         </div>
 
@@ -285,6 +291,12 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
               <span>{money(power, true)}</span>
             </div>
           )}
+          {shorting && (
+            <p class="tiny warn">
+              You borrow {inst.ticker} shares and sell them. You make money if {inst.ticker} falls; if it rises, your loss has no
+              ceiling. Borrow fee {inst.ticker === 'MOONR' ? '30' : '0.5'}% a year, and you pay its dividends.
+            </p>
+          )}
           {preview.borrowed > 0 && (
             <p class="tiny warn">
               {money(preview.borrowed, true)} of this is borrowed at {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on
@@ -309,7 +321,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
 
         <div class="stack gap-6">
           <button type="button" class="primary confirm" disabled={!!preview.problem} onClick={confirm}>
-            {preview.problem ?? describeOrder(draft)}
+            {preview.problem ?? describeOrder(draft, heldShares)}
             {/* XP reward label slot (phase 4). */}
           </button>
           <button type="button" class="link cancel" onClick={onClose}>

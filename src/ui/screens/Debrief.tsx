@@ -14,6 +14,7 @@ const MOMENT_COLOR: Record<Moment['kind'], string> = {
   satOut: 'var(--text-dim)',
   marginCall: 'var(--down)',
   forcedSale: 'var(--down)',
+  shortSqueeze: 'var(--down)',
 };
 
 function headline(d: Report): string {
@@ -116,7 +117,7 @@ export function Debrief({ market }: { market: Market }) {
         <div class="stats-grid mono">
           <Stat label="worst_drop" value={d.worstDrawdown > 0 ? `${MINUS}${(d.worstDrawdown * 100).toFixed(1)}%` : '0.0%'} tone={d.worstDrawdown > 0 ? 'down' : undefined} />
           <Stat label="trades" value={String(d.trades)} />
-          <Stat label="costs_paid" value={money(d.fees + d.spread + d.interest)} />
+          <Stat label="costs_paid" value={money(d.fees + d.spread + d.interest + d.borrowFees)} />
           <Stat label="win_rate" value={d.closedTrades ? `${d.wins}/${d.closedTrades}` : 'n/a'} />
           <Stat label="best" value={tradeText(d.best)} tone={d.best ? (d.best.pct >= 0 ? 'up' : 'down') : undefined} />
           <Stat label="worst" value={tradeText(d.worst)} tone={d.worst ? (d.worst.pct >= 0 ? 'up' : 'down') : undefined} />
@@ -124,6 +125,8 @@ export function Debrief({ market }: { market: Market }) {
         <p class="tiny dim">
           SPY's worst drop was {MINUS}
           {(d.spyWorstDrawdown * 100).toFixed(1)}%. Costs are spreads plus fees{d.interest > 0 ? ` plus ${money(d.interest, true)} margin interest` : ''}
+          {d.borrowFees > 0 ? ` and ${money(d.borrowFees, true)} borrow fees` : ''}
+          {d.dividendsOwed > 0 ? `; your shorts owed ${money(d.dividendsOwed, true)} in dividends` : ''}
           {d.dividends > 0 ? `; you also collected ${money(d.dividends, true)} in dividends` : ''}. Best and worst count positions still held
           at their final price.
         </p>

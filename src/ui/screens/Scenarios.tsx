@@ -55,6 +55,10 @@ function Choice<T extends string | number>({
 
 const CASH = [1_000, 10_000, 100_000, 1_000_000].map((v) => ({ value: v, label: money(v) }));
 const FEES = [0, 1, 5].map((v) => ({ value: v, label: v === 0 ? '$0' : `$${v} a trade` }));
+const SHORTS: { value: 'off' | 'on'; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'on', label: 'On' },
+];
 const MARGIN: { value: 'off' | '2x'; label: string }[] = [
   { value: 'off', label: 'Off' },
   { value: '2x', label: '2x' },
@@ -116,6 +120,7 @@ export function Scenarios({ market }: { market: Market }) {
   const [cash, setCash] = useState(DEFAULT_ACCOUNT_SETTINGS.startingCash);
   const [fee, setFee] = useState(DEFAULT_ACCOUNT_SETTINGS.commission);
   const [margin, setMargin] = useState<'off' | '2x'>('off');
+  const [shorts, setShorts] = useState<'off' | 'on'>('off');
   const [speed, setSpeed] = useState<Speed>(DEFAULT_SPEED);
   const [start, setStart] = useState('2015-01-02');
   const [days, setDays] = useState(63);
@@ -138,7 +143,13 @@ export function Scenarios({ market }: { market: Market }) {
     const config: RunConfig = {
       scenarioId: picked,
       seed: custom ? seed : newSeed(),
-      settings: { ...DEFAULT_ACCOUNT_SETTINGS, startingCash: cash, commission: fee, ...(margin === '2x' ? { margin: true } : {}) },
+      settings: {
+        ...DEFAULT_ACCOUNT_SETTINGS,
+        startingCash: cash,
+        commission: fee,
+        ...(margin === '2x' ? { margin: true } : {}),
+        ...(margin === '2x' && shorts === 'on' ? { shorts: true } : {}),
+      },
       ...(custom ? { custom: { start, days, startRegime: mood, volScale: vol, news }, targetReturn: target || undefined } : {}),
     };
     send({ type: 'speed', dayLengthMs: SPEEDS[speed] });
@@ -214,13 +225,14 @@ export function Scenarios({ market }: { market: Market }) {
           <Choice label="Starting cash" value={cash} options={CASH} onChange={setCash} />
           <Choice label="Commission" value={fee} options={FEES} onChange={setFee} />
           <Choice label="Margin (borrow up to 2x, 8% a year)" value={margin} options={MARGIN} onChange={setMargin} />
+          {margin === '2x' && <Choice label="Short selling" value={shorts} options={SHORTS} onChange={setShorts} />}
           <Choice label="Speed" value={speed} options={SPEED_OPTIONS} onChange={setSpeed} />
         </section>
       )}
 
       <div class="picker-footer">
         <span class="mono tiny dim">
-          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin={margin} fees=${fee}
+          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin={margin}{margin === '2x' && shorts === 'on' ? ' shorts=on' : ''} fees=${fee}
         </span>
         <button type="button" class={`primary ${boss ? 'boss' : ''}`} onClick={go} disabled={custom && (!startOk || !seedOk)}>
           <PlayIcon /> {custom ? 'Start custom run' : boss ? 'Start boss run' : `Start ${def?.name ?? 'run'}`}

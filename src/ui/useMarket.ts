@@ -142,7 +142,10 @@ function addNotices(state: MarketView, items: { ok: boolean; message: string }[]
 function updateMessage(o: Order): { ok: boolean; message: string } {
   switch (o.status) {
     case 'filled':
-      return { ok: true, message: `Filled: ${o.side === 'buy' ? 'bought' : 'sold'} ${o.ticker} at $${(o.fillPrice ?? 0).toFixed(2)}.` };
+      return {
+        ok: true,
+        message: `Filled: ${o.side === 'buy' ? (o.short ? 'covered' : 'bought') : o.short ? 'sold short' : 'sold'} ${o.ticker} at $${(o.fillPrice ?? 0).toFixed(2)}.`,
+      };
     case 'expired':
       return { ok: false, message: `Your ${o.type} order on ${o.ticker} expired at the close.` };
     case 'rejected':

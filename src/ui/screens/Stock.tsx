@@ -48,6 +48,7 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
   const first = closes[0] ?? p;
   const runPct = first ? p / first - 1 : 0;
   const held = view.account?.positions.find((x) => x.ticker === ticker);
+  const canShort = !!view.settings?.shorts && !!view.settings?.margin;
   const orders = view.account?.openOrders.filter((o) => o.ticker === ticker) ?? [];
   // An earnings gap shows between the close before the report and the close of its day.
   const earningsMarks = (hist?.news ?? []).filter((n) => n.kind === 'earnings').map((n) => n.day + 1);
@@ -124,10 +125,10 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
 
       <div class="actions">
         <button type="button" class="primary" onClick={() => setSheet('buy')}>
-          Buy
+          {held && held.shares < 0 ? 'Buy to cover' : 'Buy'}
         </button>
-        <button type="button" class="ghost" disabled={!held} onClick={() => setSheet('sell')}>
-          Sell
+        <button type="button" class="ghost" disabled={!(held && held.shares > 0) && !canShort} onClick={() => setSheet('sell')}>
+          {held && held.shares > 0 ? 'Sell' : canShort ? 'Short' : 'Sell'}
         </button>
       </div>
 
@@ -136,7 +137,10 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
           <h2 class="section">YOUR POSITION</h2>
           <dl class="facts">
             <dt>shares</dt>
-            <dd>{shares(held.shares)}</dd>
+            <dd>
+              {shares(held.shares)}
+              {held.shares < 0 ? ' (short)' : ''}
+            </dd>
             <dt>avg cost</dt>
             <dd>{money(held.avgCost, true)}</dd>
             <dt>value</dt>
