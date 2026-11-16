@@ -55,6 +55,9 @@ export function useRoute(): Route {
   useEffect(() => {
     const onChange = () => setRoute(parseRoute(location.hash));
     window.addEventListener('hashchange', onChange);
+    // The hash can change between the first render and this effect (a link tapped while the
+    // app starts): catch up with it.
+    onChange();
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
   return route;
