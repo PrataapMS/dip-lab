@@ -53,7 +53,7 @@ export interface MarketView {
 }
 
 const EMPTY = new Float32Array(0);
-const MAX_NOTICES = 4;
+const MAX_NOTICES = 2;
 
 export const initialView: MarketView = {
   ready: false,

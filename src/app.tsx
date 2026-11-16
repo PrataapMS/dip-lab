@@ -3,7 +3,7 @@ import { HOME, type Route, useRoute } from './ui/router';
 import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
 import { Market as MarketScreen } from './ui/screens/Market';
-import { Placeholder } from './ui/screens/Placeholder';
+import { Portfolio } from './ui/screens/Portfolio';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { type Market, useMarket } from './ui/useMarket';
@@ -26,7 +26,7 @@ function Screen({ route, market }: { route: Route; market: Market }) {
     case 'market':
       return <MarketScreen market={market} />;
     case 'portfolio':
-      return <Placeholder title="Portfolio" />;
+      return <Portfolio market={market} />;
     case 'stock':
       return <Stock key={route.ticker} market={market} ticker={route.ticker} />;
   }
