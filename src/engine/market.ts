@@ -4,6 +4,7 @@ import type { Instrument } from './instruments';
 import { BARS_PER_DAY, generateDayPath, POINTS_PER_DAY } from './intraday';
 import { REFERENCE_MARKET_VOL } from './regimes';
 import { childSeed, createRng, normal } from './rng';
+import { knownStartPrice } from './startPrices';
 import { buildScenarioMarket, buildSpecialPath, type ScenarioDef, type ScenarioMarket } from './scenarios';
 
 /** A whole scenario's market: every instrument's daily closes, ready to play. */
@@ -58,7 +59,8 @@ export function buildMarket(def: ScenarioDef, seed: number, universe: readonly I
       continue;
     }
     const sectorReturns = inst.sector ? factors.sectors[inst.sector] : null;
-    const path = generateStockPath(seed, inst, startPrice(seed, inst.ticker), marketFactor, sectorReturns);
+    const p0 = knownStartPrice(def.start, inst.ticker) ?? startPrice(seed, inst.ticker);
+    const path = generateStockPath(seed, inst, p0, marketFactor, sectorReturns);
     closes.push(Float32Array.from(path.closes));
     jumps.push(Float32Array.from(path.jumps));
   }
