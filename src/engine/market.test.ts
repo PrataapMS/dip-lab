@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UNIVERSE } from '../data/universe';
 import { BARS_PER_DAY, POINTS_PER_DAY } from './intraday';
-import { buildMarket, dayPrices, instrumentsFor, startPrice } from './market';
+import { buildMarket, dayBars, dayPrices, instrumentsFor, startPrice } from './market';
 import { getScenario } from './scenarios';
 
 const covid = buildMarket(getScenario('covid-2020'), 42, UNIVERSE);
@@ -50,6 +50,20 @@ describe('market', () => {
       expect(Math.abs(Math.log(open / prev))).toBeLessThan(0.5);
     });
     expect(dayPrices(covid, day)).toEqual(prices);
+  });
+
+  it('gives each bar a high and low that contain its open and close', () => {
+    const { points, high, low } = dayBars(covid, 5);
+    expect(high).toHaveLength(covid.instruments.length * BARS_PER_DAY);
+    for (let i = 0; i < covid.instruments.length; i += 37) {
+      for (let k = 0; k < BARS_PER_DAY; k++) {
+        const o = points[i * POINTS_PER_DAY + k] ?? 0;
+        const c = points[i * POINTS_PER_DAY + k + 1] ?? 0;
+        expect(high[i * BARS_PER_DAY + k]).toBeGreaterThanOrEqual(Math.max(o, c));
+        expect(low[i * BARS_PER_DAY + k]).toBeLessThanOrEqual(Math.min(o, c));
+      }
+    }
+    expect(dayBars(covid, 5).points).toEqual(dayPrices(covid, 5));
   });
 
   it('prices are stable per ticker and seed', () => {

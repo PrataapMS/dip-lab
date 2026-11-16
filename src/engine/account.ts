@@ -1,4 +1,5 @@
 import { type CostModel, fillPrice } from './costs';
+import type { Order } from './orders';
 
 /**
  * The player's account: cash, holdings at average cost, and every fill. Pure functions that
@@ -61,6 +62,9 @@ export interface AccountState {
   fills: Fill[];
   /** Account value at each close so far. */
   equityByDay: number[];
+  /** Every order placed, oldest first, whatever its status. */
+  orders: Order[];
+  nextOrderId: number;
 }
 
 /** Fractional shares are kept to six decimal places. */
@@ -96,6 +100,8 @@ export function createAccount(settings: AccountSettings = DEFAULT_ACCOUNT_SETTIN
     spreadPaid: 0,
     fills: [],
     equityByDay: [],
+    orders: [],
+    nextOrderId: 1,
   };
 }
 
@@ -107,6 +113,8 @@ export interface TradeRequest {
   mid: number;
   /** Half the bid-ask spread as a fraction of price (see `halfSpread`). */
   halfSpread: number;
+  /** Execution price when an order sets it (limits, stops); otherwise mid plus or minus half the spread. */
+  price?: number;
   at: MarketTime;
   orderId?: number | null;
 }
@@ -118,7 +126,7 @@ export function executeTrade(state: AccountState, req: TradeRequest): TradeResul
   const { ticker, side, amount } = req;
   if (!(amount.value > 0) || !Number.isFinite(amount.value)) return { ok: false, reason: 'Enter an amount above zero.' };
   if (!(req.mid > 0)) return { ok: false, reason: `${ticker} has no price right now.` };
-  const price = fillPrice(req.mid, side, req.halfSpread);
+  const price = req.price ?? fillPrice(req.mid, side, req.halfSpread);
   const commission = state.settings.commission;
   const held = state.positions[ticker];
 

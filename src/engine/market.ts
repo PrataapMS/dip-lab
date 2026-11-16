@@ -1,7 +1,7 @@
 import type { IsoDate } from './calendar';
 import { generateStockPath, idioVolFor, SECTOR_VOL } from './factors';
 import type { Instrument } from './instruments';
-import { generateDayPath, POINTS_PER_DAY } from './intraday';
+import { BARS_PER_DAY, generateDayPath, POINTS_PER_DAY } from './intraday';
 import { REFERENCE_MARKET_VOL } from './regimes';
 import { childSeed, createRng, normal } from './rng';
 import { buildScenarioMarket, buildSpecialPath, type ScenarioDef, type ScenarioMarket } from './scenarios';
@@ -78,16 +78,28 @@ export function instrumentVol(m: BuiltMarket, index: number, day: number): numbe
 }
 
 /**
- * Every instrument's 5-minute path for one day, flattened:
- * prices[i * POINTS_PER_DAY + bar] is instrument i after `bar` bars (0 = open, 78 = close).
+ * Every instrument's 5-minute bars for one day, flattened:
+ * points[i * POINTS_PER_DAY + p] is instrument i after `p` bars (0 = open, 78 = close), and
+ * high/low[i * BARS_PER_DAY + k] is the range traded during bar k (from point k to k + 1).
  */
-export function dayPrices(m: BuiltMarket, day: number): Float32Array {
-  const out = new Float32Array(m.instruments.length * POINTS_PER_DAY);
+export interface DayBars {
+  points: Float32Array;
+  high: Float32Array;
+  low: Float32Array;
+}
+
+export function dayBars(m: BuiltMarket, day: number): DayBars {
+  const n = m.instruments.length;
+  const out: DayBars = {
+    points: new Float32Array(n * POINTS_PER_DAY),
+    high: new Float32Array(n * BARS_PER_DAY),
+    low: new Float32Array(n * BARS_PER_DAY),
+  };
   m.instruments.forEach((inst, i) => {
     const closes = m.closes[i];
     const prevClose = closes?.[day] ?? 0;
     const close = closes?.[day + 1] ?? prevClose;
-    const { points } = generateDayPath({
+    const path = generateDayPath({
       seed: m.seed,
       ticker: inst.ticker,
       day,
@@ -96,7 +108,14 @@ export function dayPrices(m: BuiltMarket, day: number): Float32Array {
       annualVol: instrumentVol(m, i, day),
       jump: m.jumps[i]?.[day] ?? 0,
     });
-    out.set(points, i * POINTS_PER_DAY);
+    out.points.set(path.points, i * POINTS_PER_DAY);
+    out.high.set(path.high, i * BARS_PER_DAY);
+    out.low.set(path.low, i * BARS_PER_DAY);
   });
   return out;
+}
+
+/** Just the points of `dayBars`. */
+export function dayPrices(m: BuiltMarket, day: number): Float32Array {
+  return dayBars(m, day).points;
 }
