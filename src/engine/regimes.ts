@@ -18,8 +18,8 @@ export interface RegimeParams {
 export const REGIME_PARAMS: Record<Regime, RegimeParams> = {
   calm: { annualDrift: 0.07, annualVol: 0.12 },
   bull: { annualDrift: 0.2, annualVol: 0.15 },
-  bear: { annualDrift: -0.25, annualVol: 0.28 },
-  crash: { annualDrift: -1.5, annualVol: 0.6 },
+  bear: { annualDrift: -0.25, annualVol: 0.25 },
+  crash: { annualDrift: -1.5, annualVol: 0.55 },
 };
 
 /**
@@ -81,7 +81,7 @@ export function volatilityPath(rand: Rng, baseVols: readonly number[]): Volatili
   for (let t = 0; t < baseVols.length; t++) {
     if (t > 0) m = 1 - GARCH_ALPHA - GARCH_BETA + GARCH_ALPHA * m * prevZ * prevZ + GARCH_BETA * m;
     // Keep extreme streaks inside a believable band.
-    m = Math.min(Math.max(m, 0.25), 6);
+    m = Math.min(Math.max(m, 0.25), 4);
     const vol = (baseVols[t] ?? 0) * Math.sqrt(m);
     const z = normal(rand);
     vols.push(vol);
