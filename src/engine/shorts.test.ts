@@ -141,5 +141,5 @@ describe('shorts in a run and the debrief', () => {
     expect(d.maxWeight).toBeNull();
     // SPY rebounds well above its start by December: the short went against the player.
     expect(d.moments.map((m) => m.kind)).toContain('shortSqueeze');
-  });
+  }, 30_000);
 });

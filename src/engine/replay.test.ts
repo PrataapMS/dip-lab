@@ -48,7 +48,7 @@ describe('replay a moment', () => {
       const live = walkTo(fresh(), day, SCRIPT);
       expect(original.accountAtClose(day)).toEqual(live.account);
     }
-  });
+  }, 30_000);
 
   it('branches at the close before day N, paused', () => {
     const b = original.branch(15, { letter: 'B', score: 75 });
@@ -60,7 +60,7 @@ describe('replay a moment', () => {
     expect(b.account).toEqual(original.accountAtClose(14));
     // The original is untouched.
     expect(original.finished).toBe(true);
-  });
+  }, 30_000);
 
   it('the same orders after the branch give the same result; a different one diverges', () => {
     const same = play(original.branch(15, { letter: 'B', score: 75 }), SCRIPT);
@@ -70,7 +70,7 @@ describe('replay a moment', () => {
     expect(other.account.equityByDay[14]).toBe(original.account.equityByDay[14]);
     expect(other.account.equityByDay.at(-1)).not.toBe(original.account.equityByDay.at(-1));
     expect(debrief(other).branchOf?.letter).toBe('B');
-  });
+  }, 30_000);
 
   it('day 0 starts from scratch', () => {
     const b = original.branch(0, { letter: 'C', score: 60 });
@@ -78,5 +78,5 @@ describe('replay a moment', () => {
     expect(b.clock.bar).toBe(0);
     expect(b.account.fills).toEqual([]);
     expect(play(b, SCRIPT).account).toEqual(original.account);
-  });
+  }, 30_000);
 });

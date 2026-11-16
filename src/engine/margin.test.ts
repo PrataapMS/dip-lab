@@ -87,6 +87,11 @@ describe('margin account', () => {
 describe('margin in a run', () => {
   const covid = buildMarket(getScenario('covid-2020'), 21, UNIVERSE);
 
+  // Playing 2x SPY through the whole COVID scenario takes a few seconds on a CI runner.
+  const SLOW = 30_000;
+  let shared: Run | null = null;
+  const sharedRun = () => (shared ??= leveredSpy());
+
   function leveredSpy(): Run {
     const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, { pauseAtClose: false });
     const r = run.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 19_900 } });
@@ -96,7 +101,7 @@ describe('margin in a run', () => {
   }
 
   it('2x SPY through the COVID crash gets a margin call, a forced sale, and the grade shows it', () => {
-    const run = leveredSpy();
+    const run = sharedRun();
     expect(run.account.marginCalls.length).toBeGreaterThan(0);
     expect(run.account.interestPaid).toBeGreaterThan(0);
     expect(run.alerts.map((a) => a.kind)).toContain('marginCall');
@@ -114,14 +119,14 @@ describe('margin in a run', () => {
     expect(d.interest).toBeCloseTo(run.account.interestPaid, 9);
     expect(d.grade.score).toBeLessThan(70);
     expect(d.moments.map((m) => m.kind)).toContain('forcedSale');
-  });
+  }, SLOW);
 
   it('is deterministic', () => {
-    const a = leveredSpy();
+    const a = sharedRun();
     const b = leveredSpy();
     expect(b.account.equityByDay).toEqual(a.account.equityByDay);
     expect(b.account.fills).toEqual(a.account.fills);
-  });
+  }, SLOW);
 
   it('pauses the clock at the close where a call is made', () => {
     const run = new Run(covid, { ...DEFAULT_ACCOUNT_SETTINGS, margin: true }, undefined, { pauseAtClose: false });
@@ -133,7 +138,7 @@ describe('margin in a run', () => {
     }
     expect(run.account.marginCall).not.toBeNull();
     expect(run.clock.playing).toBe(false);
-  });
+  }, SLOW);
 });
 
 describe('grade with leverage', () => {

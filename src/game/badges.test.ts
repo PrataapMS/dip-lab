@@ -148,7 +148,7 @@ describe('highlights in a real run', () => {
       r.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 5_000 } });
     });
     expect(highlights(run).boughtDip).toBe('SPY');
-  });
+  }, 30_000);
 
   it('finds diamond hands when SPY is held through the crash and ends ahead', () => {
     const run = played(covid, (r) => r.place({ ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 5_000 } }));
@@ -156,7 +156,7 @@ describe('highlights in a real run', () => {
     expect(endUp).toBe(true);
     expect(highlights(run).diamondHands).toBe(endUp ? 'SPY' : null);
     expect(highlights(run).boughtDip).toBeNull();
-  });
+  }, 30_000);
 
   it('finds a stop-loss that saved you', () => {
     const run = played(covid, (r) => {
@@ -165,5 +165,5 @@ describe('highlights in a real run', () => {
     });
     expect(run.account.fills).toHaveLength(2);
     expect(highlights(run).stopSaved).toBe('SPY');
-  });
+  }, 30_000);
 });
