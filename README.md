@@ -217,7 +217,7 @@ npm run dev        # http://localhost:5173
 | `npm run typecheck` | Type-check with `tsc --noEmit` |
 | `npm run build` | Production build into `dist/`, including the service worker |
 | `npm run preview` | Serve the production build locally |
-| `npm run lint` | Lint with [Biome](https://biomejs.dev) (`npm run format` formats) |
+| `npm run lint` | Lint and check formatting with [Biome](https://biomejs.dev) (`npm run format` fixes formatting) |
 | `npm run test:coverage` | Run the tests with a coverage report |
 | `npm run check:dist` | Check the build's PWA files and size budget |
 | `npm run test:e2e` | Play a first trade in Chrome against the build, then reload offline (needs `npm i --no-save playwright-core@1.59.1` and a prior `npm run build`) |
