@@ -1,7 +1,8 @@
 name: Deploy to GitHub Pages
 
 # Called by CI after verify and e2e pass on a major version bump on main, or run manually.
-# A manual run verifies the code itself before deploying. Each deploy tags a release.
+# A manual run verifies the code itself before deploying. Each deploy tags a release and
+# reports the outcome on Telegram.
 on:
   workflow_call:
   workflow_dispatch:
@@ -57,6 +58,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
@@ -90,3 +93,28 @@ jobs:
           fi
           gh release create "$tag" --target "$GITHUB_SHA" --title "Dip Lab $tag" --generate-notes
           echo "### Released $tag" >> "$GITHUB_STEP_SUMMARY"
+
+  # Reports the deploy (live or failed) on Telegram. A notification problem never fails the deploy.
+  notify:
+    needs: [build, deploy, release]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          RELEASE_RESULT: ${{ needs.release.result }}
+          SITE_URL: ${{ needs.deploy.outputs.page_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/notify-telegram.mjs
