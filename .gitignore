@@ -14,3 +14,6 @@ docs/internal/
 
 # Local Netlify folder
 .netlify
+
+# End-to-end test output
+e2e-results/
