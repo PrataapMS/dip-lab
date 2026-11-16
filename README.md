@@ -281,7 +281,7 @@ src/
 | 3 | All scenarios, news and events, dividends, debrief and grades | ✅ |
 | 4 | Tutorial, glossary, lessons, challenges, XP and badges, margin and shorts | ✅ |
 | 5 | Saves, settings, install prompt, offline polish, performance | ✅ |
-| 6 | Release 1.0: editable watchlist, next event, error screen, accessibility | 🚧 |
+| 6 | Release 1.0: editable watchlist, next event, error screen, accessibility | ✅ |
 
 Details in [docs/ROADMAP.md](docs/ROADMAP.md). Ideas and bug reports are welcome in
 [Issues](https://github.com/PrataapMS/dip-lab/issues).

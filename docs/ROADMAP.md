@@ -64,7 +64,7 @@ real price data.
 | 3 | All scenarios, news and events, dividends, end-of-run debrief | Done |
 | 4 | Guided first trade, glossary, lessons, challenges, XP, quests and badges, replay a moment, margin and shorts | Done |
 | 5 | Offline polish, install prompt, saves, settings, performance | Done |
-| 6 | Release 1.0: editable watchlist, next event, refreshed stock list, error screen, accessibility | In progress |
+| 6 | Release 1.0: editable watchlist, next event, refreshed stock list, error screen, accessibility | Done |
 
 ## Later ideas
 
