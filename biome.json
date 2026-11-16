@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!src/data/**/*.json", "!public/**"]
+    "includes": ["**", "!src/data/**/*.json", "!src/storage/fixtures/**", "!public/**"]
   },
   "formatter": {
     "enabled": true,

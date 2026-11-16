@@ -7,6 +7,7 @@ import type { SlotBody } from './slots';
  */
 
 export const BACKUP_FORMAT = 'dip-lab';
+/** Bump with a migration, never by dropping older files (see `src/storage/fixtures`). */
 export const BACKUP_VERSION = 1;
 
 export interface BackupFile {

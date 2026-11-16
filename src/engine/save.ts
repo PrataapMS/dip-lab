@@ -10,7 +10,10 @@ import type { CustomOptions } from './scenarios';
  * Restoring is instant; nothing is re-simulated.
  */
 
-/** Bump when `RunSave` changes shape; older saves are then rejected with a plain message. */
+/**
+ * Bump when `RunSave` changes shape, and migrate every older format on load: from 1.0, saves
+ * from earlier versions must keep opening (`src/storage/fixtures` holds format 1 files).
+ */
 export const SAVE_FORMAT = 1;
 
 /** What the market is built from. */
