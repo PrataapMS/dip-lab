@@ -164,6 +164,16 @@ function emitActivity(r: Run, extra: Activity[] = []): void {
   if (items.length) post({ type: 'activity', items });
 }
 
+/** Closes in the last account sent, to send `equityByDay` only when it grows. */
+let closesPosted = -1;
+
+function postAccount(r: Run): void {
+  const { equityByDay, ...rest } = r.view();
+  const same = equityByDay.length === closesPosted;
+  closesPosted = equityByDay.length;
+  post({ type: 'account', account: same ? rest : { ...rest, equityByDay } });
+}
+
 function emitTick(): void {
   if (!run) return;
   const r = run;
@@ -201,7 +211,7 @@ function emitTick(): void {
   const extra: Activity[] = newAlerts
     .filter((x) => x.kind === 'marginCall')
     .map((x) => ({ kind: 'marginCall', day: x.day }));
-  post({ type: 'account', account: r.view() });
+  postAccount(r);
   const closes = r.account.equityByDay.length;
   if (closes > closesSent && r.clock.bar === BARS_PER_DAY) {
     post({ type: 'dayEnd', summary: daySummary(r) });
@@ -346,6 +356,7 @@ function load(r: Run, seed: number, restored = false): void {
   closesSent = r.account.equityByDay.length;
   fillsSent = r.account.fills.length;
   endSent = false;
+  closesPosted = -1;
   endRestored = restored && r.endReason !== null;
   alertsSent = r.alerts.length;
   lastDebrief = null;
@@ -593,7 +604,7 @@ function handle(cmd: Command): void {
         message: orderMessage(order),
       });
       emitActivity(r, order.status === 'rejected' ? [] : [orderActivity(order, held)]);
-      post({ type: 'account', account: requireRun().view() });
+      postAccount(requireRun());
       autosave();
       return;
     }
@@ -606,7 +617,7 @@ function handle(cmd: Command): void {
         order: r.order ?? null,
         message: r.reason ?? (r.order ? orderMessage(r.order) : ''),
       });
-      post({ type: 'account', account: requireRun().view() });
+      postAccount(requireRun());
       autosave();
       return;
     }

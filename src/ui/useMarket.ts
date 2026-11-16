@@ -238,7 +238,13 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       };
     }
     case 'account':
-      return { ...state, account: e.account };
+      return {
+        ...state,
+        account: {
+          ...e.account,
+          equityByDay: e.account.equityByDay ?? state.account?.equityByDay ?? [],
+        },
+      };
     case 'history':
       return {
         ...state,

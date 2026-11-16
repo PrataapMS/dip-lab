@@ -8,8 +8,14 @@ export function signedPct(fraction: number, digits = 2): string {
   return `${sign}${Math.abs(pct).toFixed(digits)}%`;
 }
 
+// Built once: `toLocaleString` with options creates a formatter on every call, which shows up
+// when a screen formats hundreds of numbers ten times a second.
+const CENTS = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const WHOLE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const SHARES = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 });
+
 export function price(value: number): string {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return CENTS.format(value);
 }
 
 /** "Mon 23 Mar 2020" from an ISO date, without Date parsing quirks. */
@@ -45,8 +51,7 @@ function isZero(formatted: string): boolean {
 
 /** "$10,482" (whole dollars) or "$812.40" with `cents`. */
 export function money(value: number, cents = false): string {
-  const digits = cents ? 2 : 0;
-  const s = `$${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  const s = `$${(cents ? CENTS : WHOLE).format(Math.abs(value))}`;
   return value < 0 && !isZero(s) ? `${MINUS}${s}` : s;
 }
 
@@ -58,7 +63,7 @@ export function signedMoney(value: number, cents = false): string {
 
 /** Shares with up to 4 decimals and no trailing zeros: "10.3712", "3". */
 export function shares(value: number): string {
-  return value.toLocaleString('en-US', { maximumFractionDigits: 4 });
+  return SHARES.format(value);
 }
 
 /** Lower-case three-letter weekday, e.g. "tue". */

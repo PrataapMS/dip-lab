@@ -169,7 +169,11 @@ export type WorkerEvent =
   | { type: 'flushed' }
   | { type: 'exported'; runs: SlotBody[] }
   | { type: 'imported'; slot: number }
-  | { type: 'account'; account: AccountView }
+  | {
+      type: 'account';
+      /** `equityByDay` is left out when it hasn't changed since the last one (it can be long). */
+      account: Omit<AccountView, 'equityByDay'> & { equityByDay?: number[] };
+    }
   | {
       type: 'history';
       ticker: string;

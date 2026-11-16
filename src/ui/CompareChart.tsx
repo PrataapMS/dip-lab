@@ -11,18 +11,49 @@ interface Props {
 }
 
 const W = 320;
+/** More points than this are thinned: the chart is only ~320 units wide. */
+const MAX_POINTS = 400;
+
+/**
+ * Indexes to draw from a long series: the first and last, plus each bucket's lowest and highest
+ * point in order, so dips and peaks survive however long the run is.
+ */
+export function thinned(vals: readonly number[], max = MAX_POINTS): number[] {
+  const n = vals.length;
+  if (n <= max) return Array.from({ length: n }, (_, i) => i);
+  const buckets = Math.floor((max - 2) / 2);
+  const size = (n - 2) / buckets;
+  const out = [0];
+  for (let b = 0; b < buckets; b++) {
+    const from = 1 + Math.floor(b * size);
+    const to = Math.min(n - 1, 1 + Math.floor((b + 1) * size));
+    let lo = from;
+    let hi = from;
+    for (let i = from; i < to; i++) {
+      if ((vals[i] ?? 0) < (vals[lo] ?? 0)) lo = i;
+      if ((vals[i] ?? 0) > (vals[hi] ?? 0)) hi = i;
+    }
+    if (to > from) out.push(...(lo === hi ? [lo] : lo < hi ? [lo, hi] : [hi, lo]));
+  }
+  out.push(n - 1);
+  return out;
+}
 
 /** Two lines rebased to 100: the account (solid accent) against SPY (dashed, dim). */
 export function CompareChart({ you, spy, capacity, label, height = 140, markers = [] }: Props) {
   const H = height;
   const slots = Math.max(capacity, 2) - 1;
-  const all = [...you, ...spy, 100];
-  const min = Math.min(...all);
-  const max = Math.max(...all);
+  let min = 100;
+  let max = 100;
+  for (const v of you) (min = Math.min(min, v)), (max = Math.max(max, v));
+  for (const v of spy) (min = Math.min(min, v)), (max = Math.max(max, v));
   const span = max - min || 1;
   const x = (i: number) => ((i / slots) * W).toFixed(1);
   const y = (v: number) => (H - 6 - ((v - min) / span) * (H - 12)).toFixed(1);
-  const line = (vals: readonly number[]) => vals.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  const line = (vals: readonly number[]) =>
+    thinned(vals)
+      .map((i) => `${x(i)},${y(vals[i] ?? 100)}`)
+      .join(' ');
   const last = you[you.length - 1];
   return (
     <svg
