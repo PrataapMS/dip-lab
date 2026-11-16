@@ -26,6 +26,10 @@ The app is published to GitHub Pages only when the major version in `package.jso
 `main` (for example `0.x` to `1.0.0`). Other pushes run CI only. A deploy can also be started
 manually from the Actions tab.
 
+Netlify deploys are manual only: run **Deploy to Netlify** from the Actions tab and pick
+`preview` or `production`. It needs two repository secrets, `NETLIFY_AUTH_TOKEN` (a Netlify
+personal access token) and `NETLIFY_SITE_ID`. Build settings live in `netlify.toml`.
+
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).

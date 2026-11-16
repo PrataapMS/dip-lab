@@ -1,0 +1,52 @@
+name: Deploy to Netlify
+
+# Manual only: run it from the Actions tab. Nothing deploys to Netlify on push.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to deploy
+        type: choice
+        options: [preview, production]
+        default: preview
+
+permissions:
+  contents: read
+
+concurrency:
+  group: netlify
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: netlify-${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error::Set the NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID repository secrets first."
+            exit 1
+          fi
+          flags="--dir=dist --no-build --message=${GITHUB_SHA::7}"
+          if [ "$TARGET" = "production" ]; then flags="$flags --prod"; else flags="$flags --alias=preview"; fi
+          npx --yes netlify-cli@27.16.1 deploy $flags | tee deploy.log
+          url=$(grep -oE 'https://[^ ]+\.netlify\.app' deploy.log | tail -1)
+          echo "### Netlify $TARGET: $url" >> "$GITHUB_STEP_SUMMARY"
