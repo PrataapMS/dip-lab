@@ -25,6 +25,7 @@ import {
   slotToReplace,
 } from '../../storage/slots';
 import { deliverFile } from '../files';
+import { play, setSoundEnabled, startAudio } from '../sound';
 import { navigate } from '../router';
 import { BackIcon } from '../icons';
 import { SlotSummary } from '../Slots';
@@ -475,7 +476,15 @@ export function Settings({ market }: { market: Market }) {
           label="Sound effects"
           value={settings.sound ? 'on' : 'off'}
           options={SOUND}
-          onChange={(v) => updateSettings({ sound: v === 'on' })}
+          onChange={(v) => {
+            updateSettings({ sound: v === 'on' });
+            if (v === 'on') {
+              // Play a sample right away (this tap is allowed to start audio).
+              setSoundEnabled(true);
+              startAudio();
+              play('chime');
+            }
+          }}
         />
       </section>
 

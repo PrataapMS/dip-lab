@@ -17,6 +17,7 @@ import { migrateSettings, pauseAtCloseFor, type Settings } from '../game/setting
 import { challengeById } from '../learn/challenges';
 import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from '../storage/db';
+import { cueFor, play, setSoundEnabled } from './sound';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
@@ -108,6 +109,18 @@ export function ProgressProvider({
       return next;
     });
   }, []);
+  const soundOn = settings?.sound;
+  useEffect(() => {
+    if (soundOn !== undefined) setSoundEnabled(soundOn);
+  }, [soundOn]);
+  useEffect(
+    () =>
+      market.subscribe((e) => {
+        const cue = cueFor(e);
+        if (cue) play(cue);
+      }),
+    [market.subscribe],
+  );
   // The worker starts new runs with these.
   const dayLengthMs = settings?.dayLengthMs;
   const pauseRule = settings?.pauseAtClose;
@@ -131,6 +144,7 @@ export function ProgressProvider({
         const before = levelFor(current.xp).level;
         const after = levelFor(r.progress.xp);
         if (after.level > before) notify(true, `Level up! Lv ${after.level} · ${after.rank}`);
+        play(after.level > before ? 'levelUp' : 'chime');
       }
     },
     [notify],
