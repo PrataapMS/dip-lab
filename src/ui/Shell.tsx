@@ -5,7 +5,9 @@ import { BARS_PER_DAY, barTime } from '../engine/intraday';
 import { money, signedMoney, signedPct, upDown, weekdayShort } from './format';
 import { HomeIcon, LearnIcon, MarketIcon, PauseIcon, PlayIcon, PortfolioIcon, SkipIcon } from './icons';
 import { formatRoute, type Route } from './router';
+import { levelFor } from '../game/levels';
 import type { Market, MarketView } from './useMarket';
+import { useProgress } from './useProgress';
 
 /** "> market open", "> market closed" or "> run complete". */
 export function marketStatus(view: MarketView): string {
@@ -66,6 +68,7 @@ export function TopBar({ view, children }: { view: MarketView; children?: Compon
         </div>
       </div>
       {children}
+      <XpStrip />
     </header>
   );
 }
@@ -124,7 +127,7 @@ const TABS:{ route: Route; label: string; icon: () => preact.JSX.Element }[] = [
 ];
 
 export function TabBar({ route, hasRun }: { route: Route; hasRun: boolean }) {
-  const current = route.name === 'stock' ? 'market' : route.name === 'new' || route.name === 'debrief' ? 'home' : route.name;
+  const current = route.name === 'stock' ? 'market' : route.name === 'new' || route.name === 'debrief' || route.name === 'badges' ? 'home' : route.name;
   return (
     <nav class="tabbar" aria-label="Main">
       {TABS.map(({ route: r, label, icon: Icon }) => {
@@ -184,5 +187,19 @@ export function MarginBanner({ market }: { market: Market }) {
           : `Sell something before the close of day ${a.marginCall.day + 2}, or your broker sells for you at the open after.`}
       </p>
     </section>
+  );
+}
+
+/** A thin XP bar with the level, under the top bar. */
+function XpStrip() {
+  const { progress } = useProgress();
+  const lv = levelFor(progress.xp);
+  return (
+    <div class="xp-strip mono tiny" title={`${lv.into} / ${lv.need} XP to Lv ${lv.level + 1}`}>
+      <span class="xp">LV {lv.level}</span>
+      <span class="xp-bar thin" aria-hidden="true">
+        <span style={{ width: `${(lv.into / lv.need) * 100}%` }} />
+      </span>
+    </div>
   );
 }

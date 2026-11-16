@@ -3,10 +3,14 @@ import { DEFAULT_ACCOUNT_SETTINGS } from '../../engine/account';
 import { DEFAULT_SPEED, type Speed, SPEEDS } from '../../engine/clock';
 import type { Regime } from '../../engine/regimes';
 import { CUSTOM_LIMITS, type NewsLevel, SCENARIOS, type ScenarioDef } from '../../engine/scenarios';
+import { isUnlocked, levelFor, UNLOCKS } from '../../game/levels';
+import { baseRunXp } from '../../game/xp';
+import { LockIcon } from '../BadgeIcon';
 import { dateRange, money } from '../format';
 import { BackIcon, PlayIcon } from '../icons';
 import { navigate } from '../router';
 import type { Market, RunConfig } from '../useMarket';
+import { useProgress } from '../useProgress';
 
 const CUSTOM = 'custom';
 const DEFAULT_SCENARIO = 'first-steps';
@@ -93,8 +97,34 @@ const TARGETS = [
   { value: 0.5, label: '+50%' },
 ];
 
-function ScenarioCard({ def, selected, inProgress, onPick }: { def: ScenarioDef; selected: boolean; inProgress: boolean; onPick: () => void }) {
+interface CardProps {
+  def: ScenarioDef;
+  selected: boolean;
+  inProgress: boolean;
+  /** Level needed when it is still locked. */
+  lockedUntil: number | null;
+  best: string | null;
+  onPick: () => void;
+}
+
+function ScenarioCard({ def, selected, inProgress, lockedUntil, best, onPick }: CardProps) {
   const boss = def.difficulty >= 4;
+  if (lockedUntil) {
+    return (
+      <div class="scenario-card locked" aria-disabled="true">
+        <span class="row gap-12">
+          <LockIcon size={20} />
+          <span class="stack grow">
+            <span class="scenario-name">{def.name}</span>
+            <span class="tiny dim">
+              Unlocks at Lv {lockedUntil} · {def.teaches}
+            </span>
+          </span>
+          <span class="mono tiny dim">+{baseRunXp(def.difficulty)} XP</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <button type="button" class={`scenario-card ${boss ? 'boss' : ''}`} aria-pressed={selected} onClick={onPick}>
       <span class="row">
@@ -108,6 +138,7 @@ function ScenarioCard({ def, selected, inProgress, onPick }: { def: ScenarioDef;
         <span class="pips-row">
           difficulty <Pips level={def.difficulty} boss={boss} />
         </span>
+        <span class="xp">{best ? `best: ${best}` : `+${baseRunXp(def.difficulty)} XP`}</span>
       </span>
     </button>
   );
@@ -115,6 +146,10 @@ function ScenarioCard({ def, selected, inProgress, onPick }: { def: ScenarioDef;
 
 export function Scenarios({ market }: { market: Market }) {
   const { view, send, startRun } = market;
+  const { progress } = useProgress();
+  const level = levelFor(progress.xp).level;
+  const can = (what: keyof typeof UNLOCKS) => isUnlocked(what, level, progress.unlockAll);
+  const lockedUntil = (id: string) => (id === 'meme-squeeze' && !can('meme-squeeze') ? UNLOCKS['meme-squeeze'].level : null);
   const [picked, setPicked] = useState(DEFAULT_SCENARIO);
   const [tweak, setTweak] = useState(false);
   const [cash, setCash] = useState(DEFAULT_ACCOUNT_SETTINGS.startingCash);
@@ -147,8 +182,8 @@ export function Scenarios({ market }: { market: Market }) {
         ...DEFAULT_ACCOUNT_SETTINGS,
         startingCash: cash,
         commission: fee,
-        ...(margin === '2x' ? { margin: true } : {}),
-        ...(margin === '2x' && shorts === 'on' ? { shorts: true } : {}),
+        ...(margin === '2x' && can('margin') ? { margin: true } : {}),
+        ...(margin === '2x' && shorts === 'on' && can('margin') && can('shorts') ? { shorts: true } : {}),
       },
       ...(custom ? { custom: { start, days, startRegime: mood, volScale: vol, news }, targetReturn: target || undefined } : {}),
     };
@@ -172,7 +207,15 @@ export function Scenarios({ market }: { market: Market }) {
 
       <div class="stack gap-8" role="group" aria-label="Scenarios">
         {SCENARIOS.map((s) => (
-          <ScenarioCard key={s.id} def={s} selected={picked === s.id} inProgress={running?.id === s.id} onPick={() => setPicked(s.id)} />
+          <ScenarioCard
+            key={s.id}
+            def={s}
+            selected={picked === s.id}
+            inProgress={running?.id === s.id}
+            lockedUntil={lockedUntil(s.id)}
+            best={progress.bestGrade[s.id]?.letter ?? null}
+            onPick={() => setPicked(s.id)}
+          />
         ))}
         <button type="button" class={`scenario-card custom`} aria-pressed={custom} onClick={() => setPicked(CUSTOM)}>
           <span class="scenario-name">Custom</span>
@@ -224,15 +267,30 @@ export function Scenarios({ market }: { market: Market }) {
           <h2 id="rules-title" class="section">RULES AND SPEED</h2>
           <Choice label="Starting cash" value={cash} options={CASH} onChange={setCash} />
           <Choice label="Commission" value={fee} options={FEES} onChange={setFee} />
-          <Choice label="Margin (borrow up to 2x, 8% a year)" value={margin} options={MARGIN} onChange={setMargin} />
-          {margin === '2x' && <Choice label="Short selling" value={shorts} options={SHORTS} onChange={setShorts} />}
+          {can('margin') ? (
+            <Choice label="Margin (borrow up to 2x, 8% a year)" value={margin} options={MARGIN} onChange={setMargin} />
+          ) : (
+            <p class="small dim locked-rule">
+              <LockIcon size={16} /> Margin unlocks at Lv {UNLOCKS.margin.level}
+            </p>
+          )}
+          {can('margin') &&
+            margin === '2x' &&
+            (can('shorts') ? (
+              <Choice label="Short selling" value={shorts} options={SHORTS} onChange={setShorts} />
+            ) : (
+              <p class="small dim locked-rule">
+                <LockIcon size={16} /> Short selling unlocks at Lv {UNLOCKS.shorts.level}
+              </p>
+            ))}
           <Choice label="Speed" value={speed} options={SPEED_OPTIONS} onChange={setSpeed} />
         </section>
       )}
 
       <div class="picker-footer">
         <span class="mono tiny dim">
-          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin={margin}{margin === '2x' && shorts === 'on' ? ' shorts=on' : ''} fees=${fee}
+          cash={money(cash)} speed={SPEEDS[speed] / 1000}s/day margin={can('margin') ? margin : 'off'}
+          {can('margin') && can('shorts') && margin === '2x' && shorts === 'on' ? ' shorts=on' : ''} fees=${fee}
         </span>
         <button type="button" class={`primary ${boss ? 'boss' : ''}`} onClick={go} disabled={custom && (!startOk || !seedOk)}>
           <PlayIcon /> {custom ? 'Start custom run' : boss ? 'Start boss run' : `Start ${def?.name ?? 'run'}`}

@@ -3,10 +3,12 @@ import type { Side } from '../engine/account';
 import { halfSpread } from '../engine/costs';
 import { BARS_PER_DAY } from '../engine/intraday';
 import { describeOrder, type OrderDraft, type OrderType, type TimeInForce } from '../engine/orders';
-import type { InstrumentInfo } from '../engine/protocol';
+import type { Activity, InstrumentInfo } from '../engine/protocol';
+import { orderXpHint } from '../game/hints';
 import { money, shares as fmtShares } from './format';
 import { cents, parseAmount, previewOrder, riskCheck } from './orderPreview';
 import type { Market } from './useMarket';
+import { today, useProgress } from './useProgress';
 
 const EXPLAIN: Record<OrderType, (side: Side) => string> = {
   market: () => 'Market: trade right now at the current price. You pay a tiny extra called the spread.',
@@ -139,6 +141,15 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
     [inst.ticker, side, type, unit, amount, limitPrice, stopPrice, tif],
   );
   const closed = view.bar >= BARS_PER_DAY;
+  const { progress } = useProgress();
+  const xpHint = useMemo(() => {
+    const short = side === 'sell' ? heldShares <= 0 : heldShares < 0;
+    const would: Activity[] = [{ kind: 'order', type, side, ticker: inst.ticker, short }];
+    if (type === 'market' || preview.fillsNow) {
+      would.push({ kind: 'fill', ticker: inst.ticker, side, orderType: type, etf: inst.kind === 'etf', short, forced: false, realised: 0, day: view.day });
+    }
+    return orderXpHint(progress, today(), would);
+  }, [progress, type, side, heldShares, inst.ticker, inst.kind, preview.fillsNow, view.day]);
 
   const setMax = () => {
     if (!closing(side)) {
@@ -322,7 +333,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         <div class="stack gap-6">
           <button type="button" class="primary confirm" disabled={!!preview.problem} onClick={confirm}>
             {preview.problem ?? describeOrder(draft, heldShares)}
-            {/* XP reward label slot (phase 4). */}
+            {!preview.problem && xpHint && <span class="xp-label mono">{xpHint}</span>}
           </button>
           <button type="button" class="link cancel" onClick={onClose}>
             Cancel

@@ -7,6 +7,7 @@ export type Route =
   | { name: 'portfolio' }
   | { name: 'learn' }
   | { name: 'debrief' }
+  | { name: 'badges' }
   /** Pick your run. */
   | { name: 'new' }
   | { name: 'stock'; ticker: string };
@@ -20,6 +21,7 @@ export function parseRoute(hash: string): Route {
     case 'portfolio':
     case 'learn':
     case 'debrief':
+    case 'badges':
     case 'new':
       return { name: parts[0] };
     case 'stock': {

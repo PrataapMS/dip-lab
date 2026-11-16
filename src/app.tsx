@@ -1,6 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import { HOME, type Route, useRoute } from './ui/router';
 import { navigate } from './ui/router';
+import { Badges } from './ui/screens/Badges';
 import { Debrief } from './ui/screens/Debrief';
 import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
@@ -29,6 +30,8 @@ function Screen({ route, market }: { route: Route; market: Market }) {
       return <Learn />;
     case 'debrief':
       return <Debrief market={market} />;
+    case 'badges':
+      return <Badges />;
     case 'new':
       return <Scenarios market={market} />;
     case 'market':
