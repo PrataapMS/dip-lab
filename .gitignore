@@ -11,3 +11,6 @@ coverage/
 CLAUDE.md
 docs/internal/
 .claude/
+
+# Local Netlify folder
+.netlify
