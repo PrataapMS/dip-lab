@@ -41,6 +41,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Full-run simulations take seconds on CI runners, more with coverage instrumentation.
+    testTimeout: 30_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
