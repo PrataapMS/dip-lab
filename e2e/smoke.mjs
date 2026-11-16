@@ -15,13 +15,22 @@ const ORIGIN = `http://localhost:${PORT}`;
 const OUT = 'e2e-results';
 
 const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-  stdio: ['ignore', 'pipe', 'inherit'],
+  stdio: ['ignore', 'ignore', 'inherit'],
 });
-await new Promise((resolve, reject) => {
-  preview.stdout.on('data', (d) => d.toString().includes(ORIGIN) && resolve());
-  preview.on('exit', (code) => reject(new Error(`vite preview exited with ${code}`)));
-  setTimeout(() => reject(new Error('vite preview did not start')), 30_000);
+let previewExit = null;
+preview.on('exit', (code) => {
+  previewExit = code;
 });
+for (let waited = 0; ; waited += 250) {
+  if (previewExit !== null) throw new Error(`vite preview exited with ${previewExit}`);
+  if (waited > 30_000) throw new Error('vite preview did not start');
+  const up = await fetch(ORIGIN).then(
+    (r) => r.ok,
+    () => false,
+  );
+  if (up) break;
+  await new Promise((r) => setTimeout(r, 250));
+}
 
 const browser = await chromium.launch({ channel: process.env.E2E_CHANNEL ?? 'chrome' });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
