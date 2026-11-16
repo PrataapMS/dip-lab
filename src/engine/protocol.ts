@@ -3,6 +3,7 @@
  * structured cloning: plain objects, arrays and typed arrays only.
  */
 import type { AccountSettings } from './account';
+import type { Debrief } from './debrief';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
 import type { AccountView, EndReason } from './run';
@@ -12,6 +13,7 @@ export type { AccountView } from './run';
 export type { NewsItem, Upcoming } from './news';
 export type { EndReason } from './run';
 export type { DaySummary } from './summary';
+export type { Debrief, Moment, TradeStat } from './debrief';
 
 export type Command =
   | {
@@ -105,8 +107,8 @@ export type WorkerEvent =
     }
   /** Sent at each close. */
   | { type: 'dayEnd'; summary: DaySummary }
-  /** The run is over. */
-  | { type: 'ended'; reason: EndReason }
+  /** The run is over: why, and the end-of-run report. */
+  | { type: 'ended'; reason: EndReason; debrief: Debrief }
   | { type: 'account'; account: AccountView }
   | {
       type: 'history';

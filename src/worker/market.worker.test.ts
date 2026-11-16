@@ -178,6 +178,7 @@ describe('market worker', () => {
     expect(last('tick').pauseAtClose).toBe(false);
     send({ type: 'end' });
     expect(last('ended').reason).toBe('ended');
+    expect(last('ended').debrief).toMatchObject({ scenarioId: 'first-steps', seed: 5, reason: 'ended', trades: 0 });
     expect(last('tick')).toMatchObject({ finished: true, endReason: 'ended' });
     send({ type: 'placeOrder', draft: { ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 10 } } });
     expect(last('orderResult').ok).toBe(false);

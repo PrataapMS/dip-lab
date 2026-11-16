@@ -7,6 +7,7 @@ import type {
   AccountView,
   Command,
   DaySummary,
+  Debrief,
   EndReason,
   InstrumentInfo,
   NewsItem,
@@ -70,6 +71,8 @@ export interface MarketView {
   pauseAtClose: boolean;
   /** Summary of the latest close, until dismissed. */
   daySummary: DaySummary | null;
+  /** End-of-run report, once the run is over. */
+  debrief: Debrief | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -105,6 +108,7 @@ export const initialView: MarketView = {
   endReason: null,
   pauseAtClose: false,
   daySummary: null,
+  debrief: null,
 };
 
 /** News lines kept for the feed. */
@@ -189,7 +193,7 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'dayEnd':
       return { ...state, daySummary: e.summary };
     case 'ended':
-      return { ...state, endReason: e.reason, finished: true, playing: false };
+      return { ...state, endReason: e.reason, debrief: e.debrief, finished: true, playing: false };
     case 'error':
       return { ...state, error: e.message };
   }

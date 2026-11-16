@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { UNIVERSE } from '../data/universe';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
+import { debrief } from '../engine/debrief';
 import { BARS_PER_DAY } from '../engine/intraday';
 import { buildMarket } from '../engine/market';
 import { dividendItem, selectNews, tickerNews, upcomingFor } from '../engine/news';
@@ -143,7 +144,7 @@ function emitTick(): void {
   closesSent = closes;
   if (r.endReason && !endSent) {
     endSent = true;
-    post({ type: 'ended', reason: r.endReason });
+    post({ type: 'ended', reason: r.endReason, debrief: debrief(r) });
   }
 }
 
