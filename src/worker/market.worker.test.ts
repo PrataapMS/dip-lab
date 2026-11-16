@@ -30,7 +30,7 @@ afterEach(() => {
 describe('market worker', () => {
   it('loads a scenario and posts the first day and tick', () => {
     send({ type: 'newRun', scenarioId: 'covid-2020', seed: 7 });
-    expect(events.map((e) => e.type)).toEqual(['loaded', 'day', 'tick', 'account']);
+    expect(events.map((e) => e.type)).toEqual(['loaded', 'day', 'tick', 'news', 'account']);
     const loaded = last('loaded');
     expect(loaded.dates[0]).toBe('2020-02-20');
     expect(loaded.instruments[loaded.indexInstrument]?.ticker).toBe('SPY');
@@ -143,6 +143,30 @@ describe('market worker', () => {
     const a = play();
     expect(a.equityByDay).toHaveLength(15);
     expect(play()).toEqual(a);
+  });
+
+  it('sends the intro headline, news about holdings and dividends received', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    expect(last('news').items[0]).toMatchObject({ kind: 'headline', day: 0, bar: 0 });
+    send({ type: 'placeOrder', draft: { ticker: 'SPY', side: 'buy', type: 'market', amount: { kind: 'shares', value: 5 } } });
+    send({ type: 'placeOrder', draft: { ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'shares', value: 5 } } });
+    events.length = 0;
+    for (let d = 0; d < 60; d++) send({ type: 'stepDay' });
+    const items = events.flatMap((e) => (e.type === 'news' ? e.items : []));
+    expect(items.some((n) => n.kind === 'dividend' && n.ticker === 'SPY' && n.mine)).toBe(true);
+    expect(items.some((n) => n.kind === 'earnings' && n.ticker === 'KO' && n.mine)).toBe(true);
+    const days = items.map((n) => n.day);
+    expect(days).toEqual([...days].sort((a, b) => a - b));
+  });
+
+  it('sends a ticker its news and upcoming dates', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'inspect', ticker: 'KO' });
+    const h = last('history');
+    expect(h.news).toEqual([]);
+    expect(h.upcoming.earnings).toBeGreaterThan(0);
+    expect(h.upcoming.exDividend).toBeGreaterThan(0);
+    send({ type: 'inspect', ticker: null });
   });
 
   it('reports errors instead of throwing', () => {

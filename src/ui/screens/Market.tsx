@@ -3,6 +3,7 @@ import { BARS_PER_DAY, barTime } from '../../engine/intraday';
 import type { InstrumentInfo } from '../../engine/protocol';
 import { price, signedPct, upDown } from '../format';
 import { dayChange, defaultWatchlist, INDEX_TILES, inSector, searchInstruments, SECTOR_CHIPS, topMovers } from '../marketList';
+import { NewsList } from '../NewsList';
 import { formatRoute } from '../router';
 import { Sparkline } from '../Sparkline';
 import type { Market as MarketApi, MarketView } from '../useMarket';
@@ -32,7 +33,12 @@ function QuoteRow({ inst, view }: { inst: InstrumentInfo; view: MarketView }) {
   );
 }
 
+/** Lines shown in the Market news list. */
+const NEWS_SHOWN = 8;
+
 function statusLine(view: MarketView): string {
+  const latest = view.news[view.news.length - 1];
+  if (!view.finished && latest && latest.day === view.day) return `> ${latest.text}`;
   const spy = dayChange(view.prices, view.prevCloses, view.indexInstrument);
   if (view.finished) return `> run complete. SPY ${signedPct(spy)} on the last day`;
   if (view.bar >= BARS_PER_DAY) return `> close: SPY ${signedPct(spy)}`;
@@ -158,6 +164,11 @@ export function Market({ market }: { market: MarketApi }) {
         ) : (
           <p class="small dim">No ticker or name matches that.</p>
         )}
+      </section>
+
+      <section class="list-section">
+        <h2 class="section">NEWS</h2>
+        <NewsList items={view.news.slice(-NEWS_SHOWN).reverse()} empty="No news yet. Earnings and headlines show up here." />
       </section>
 
       <p class="status-line mono">

@@ -396,7 +396,7 @@ export const SCENARIOS: readonly ScenarioDef[] = [
       { date: '2024-04-01', text: 'Earnings season begins: hundreds of companies report in the coming weeks', tone: 'flat', at: 'open' },
       { date: '2024-06-28', text: 'Quarter ends with stocks modestly higher after a busy earnings season', tone: 'up' },
     ],
-    earningsScale: 1.5,
+    earningsScale: 1.25,
     market: [{ date: '2024-06-28', ret: 0.03, regime: 'calm' }],
   },
 ];

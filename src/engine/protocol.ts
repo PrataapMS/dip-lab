@@ -3,10 +3,12 @@
  * structured cloning: plain objects, arrays and typed arrays only.
  */
 import type { AccountSettings } from './account';
+import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
 import type { AccountView } from './run';
 
 export type { AccountView } from './run';
+export type { NewsItem, Upcoming } from './news';
 
 export type Command =
   | { type: 'newRun'; scenarioId: string; seed: number; settings?: AccountSettings }
@@ -94,7 +96,12 @@ export type WorkerEvent =
       closes: number[];
       /** Price at each bar so far today. */
       today: number[];
+      /** Its news so far, newest first. */
+      news: NewsItem[];
+      upcoming: Upcoming;
     }
+  /** New lines for the news feed, oldest first. */
+  | { type: 'news'; items: NewsItem[] }
   /** Answer to placeOrder or cancelOrder. */
   | { type: 'orderResult'; ok: boolean; order: Order | null; message: string }
   /** Orders that filled, expired or were rejected while the clock ran. */

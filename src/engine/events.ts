@@ -43,6 +43,8 @@ const INLINE_P = 0.1;
  */
 const REACTION: Record<EarningsResult, number> = { beat: 0.41, inline: -0.29, miss: -1.29 };
 const REACTION_NOISE = 0.8;
+/** Earnings moves relative to a news jump: typical large-cap reactions are a few percent. */
+const EARNINGS_SIZE = 0.8;
 
 /** Number of wordings to pick from (see `headlines.ts`). */
 export const VARIANTS = 7;
@@ -115,7 +117,7 @@ export function planEarnings(seed: number, inst: Instrument, dates: readonly Iso
   const jumps = new Float64Array(dates.length);
   const events: MarketEvent[] = [];
   const rand = createRng(childSeed(seed, `earnings:${inst.ticker}`));
-  const sd = jumpSize(inst.vol) * scale;
+  const sd = jumpSize(inst.vol) * EARNINGS_SIZE * scale;
   for (const day of earningsDays(dates, inst.ticker)) {
     const u = rand();
     const z = normal(rand);

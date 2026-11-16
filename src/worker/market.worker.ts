@@ -2,6 +2,7 @@
 import { UNIVERSE } from '../data/universe';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
 import { buildMarket } from '../engine/market';
+import { dividendItem, selectNews, tickerNews, upcomingFor } from '../engine/news';
 import { type Order, orderMessage } from '../engine/orders';
 import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engine/protocol';
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
@@ -25,6 +26,10 @@ let watched: string[] = [];
 let inspected: string | null = null;
 let lastNow = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
+/** Next market event not yet sent to the feed. */
+let newsCursor = 0;
+/** Dividend payments already sent to the feed. */
+let dividendsSent = 0;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
   scope.postMessage(event, transfer);
@@ -69,7 +74,37 @@ function emitHistory(r: Run): void {
   if (!inspected) return;
   const i = r.indexOf(inspected);
   if (i === undefined) return;
-  post({ type: 'history', ticker: inspected, closes: closesUpTo(r, i, r.clock.day, r.clock.day + 1), today: r.today(i) });
+  post({
+    type: 'history',
+    ticker: inspected,
+    closes: closesUpTo(r, i, r.clock.day, r.clock.day + 1),
+    today: r.today(i),
+    news: tickerNews(r.market, inspected, r.clock.day, r.clock.bar),
+    upcoming: upcomingFor(r.market, inspected, r.clock.day),
+  });
+}
+
+/** Send market events that have happened since the last call, plus dividends received. */
+function emitNews(r: Run): void {
+  const events = r.market.events;
+  const start = newsCursor;
+  const { day, bar } = r.clock;
+  while (newsCursor < events.length) {
+    const e = events[newsCursor];
+    if (!e || e.day > day || (e.day === day && e.bar > bar)) break;
+    newsCursor++;
+  }
+  const a = r.account;
+  const followed = new Set<string>([...Object.keys(a.positions), ...watched, ...(inspected ? [inspected] : [])]);
+  for (const o of a.orders) if (o.status === 'open') followed.add(o.ticker);
+  const items = selectNews(
+    events.slice(start, newsCursor),
+    (t) => followed.has(t),
+    (t) => (a.positions[t]?.shares ?? 0) > 0,
+  );
+  for (const p of a.dividends.slice(dividendsSent)) items.push(dividendItem(p));
+  dividendsSent = a.dividends.length;
+  if (items.length) post({ type: 'news', items });
 }
 
 function emitTick(): void {
@@ -94,6 +129,7 @@ function emitTick(): void {
     },
     [prices.buffer],
   );
+  emitNews(r);
   post({ type: 'account', account: r.view() });
 }
 
@@ -139,6 +175,8 @@ function handle(cmd: Command): void {
       const market = buildMarket(def, cmd.seed, UNIVERSE);
       run = new Run(market, cmd.settings, dayLengthMs);
       postedDay = -1;
+      newsCursor = 0;
+      dividendsSent = 0;
       post({
         type: 'loaded',
         scenario: { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional },

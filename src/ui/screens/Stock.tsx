@@ -5,6 +5,7 @@ import { describeOrder } from '../../engine/orders';
 import { money, price as fmtPrice, shares, signedMoney, signedPct, upDown } from '../format';
 import { BackIcon } from '../icons';
 import { LineChart } from '../LineChart';
+import { NewsList } from '../NewsList';
 import { dayChange } from '../marketList';
 import { OrderSheet } from '../OrderSheet';
 import { navigate } from '../router';
@@ -48,6 +49,17 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
   const runPct = first ? p / first - 1 : 0;
   const held = view.account?.positions.find((x) => x.ticker === ticker);
   const orders = view.account?.openOrders.filter((o) => o.ticker === ticker) ?? [];
+  // An earnings gap shows between the close before the report and the close of its day.
+  const earningsMarks = (hist?.news ?? []).filter((n) => n.kind === 'earnings').map((n) => n.day + 1);
+  const upcoming = hist?.upcoming;
+  const inDays = (d: number) => {
+    const n = d - view.day;
+    return n === 1 ? 'tomorrow' : `in ${n} trading days`;
+  };
+  const chips = [
+    upcoming?.earnings != null ? `Earnings ${inDays(upcoming.earnings)}` : null,
+    upcoming?.exDividend != null ? `Ex-dividend ${inDays(upcoming.exDividend)}` : null,
+  ].filter((c): c is string => !!c);
 
   return (
     <>
@@ -68,6 +80,16 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
         <span class={`chg big-chg ${upDown(change)}`}>{signedPct(change)}</span>
         <span class="small dim">today</span>
       </div>
+
+      {chips.length > 0 && (
+        <div class="event-chips">
+          {chips.map((c) => (
+            <span key={c} class="event-chip mono tiny">
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
 
       <section class="chart-box">
         <div class="segmented range" role="group" aria-label="Chart range">
@@ -93,8 +115,9 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
             capacity={view.dates.length + 1}
             baseline={first}
             up={runPct >= 0}
-            label={`${ticker} since the run started, ${signedPct(runPct)}`}
+            label={`${ticker} since the run started, ${signedPct(runPct)}${earningsMarks.length ? `, ${earningsMarks.length} earnings reports marked` : ''}`}
             height={150}
+            markers={earningsMarks}
           />
         )}
       </section>
@@ -144,6 +167,12 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
           </ul>
         </section>
       )}
+
+      <section class="panel">
+        <h2 class="section">NEWS</h2>
+        <NewsList items={hist?.news ?? []} empty={`No news about ${ticker} yet in this run.`} />
+        {earningsMarks.length > 0 && range === 'run' && <p class="tiny dim">Amber dots on the chart mark earnings days.</p>}
+      </section>
 
       <section class="panel">
         <h2 class="section">QUICK FACTS</h2>

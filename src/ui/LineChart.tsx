@@ -7,11 +7,13 @@ interface Props {
   up: boolean;
   label: string;
   height?: number;
+  /** Indexes of points to mark (e.g. earnings days), with a label for screen readers. */
+  markers?: readonly number[];
 }
 
 const W = 320;
 
-export function LineChart({ values, capacity, baseline, up, label, height = 120 }: Props) {
+export function LineChart({ values, capacity, baseline, up, label, height = 120, markers = [] }: Props) {
   const H = height;
   const slots = Math.max(capacity ?? values.length, 2) - 1;
   const all = baseline !== undefined ? [...values, baseline] : values;
@@ -31,6 +33,11 @@ export function LineChart({ values, capacity, baseline, up, label, height = 120 
       {values.length > 1 && (
         <polyline points={points} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
       )}
+      {markers
+        .filter((k) => k >= 0 && k < values.length)
+        .map((k) => (
+          <circle key={k} cx={((k / slots) * W).toFixed(1)} cy={y(values[k] ?? 0)} r="3.5" fill="var(--bg)" stroke="var(--warn)" stroke-width="2" />
+        ))}
       {last !== undefined && (
         <circle cx={(((values.length - 1) / slots) * W).toFixed(1)} cy={y(last)} r="3" fill={color} />
       )}

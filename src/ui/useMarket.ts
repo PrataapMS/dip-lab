@@ -3,7 +3,7 @@ import type { AccountSettings } from '../engine/account';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import type { Order } from '../engine/orders';
-import type { AccountView, Command, InstrumentInfo, ScenarioInfo, WorkerEvent } from '../engine/protocol';
+import type { AccountView, Command, InstrumentInfo, NewsItem, ScenarioInfo, Upcoming, WorkerEvent } from '../engine/protocol';
 
 export interface Notice {
   id: number;
@@ -15,6 +15,8 @@ export interface History {
   ticker: string;
   closes: number[];
   today: number[];
+  news: NewsItem[];
+  upcoming: Upcoming;
 }
 
 export interface MarketView {
@@ -52,6 +54,8 @@ export interface MarketView {
   account: AccountView | null;
   /** Latest order messages, newest last. */
   notices: Notice[];
+  /** News feed, newest last. */
+  news: NewsItem[];
 }
 
 const EMPTY = new Float32Array(0);
@@ -83,7 +87,16 @@ export const initialView: MarketView = {
   history: null,
   account: null,
   notices: [],
+  news: [],
 };
+
+/** News lines kept for the feed. */
+export const NEWS_KEPT = 60;
+
+/** Headlines and news about holdings also pop up as notices. */
+export function newsNotices(items: readonly NewsItem[]): { ok: boolean; message: string }[] {
+  return items.filter((n) => n.kind === 'headline' || n.mine).map((n) => ({ ok: n.tone !== 'down', message: n.text }));
+}
 
 let noticeId = 0;
 
@@ -143,7 +156,13 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'account':
       return { ...state, account: e.account };
     case 'history':
-      return { ...state, history: { ticker: e.ticker, closes: e.closes, today: e.today } };
+      return { ...state, history: { ticker: e.ticker, closes: e.closes, today: e.today, news: e.news, upcoming: e.upcoming } };
+    case 'news':
+      return {
+        ...state,
+        news: [...state.news, ...e.items].slice(-NEWS_KEPT),
+        notices: addNotices(state, newsNotices(e.items)),
+      };
     case 'orderResult':
       return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
     case 'orderUpdates':
