@@ -4,6 +4,7 @@ import { endText } from '../DayCard';
 import { money, MINUS, signedPct } from '../format';
 import { PlusIcon, ReplayIcon } from '../icons';
 import { navigate } from '../router';
+import { RunRewards } from '../RunRewards';
 import type { Market } from '../useMarket';
 
 const MOMENT_COLOR: Record<Moment['kind'], string> = {
@@ -154,6 +155,8 @@ export function Debrief({ market }: { market: Market }) {
         </p>
         {g.cap && <p class="small warn">{g.cap}</p>}
       </section>
+
+      <RunRewards days={d.days} />
 
       <section class="stack gap-8">
         <h2 class="section">MOMENTS TO LEARN FROM</h2>

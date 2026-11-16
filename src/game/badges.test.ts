@@ -44,7 +44,7 @@ describe('badges', () => {
     const fill: Activity = { kind: 'fill', ticker: 'KO', side: 'buy', orderType: 'market', etf: false, short: false, forced: false, realised: 0, day: 0 };
     const r = applyActivity(emptyProgress(), fill, DATE, CTX);
     expect(r.progress.badges['first-trade']).toBe(DATE);
-    expect(r.rewards).toContainEqual({ source: 'badge', label: 'Badge: First trade', xp: 50 });
+    expect(r.rewards).toContainEqual({ source: 'badge', label: 'Badge: First trade', xp: 50, id: 'first-trade' });
     expect(applyActivity(r.progress, fill, DATE, CTX).rewards.filter((x) => x.source === 'badge')).toEqual([]);
   });
 

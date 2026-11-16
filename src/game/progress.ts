@@ -97,6 +97,8 @@ export interface Reward {
   source: RewardSource;
   label: string;
   xp: number;
+  /** The badge, quest, lesson or challenge it came from. */
+  id?: string;
 }
 
 export function grant(p: Progress, rewards: readonly Reward[]): Progress {
@@ -154,7 +156,7 @@ export function applyActivity(p: Progress, a: Activity, date: string, ctx: Badge
   const q = advanceQuests(p.quests, date, a);
   let next: Progress = q.state === p.quests ? p : { ...p, quests: q.state };
   for (const done of q.completed) {
-    rewards.push({ source: 'quest', label: `Quest: ${done.text}`, xp: done.xp });
+    rewards.push({ source: 'quest', label: `Quest: ${done.text}`, xp: done.xp, id: done.id });
     next = bump(next, 'questsDone');
   }
   if (a.kind === 'close' || a.kind === 'lessonDone') {
@@ -169,7 +171,7 @@ export function applyActivity(p: Progress, a: Activity, date: string, ctx: Badge
   }
   for (const b of newBadges(a, next, ctx)) {
     next = { ...next, badges: { ...next.badges, [b.id]: date } };
-    rewards.push({ source: 'badge', label: `Badge: ${b.name}`, xp: XP.badge });
+    rewards.push({ source: 'badge', label: `Badge: ${b.name}`, xp: XP.badge, id: b.id });
   }
   return { progress: grant(next, rewards), rewards };
 }

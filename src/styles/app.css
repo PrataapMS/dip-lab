@@ -1551,3 +1551,67 @@ button:disabled {
 .scenario-card.locked .mono {
   white-space: nowrap;
 }
+
+/* ---------- Debrief rewards ---------- */
+.strong {
+  font-weight: 700;
+}
+
+.xp-panel {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--xp);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xp-panel .pixel {
+  font-size: 15px;
+  color: var(--xp);
+}
+
+.xp-panel.level-up {
+  background: var(--xp);
+  color: var(--on-accent);
+  border-color: var(--xp);
+}
+
+.xp-panel.level-up .pixel {
+  color: var(--on-accent);
+}
+
+.xp-panel-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.xp-bar.on-panel {
+  height: 8px;
+}
+
+.level-up .xp-bar.on-panel {
+  background: rgba(11, 13, 20, 0.25);
+}
+
+.level-up .xp-bar.on-panel span {
+  background: var(--on-accent);
+}
+
+.xp-lines {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid currentColor;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.85;
+}
+
+.xp-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
