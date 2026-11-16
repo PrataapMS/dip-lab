@@ -5,6 +5,7 @@ import { money, MINUS, signedPct } from '../format';
 import { PlusIcon, ReplayIcon } from '../icons';
 import { navigate } from '../router';
 import { RunRewards } from '../RunRewards';
+import { Term } from '../Term';
 import type { Market } from '../useMarket';
 
 const MOMENT_COLOR: Record<Moment['kind'], string> = {
@@ -28,10 +29,10 @@ function tradeText(t: TradeStat | null): string {
   return t ? `${t.ticker} ${signedPct(t.pct, 0)}` : 'n/a';
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'up' | 'down' }) {
+function Stat({ label, value, tone, term }: { label: string; value: string; tone?: 'up' | 'down'; term?: string }) {
   return (
     <div class="stat">
-      <span class="tiny dim">{label}</span>
+      <span class="tiny dim">{term ? <Term id={term}>{label}</Term> : label}</span>
       <span class={`stat-value ${tone ?? ''}`}>{value}</span>
     </div>
   );
@@ -71,7 +72,9 @@ export function Debrief({ market }: { market: Market }) {
       <header class="debrief-head">
         <div class={`grade-tile grade-${g.letter[0]?.toLowerCase()}`}>
           <span class="grade-letter">{g.letter}</span>
-          <span class="tiny dim mono">grade</span>
+          <span class="tiny dim mono">
+            <Term id="grade">grade</Term>
+          </span>
         </div>
         <div class="stack gap-4">
           <span class="mono tiny accent">// RUN COMPLETE · {d.scenarioName.toUpperCase()}</span>
@@ -104,7 +107,9 @@ export function Debrief({ market }: { market: Market }) {
           </span>
         </div>
         <div class="vs-tile">
-          <span class="tiny dim">buy &amp; hold SPY</span>
+          <span class="tiny dim">
+            <Term id="buy-and-hold">buy &amp; hold</Term> SPY
+          </span>
           <span class="vs-big">{signedPct(d.spyRet, 1)}</span>
           <span class="tiny dim">
             {money(d.startValue)} → {money(d.spyEndValue)}
@@ -135,10 +140,10 @@ export function Debrief({ market }: { market: Market }) {
       <section class="stack gap-8">
         <h2 class="section">STATS</h2>
         <div class="stats-grid mono">
-          <Stat label="worst_drop" value={d.worstDrawdown > 0 ? `${MINUS}${(d.worstDrawdown * 100).toFixed(1)}%` : '0.0%'} tone={d.worstDrawdown > 0 ? 'down' : undefined} />
+          <Stat label="worst_drop" term="drawdown" value={d.worstDrawdown > 0 ? `${MINUS}${(d.worstDrawdown * 100).toFixed(1)}%` : '0.0%'} tone={d.worstDrawdown > 0 ? 'down' : undefined} />
           <Stat label="trades" value={String(d.trades)} />
-          <Stat label="costs_paid" value={money(d.fees + d.spread + d.interest + d.borrowFees)} />
-          <Stat label="win_rate" value={d.closedTrades ? `${d.wins}/${d.closedTrades}` : 'n/a'} />
+          <Stat label="costs_paid" term="spread" value={money(d.fees + d.spread + d.interest + d.borrowFees)} />
+          <Stat label="win_rate" term="win-rate" value={d.closedTrades ? `${d.wins}/${d.closedTrades}` : 'n/a'} />
           <Stat label="best" value={tradeText(d.best)} tone={d.best ? (d.best.pct >= 0 ? 'up' : 'down') : undefined} />
           <Stat label="worst" value={tradeText(d.worst)} tone={d.worst ? (d.worst.pct >= 0 ? 'up' : 'down') : undefined} />
         </div>

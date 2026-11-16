@@ -5,7 +5,8 @@ export type Route =
   | { name: 'home' }
   | { name: 'market' }
   | { name: 'portfolio' }
-  | { name: 'learn' }
+  /** The Learn tab, or one lesson in it. */
+  | { name: 'learn'; lesson?: string }
   | { name: 'debrief' }
   | { name: 'badges' }
   /** Pick your run. */
@@ -17,9 +18,10 @@ export const HOME: Route = { name: 'home' };
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   switch (parts[0]) {
+    case 'learn':
+      return parts[1] && /^[a-z0-9-]{1,40}$/.test(parts[1]) ? { name: 'learn', lesson: parts[1] } : { name: 'learn' };
     case 'market':
     case 'portfolio':
-    case 'learn':
     case 'debrief':
     case 'badges':
     case 'new':
@@ -34,7 +36,9 @@ export function parseRoute(hash: string): Route {
 }
 
 export function formatRoute(r: Route): string {
-  return r.name === 'stock' ? `#/stock/${encodeURIComponent(r.ticker)}` : `#/${r.name}`;
+  if (r.name === 'stock') return `#/stock/${encodeURIComponent(r.ticker)}`;
+  if (r.name === 'learn' && r.lesson) return `#/learn/${r.lesson}`;
+  return `#/${r.name}`;
 }
 
 export function navigate(r: Route): void {

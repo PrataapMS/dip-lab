@@ -2,6 +2,7 @@ import type { EndReason } from '../engine/protocol';
 import { longDate, signedMoney, signedPct, upDown } from './format';
 import { CloseIcon, PlayIcon } from './icons';
 import type { Market } from './useMarket';
+import { Term } from './Term';
 
 const END_TEXT: Record<EndReason, string> = {
   lastDay: 'The scenario reached its last day.',
@@ -61,7 +62,9 @@ export function DayCard({ market }: { market: Market }) {
         )}
         {s.dividends > 0 && (
           <>
-            <dt>dividends</dt>
+            <dt>
+              <Term id="dividend">dividends</Term>
+            </dt>
             <dd class="up">{signedMoney(s.dividends, true)}</dd>
           </>
         )}

@@ -3,6 +3,7 @@ import { CompareChart, rebased } from '../CompareChart';
 import { money, shares, signedMoney, signedPct, upDown } from '../format';
 import { formatRoute } from '../router';
 import { MarginBanner, spyChange, spyNow } from '../Shell';
+import { Term } from '../Term';
 import type { Market } from '../useMarket';
 
 /** Slices beyond this many sectors are merged into "Other". */
@@ -39,7 +40,9 @@ export function Portfolio({ market }: { market: Market }) {
       <section class="panel">
         <div class="row end">
           <div class="stack">
-            <span class="tiny dim">account value</span>
+            <span class="tiny dim">
+              <Term id="account-value">account value</Term>
+            </span>
             <span class="big">{money(a.value, true)}</span>
           </div>
           <div class="stack end mono">
@@ -52,21 +55,29 @@ export function Portfolio({ market }: { market: Market }) {
           <dd class={upDown(today)}>
             {signedMoney(today, true)} ({signedPct(todayPct)})
           </dd>
-          <dt>total return</dt>
+          <dt>
+            <Term id="total-return">total return</Term>
+          </dt>
           <dd class={upDown(total)}>
             {signedMoney(a.value - start, true)} ({signedPct(total)})
           </dd>
           {a.dividendsReceived > 0 && (
             <>
-              <dt>dividends</dt>
+              <dt>
+                <Term id="dividend">dividends</Term>
+              </dt>
               <dd class="up">{signedMoney(a.dividendsReceived, true)}</dd>
             </>
           )}
           {a.settings.margin && (
             <>
-              <dt>buying power</dt>
+              <dt>
+                <Term id="buying-power">buying power</Term>
+              </dt>
               <dd>{money(a.buyingPower, true)}</dd>
-              <dt>equity / holdings</dt>
+              <dt>
+                <Term id="margin-call">equity / holdings</Term>
+              </dt>
               <dd class={a.marginRatio !== null && a.marginRatio < 0.3 ? 'down' : ''}>
                 {a.marginRatio === null ? 'n/a' : `${Math.round(a.marginRatio * 100)}%`} <span class="dim">(min 30%)</span>
               </dd>
@@ -74,11 +85,15 @@ export function Portfolio({ market }: { market: Market }) {
           )}
           {a.interestPaid > 0 && (
             <>
-              <dt>margin interest</dt>
+              <dt>
+                <Term id="margin-interest">margin interest</Term>
+              </dt>
               <dd class="down">{signedMoney(-a.interestPaid, true)}</dd>
             </>
           )}
-          <dt>SPY same period</dt>
+          <dt>
+            <Term id="spy">SPY</Term> same period
+          </dt>
           <dd class={upDown(spy)}>{signedPct(spy)}</dd>
           <dt>you vs SPY</dt>
           <dd class={upDown(diffPts)}>
@@ -137,7 +152,9 @@ export function Portfolio({ market }: { market: Market }) {
       </section>
 
       <section class="panel">
-        <h2 class="section">MIX</h2>
+        <h2 class="section">
+          <Term id="diversification">MIX</Term>
+        </h2>
         <div class="mix-bar" aria-hidden="true">
           {slices.map((s, k) => (
             <span key={s.label} class={s.label === 'Cash' ? 'mix-cash' : `mix-${k}`} style={{ width: `${(s.value / mixTotal) * 100}%` }} />

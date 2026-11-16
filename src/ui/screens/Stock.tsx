@@ -10,6 +10,7 @@ import { dayChange } from '../marketList';
 import { OrderSheet } from '../OrderSheet';
 import { navigate } from '../router';
 import type { Market } from '../useMarket';
+import { Term } from '../Term';
 
 function goBack(): void {
   if (history.length > 1) history.back();
@@ -141,11 +142,15 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
               {shares(held.shares)}
               {held.shares < 0 ? ' (short)' : ''}
             </dd>
-            <dt>avg cost</dt>
+            <dt>
+              <Term id="cost-basis">avg cost</Term>
+            </dt>
             <dd>{money(held.avgCost, true)}</dd>
             <dt>value</dt>
             <dd>{money(held.value, true)}</dd>
-            <dt>unrealised</dt>
+            <dt>
+              <Term id="unrealised">unrealised</Term>
+            </dt>
             <dd class={upDown(held.unrealised)}>
               {signedMoney(held.unrealised, true)} ({signedPct(held.unrealisedPct)})
             </dd>
@@ -181,13 +186,21 @@ export function Stock({ market, ticker }: { market: Market; ticker: string }) {
       <section class="panel">
         <h2 class="section">QUICK FACTS</h2>
         <dl class="facts">
-          <dt>sector</dt>
+          <dt>
+            <Term id="sector">sector</Term>
+          </dt>
           <dd>{inst.sector ?? (inst.kind === 'etf' ? 'whole market' : 'n/a')}</dd>
-          <dt>beta</dt>
+          <dt>
+            <Term id="beta">beta</Term>
+          </dt>
           <dd title="How much it tends to move with the market (1 = same as the market)">{inst.beta.toFixed(2)}</dd>
-          <dt>swings</dt>
+          <dt>
+            <Term id="volatility">swings</Term>
+          </dt>
           <dd>about {Math.round(inst.vol * 100)}% a year</dd>
-          <dt>dividend</dt>
+          <dt>
+            <Term id="yield">dividend</Term>
+          </dt>
           <dd>{inst.divYield > 0 ? `${(inst.divYield * 100).toFixed(1)}% a year` : 'none'}</dd>
           <dt>prev close</dt>
           <dd>{fmtPrice(prev)}</dd>

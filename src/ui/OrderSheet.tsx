@@ -7,6 +7,7 @@ import type { Activity, InstrumentInfo } from '../engine/protocol';
 import { orderXpHint } from '../game/hints';
 import { money, shares as fmtShares } from './format';
 import { cents, parseAmount, previewOrder, riskCheck } from './orderPreview';
+import { Term } from './Term';
 import type { Market } from './useMarket';
 import { today, useProgress } from './useProgress';
 
@@ -168,7 +169,12 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   };
 
   const stopLabel = (side === 'sell' && !shorting) || covering ? 'Stop-loss' : 'Stop';
-  const spreadNote = side === 'buy' ? '(+spread)' : '(−spread)';
+  const spreadNote = (
+    <>
+      ({side === 'buy' ? '+' : '−'}
+      <Term id="spread">spread</Term>)
+    </>
+  );
 
   return (
     <div class="sheet-layer">
@@ -254,7 +260,9 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
         {type !== 'market' && (
           <div class="trigger">
             <label class="field">
-              <span class="field-label">{type === 'limit' ? 'Limit price' : 'Stop price'}</span>
+              <span class="field-label">
+                {type === 'limit' ? <Term id="limit-order">Limit price</Term> : <Term id="stop-loss">Stop price</Term>}
+              </span>
               <input
                 inputMode="decimal"
                 value={type === 'limit' ? limitText : stopText}
@@ -262,7 +270,9 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
               />
             </label>
             <div class="field">
-              <span class="field-label">Lasts</span>
+              <span class="field-label">
+                <Term id="time-in-force">Lasts</Term>
+              </span>
               <div class="segmented" role="group" aria-label="How long the order lasts">
                 <button type="button" aria-pressed={tif === 'day'} onClick={() => setTif('day')}>
                   today
@@ -298,19 +308,21 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
           </div>
           {margin && side === 'buy' && (
             <div class="row">
-              <span class="dim">&gt; buying_power</span>
+              <span class="dim">
+                &gt; <Term id="buying-power">buying_power</Term>
+              </span>
               <span>{money(power, true)}</span>
             </div>
           )}
           {shorting && (
             <p class="tiny warn">
-              You borrow {inst.ticker} shares and sell them. You make money if {inst.ticker} falls; if it rises, your loss has no
+              You <Term id="short-selling">borrow {inst.ticker} shares and sell them</Term>. You make money if {inst.ticker} falls; if it rises, your loss has no
               ceiling. Borrow fee {inst.ticker === 'MOONR' ? '30' : '0.5'}% a year, and you pay its dividends.
             </p>
           )}
           {preview.borrowed > 0 && (
             <p class="tiny warn">
-              {money(preview.borrowed, true)} of this is borrowed at {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on
+              {money(preview.borrowed, true)} of this is <Term id="margin">borrowed</Term> at {Math.round((settings?.marginRate ?? 0.08) * 100)}% a year. Losses on
               it are yours too.
             </p>
           )}
@@ -319,7 +331,9 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
 
         <div class="field">
           <div class="row tiny-gap">
-            <span class="field-label">Risk check</span>
+            <span class="field-label">
+              <Term id="risk-check">Risk check</Term>
+            </span>
             <span class={`mono small risk-${risk.level}`}>{risk.label}</span>
           </div>
           <div class={`meter risk-${risk.level}`} aria-hidden="true">
