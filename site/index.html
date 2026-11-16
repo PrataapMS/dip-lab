@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Dip Lab: learn the stock market by replaying it</title>
+    <meta
+      name="description"
+      content="A free, offline stock market game. Trade the 2008 crash, the COVID rebound and the dot-com bubble with virtual cash, then replay the exact same market and do it better."
+    />
+    <meta name="theme-color" content="#0b0d14" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://prataapms.github.io/dip-lab/welcome/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Dip Lab: learn the stock market by replaying it" />
+    <meta
+      property="og:description"
+      content="Trade history's wildest markets with virtual cash. Then replay the exact same market and do it better. Free, offline, no sign-up."
+    />
+    <meta property="og:url" content="https://prataapms.github.io/dip-lab/welcome/" />
+    <meta property="og:image" content="https://prataapms.github.io/dip-lab/welcome/shots/banner.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="fonts/silkscreen-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/space-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
+    <script src="main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+
+    <div class="tape" aria-hidden="true">
+      <span class="tape-tag">SIMULATED FEED</span>
+      <div class="tape-track" id="tape"></div>
+    </div>
+
+    <header class="nav" id="nav">
+      <a class="brand" href="#top" aria-label="Dip Lab home">
+        <img src="icon.svg" alt="" width="32" height="32" />
+        <span class="pixel">DIP_LAB</span>
+      </a>
+      <nav aria-label="Sections">
+        <ul class="nav-links">
+          <li><a href="#try">Try it</a></li>
+          <li><a href="#start">Get started</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#scenarios">Scenarios</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+      <div class="nav-cta">
+        <a class="gh" href="https://github.com/PrataapMS/dip-lab">
+          <span class="sr">Source code on GitHub</span>
+          <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
+        </a>
+        <a class="btn btn-sm" href="../">Play free <span aria-hidden="true">▶</span></a>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- HERO -->
+      <section class="hero" id="top">
+        <svg class="hero-chart" id="hero-chart" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="dot"></span> Free · offline · no sign-up</p>
+            <h1>
+              Live through the market's <span class="hl-down">worst days</span>.
+              <span class="hl-up">Then replay them.</span>
+            </h1>
+            <p class="lede">
+              Dip Lab hands you virtual cash and drops you into the 2008 crash, the COVID rebound or
+              the dot-com bubble. Trade 550+ real company names on a clock you control. When it ends,
+              replay the <em>exact same market</em> and see if you can do better.
+            </p>
+            <div class="hero-ctas">
+              <a class="btn btn-lg magnetic" href="../">
+                <span aria-hidden="true">▶</span> Start playing, it's free
+              </a>
+              <a class="btn btn-ghost btn-lg" href="#try">Try a 30-second demo</a>
+            </div>
+            <ul class="chips" aria-label="Highlights">
+              <li>550+ stocks</li>
+              <li>10 scenarios</li>
+              <li>replayable runs</li>
+              <li>works offline</li>
+              <li>no ads, no tracking</li>
+            </ul>
+          </div>
+          <div class="hero-visual">
+            <div class="phone tilt" id="hero-phone">
+              <img src="shots/home.png" alt="Dip Lab home screen: level, XP, a COVID crash run in progress, daily quests and badges" width="585" height="1266" fetchpriority="high" />
+            </div>
+            <div class="float f1" aria-hidden="true">
+              <span class="pixel small">grade</span>
+              <b class="pixel big up">A</b>
+            </div>
+            <div class="float f2" aria-hidden="true">
+              <span class="mono small dim">you vs SPY</span>
+              <b class="mono up">+54.2%</b><span class="mono dim">+12.4%</span>
+            </div>
+            <div class="float f3" aria-hidden="true">
+              <span class="pixel xp">+80 XP</span>
+            </div>
+            <div class="float f4" aria-hidden="true">
+              <span class="mono small">🔥 3 day streak</span>
+            </div>
+          </div>
+        </div>
+        <a class="scroll-hint" href="#stats"><span class="sr">Scroll down</span></a>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats" id="stats" aria-label="Dip Lab in numbers">
+        <div class="stat reveal"><b class="mono" data-count="558">0</b><span>stocks</span></div>
+        <div class="stat reveal"><b class="mono" data-count="15">0</b><span>ETFs</span></div>
+        <div class="stat reveal"><b class="mono" data-count="10">0</b><span>scenarios</span></div>
+        <div class="stat reveal"><b class="mono" data-count="12">0</b><span>lessons</span></div>
+        <div class="stat reveal"><b class="mono" data-count="24">0</b><span>badges</span></div>
+        <div class="stat reveal"><b class="mono up">$0</b><span>forever</span></div>
+      </section>
+
+      <!-- DEMO -->
+      <section class="section" id="try">
+        <div class="section-head reveal">
+          <p class="kicker">// try it right here</p>
+          <h2>Can you buy the dip?</h2>
+          <p>
+            A 220-day crash and rebound, squeezed into a few seconds. Press play, buy when you dare,
+            sell when you flinch. Then hit <b>Replay</b>: same seed, same market, only your choices
+            change. That's the whole idea of Dip Lab.
+          </p>
+        </div>
+
+        <div class="demo reveal" id="demo">
+          <div class="demo-top">
+            <div>
+              <p class="mono dim small">SPY · simulated crash and rebound · seed <span id="d-seed">2020</span></p>
+              <p class="demo-price">
+                <b class="mono" id="d-price">$100.00</b>
+                <span class="mono" id="d-change">+0.00%</span>
+              </p>
+            </div>
+            <div class="demo-day mono">
+              day <b id="d-day">0</b>/220
+            </div>
+          </div>
+
+          <div class="demo-chart">
+            <svg id="d-svg" viewBox="0 0 800 280" preserveAspectRatio="none" role="img" aria-label="Simulated price chart for the demo market"></svg>
+            <p class="demo-headline mono" id="d-headline" aria-live="polite"></p>
+          </div>
+
+          <div class="demo-controls">
+            <button class="btn btn-icon" id="d-play" type="button" aria-label="Play">
+              <span aria-hidden="true">▶</span>
+            </button>
+            <div class="speeds" role="group" aria-label="Clock speed">
+              <button type="button" class="speed" data-speed="1">1x</button>
+              <button type="button" class="speed on" data-speed="2">2x</button>
+              <button type="button" class="speed" data-speed="4">4x</button>
+              <button type="button" class="speed" data-speed="8">8x</button>
+            </div>
+            <button class="btn btn-trade" id="d-trade" type="button">Buy $10,000 of SPY</button>
+          </div>
+
+          <div class="demo-legend mono small">
+            <span><i class="sw sw-you"></i> your account</span>
+            <span><i class="sw sw-spy"></i> buy &amp; hold SPY</span>
+            <span><i class="mk up">▲</i> buy <i class="mk down">▼</i> sell</span>
+          </div>
+
+          <div class="demo-result" id="d-result" hidden>
+            <p class="pixel small dim">// run complete</p>
+            <div class="demo-scores">
+              <div class="score you">
+                <span class="mono small">you</span>
+                <b class="mono" id="r-you">+0.0%</b>
+              </div>
+              <div class="score">
+                <span class="mono small">buy &amp; hold SPY</span>
+                <b class="mono" id="r-spy">+0.0%</b>
+              </div>
+            </div>
+            <p id="r-msg"></p>
+            <div class="demo-actions">
+              <button class="btn" id="d-replay" type="button">↺ Replay same market</button>
+              <button class="btn btn-ghost" id="d-new" type="button">🎲 New market</button>
+              <a class="btn btn-ghost" href="../">Play the full game ▶</a>
+            </div>
+          </div>
+        </div>
+        <p class="fine center">Demo only. Prices are simulated, like everything in Dip Lab.</p>
+      </section>
+
+      <!-- GET STARTED -->
+      <section class="section" id="start">
+        <div class="section-head reveal">
+          <p class="kicker">// new to investing? start here</p>
+          <h2>Trading in under 60 seconds</h2>
+          <p>
+            No account, no download, no jargon. Six steps from "what's a stock?" to your first
+            report card.
+          </p>
+        </div>
+
+        <div class="steps">
+          <div class="steps-phone" aria-hidden="true">
+            <div class="phone">
+              <img id="step-img" src="shots/home.png" alt="" width="585" height="1266" loading="lazy" />
+            </div>
+            <div class="step-dots" id="step-dots"></div>
+          </div>
+
+          <ol class="step-list">
+            <li class="step" data-shot="home.png">
+              <span class="step-n pixel">01</span>
+              <div>
+                <h3>Open Dip Lab</h3>
+                <p>
+                  Tap <a href="../">Play</a>. It runs in your browser, so there's nothing to install
+                  and nobody to sign up with. Your progress stays on your device.
+                </p>
+                <p class="tip"><b>Tip:</b> the app walks you through your first trade the first time you open it.</p>
+                <img class="step-shot" src="shots/home.png" alt="Home screen with your level, the current run and daily quests" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+            <li class="step" data-shot="pick-run.png">
+              <span class="step-n pixel">02</span>
+              <div>
+                <h3>Pick your run</h3>
+                <p>
+                  Choose a market and your starting cash. <b>First steps</b> is a gentle three-month
+                  warm-up. Feeling brave? Try the <b>COVID crash</b>. Skull icons mark the boss runs.
+                </p>
+                <p class="tip"><b>Tip:</b> start with $10,000 and $0 fees. You can change both later.</p>
+                <img class="step-shot" src="shots/pick-run.png" alt="Pick your run: scenario cards with difficulty" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+            <li class="step" data-shot="market.png">
+              <span class="step-n pixel">03</span>
+              <div>
+                <h3>Find a company you know</h3>
+                <p>
+                  The Market tab lists 550+ well-known US companies and funds. Search for one you use
+                  every day (Apple, Nike, Netflix), or browse by sector and top movers. Star it to
+                  watch it.
+                </p>
+                <p class="tip"><b>Tip:</b> SPY is a fund that holds the 500 biggest US companies at once. It's the benchmark you're racing.</p>
+                <img class="step-shot" src="shots/market.png" alt="Market screen with indexes, sectors and a watchlist" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+            <li class="step" data-shot="order.png">
+              <span class="step-n pixel">04</span>
+              <div>
+                <h3>Buy in plain English</h3>
+                <p>
+                  Tap <b>Buy</b>, pick an amount, and read the preview: <span class="mono up">"Buy $500 of AAPL"</span>.
+                  A risk check tells you how much of your account the order puts on the line before you confirm.
+                </p>
+                <p class="tip"><b>Tip:</b> every order type has an "Explain like I'm new" note. Start with a market order.</p>
+                <img class="step-shot" src="shots/order.png" alt="Order sheet: buy $500 of AAPL with a preview and a risk check" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+            <li class="step" data-shot="portfolio.png">
+              <span class="step-n pixel">05</span>
+              <div>
+                <h3>Press play and watch</h3>
+                <p>
+                  The market clock starts ticking. Speed it up (1x to 8x), pause any time, or jump to
+                  the next earnings report. Your portfolio shows you against SPY, day by day.
+                </p>
+                <p class="tip"><b>Tip:</b> the game pauses at each close so you can take a breath and read the day's summary.</p>
+                <img class="step-shot" src="shots/portfolio.png" alt="Portfolio: account value, return and a you-vs-SPY chart" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+            <li class="step" data-shot="debrief.png">
+              <span class="step-n pixel">06</span>
+              <div>
+                <h3>Get graded, then replay</h3>
+                <p>
+                  At the end you get an honest debrief: did you beat simply holding SPY? You're
+                  graded A to F on return, risk and discipline. Then hit <b>Replay</b> and face the
+                  very same market again.
+                </p>
+                <p class="tip"><b>Tip:</b> the debrief flags the moments worth learning from. Jump straight back to one and try again.</p>
+                <img class="step-shot" src="shots/debrief.png" alt="Debrief: grade A, +54.2% against +12.4% for buy-and-hold SPY" width="585" height="1266" loading="lazy" />
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div class="center reveal">
+          <a class="btn btn-lg magnetic" href="../"><span aria-hidden="true">▶</span> Start step 1 now</a>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="section" id="features">
+        <div class="section-head reveal">
+          <p class="kicker">// what's inside</p>
+          <h2>A real-feeling market in your pocket</h2>
+          <p>Everything a beginner needs to learn by doing, and enough depth to keep you coming back.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card wide reveal">
+            <div class="card-icon">↺</div>
+            <h3>Replay any market</h3>
+            <p>
+              Every run comes from a seed. Same seed, same prices, same headlines, same earnings
+              surprises. Compare two strategies fairly, or rewind to the close before a flagged
+              moment and try again.
+            </p>
+            <div class="mini-replay" aria-hidden="true">
+              <svg viewBox="0 0 300 80" preserveAspectRatio="none" aria-hidden="true">
+                <polyline class="mr-mkt" points="0,30 30,26 60,38 90,62 120,70 150,55 180,48 210,40 240,30 270,22 300,14" />
+                <polyline class="mr-a" points="0,30 30,26 60,38 90,62 120,72 150,72 180,70 210,66 240,60 270,58 300,56" />
+                <polyline class="mr-b" points="0,30 30,26 60,38 90,62 120,70 150,48 180,38 210,28 240,16 270,8 300,4" />
+              </svg>
+              <div class="mono small"><span class="down">try 1: sold the bottom</span> · <span class="up">try 2: held on</span></div>
+            </div>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">⚡</div>
+            <h3>News that moves prices</h3>
+            <p>Quarterly earnings beats and misses, company news, scenario headlines and dividends that land in your cash.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">✍</div>
+            <h3>Orders in plain words</h3>
+            <p>Market, limit and stop orders, fractional shares, buy by dollars. Every order says exactly what it does.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">⏱</div>
+            <h3>You control time</h3>
+            <p>Real NYSE calendar, 5-minute bars, 1x to 8x speed, pause anywhere, or jump to the next event.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon grade-a pixel">A</div>
+            <h3>Graded on process</h3>
+            <p>Your grade blends return, risk and discipline. Lucky all-in bets don't get an A.</p>
+          </article>
+
+          <article class="card wide reveal">
+            <div class="card-icon">★</div>
+            <h3>Level up as you learn</h3>
+            <p>
+              XP, ranks, daily quests, streaks and 24 badges. Margin unlocks at level 4, short
+              selling at level 5. XP rewards good habits, not lucky bets.
+            </p>
+            <div class="xp-demo" aria-hidden="true">
+              <div class="xp-row mono small"><span class="xp">LV 3 · Chart reader</span><span class="dim">780 / 1,000 XP</span></div>
+              <div class="xp-bar"><span></span></div>
+              <div class="badges">
+                <span title="First trade">📈</span><span title="Diamond hands">💎</span><span title="Crash tested">🛡</span><span title="Dividend collector">💰</span><span class="locked">🔒</span><span class="locked">🔒</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">📚</div>
+            <h3>Learn as you go</h3>
+            <p>A guided first trade, 47 glossary cards on every term, 12 short lessons and 8 fixed-market challenges.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">🛡</div>
+            <h3>Risk check on every order</h3>
+            <p>Before you confirm, see how much of your account an order puts at risk. Big bets get a nudge.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">✈</div>
+            <h3>Works offline</h3>
+            <p>Install it like an app. After the first visit it needs no network at all, even on a plane.</p>
+          </article>
+
+          <article class="card reveal">
+            <div class="card-icon">🔒</div>
+            <h3>Private by design</h3>
+            <p>No accounts, no ads, no tracking. Runs save themselves on your device; back them up to a file any time.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- SCENARIOS -->
+      <section class="section" id="scenarios">
+        <div class="section-head reveal">
+          <p class="kicker">// choose your market</p>
+          <h2>Nine markets and one you design</h2>
+          <p>
+            Historical scenarios follow the shape of the real period (how far and how fast it fell,
+            when it bottomed). Every individual price is simulated.
+          </p>
+        </div>
+        <div class="scen-grid" id="scen-grid"></div>
+        <p class="fine center"><span class="down">💀</span> = boss run. Difficulty from <span class="pips"><i class="on"></i><i></i><i></i><i></i><i></i></span> to <span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></p>
+      </section>
+
+      <!-- GRADING -->
+      <section class="section grading" id="grading">
+        <div class="grading-inner">
+          <div class="reveal">
+            <p class="kicker">// how you're graded</p>
+            <h2>It's not just how much you made</h2>
+            <p>
+              Your grade rewards <b>how</b> you invested. Putting half your account in one stock caps
+              your grade, and so does sitting mostly in cash. Panic-selling near the bottom costs
+              points. Beating the index with sensible risk earns the A.
+            </p>
+          </div>
+          <div class="grade-bars reveal">
+            <div class="gb">
+              <div class="gb-top"><span>Performance</span><b class="mono">40%</b></div>
+              <div class="gb-bar"><span style="--w: 40%; --c: var(--accent)"></span></div>
+              <p class="small dim">Your return vs buy-and-hold SPY over the same days</p>
+            </div>
+            <div class="gb">
+              <div class="gb-top"><span>Risk</span><b class="mono">30%</b></div>
+              <div class="gb-bar"><span style="--w: 30%; --c: var(--xp)"></span></div>
+              <p class="small dim">Your worst drawdown compared with the market's</p>
+            </div>
+            <div class="gb">
+              <div class="gb-top"><span>Discipline</span><b class="mono">30%</b></div>
+              <div class="gb-bar"><span style="--w: 30%; --c: var(--warn)"></span></div>
+              <p class="small dim">Fees paid, panic sells near lows, concentration</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INSTALL -->
+      <section class="section" id="install">
+        <div class="section-head reveal">
+          <p class="kicker">// optional</p>
+          <h2>Install it like an app</h2>
+          <p>Dip Lab is a Progressive Web App. Add it to your home screen and it opens full screen, even offline.</p>
+        </div>
+        <div class="install reveal">
+          <div class="tabs" role="tablist" aria-label="Device">
+            <button type="button" role="tab" id="tab-ios" aria-controls="pane-ios" aria-selected="true">iPhone / iPad</button>
+            <button type="button" role="tab" id="tab-android" aria-controls="pane-android" aria-selected="false" tabindex="-1">Android</button>
+            <button type="button" role="tab" id="tab-desktop" aria-controls="pane-desktop" aria-selected="false" tabindex="-1">Desktop</button>
+          </div>
+          <div class="pane" role="tabpanel" id="pane-ios" aria-labelledby="tab-ios">
+            <ol class="install-steps">
+              <li><span class="ico">🧭</span><b>Open in Safari</b><span>Go to the <a href="../">game</a> in Safari.</span></li>
+              <li><span class="ico">⬆</span><b>Tap Share</b><span>The square with an arrow at the bottom of the screen.</span></li>
+              <li><span class="ico">＋</span><b>Add to Home Screen</b><span>Scroll down the share sheet and tap it, then <b>Add</b>.</span></li>
+            </ol>
+          </div>
+          <div class="pane" role="tabpanel" id="pane-android" aria-labelledby="tab-android" hidden>
+            <ol class="install-steps">
+              <li><span class="ico">🌐</span><b>Open in Chrome</b><span>Go to the <a href="../">game</a> in Chrome.</span></li>
+              <li><span class="ico">⋮</span><b>Open the menu</b><span>Tap the three dots at the top right.</span></li>
+              <li><span class="ico">📲</span><b>Install app</b><span>Or <b>Add to Home screen</b>, then confirm.</span></li>
+            </ol>
+          </div>
+          <div class="pane" role="tabpanel" id="pane-desktop" aria-labelledby="tab-desktop" hidden>
+            <ol class="install-steps">
+              <li><span class="ico">🖥</span><b>Open in Chrome or Edge</b><span>Go to the <a href="../">game</a>.</span></li>
+              <li><span class="ico">⊕</span><b>Click install</b><span>The install icon at the right of the address bar.</span></li>
+              <li><span class="ico">🚀</span><b>Launch it</b><span>Dip Lab opens in its own window, like any app.</span></li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="section" id="faq">
+        <div class="section-head reveal">
+          <p class="kicker">// questions</p>
+          <h2>Good to know</h2>
+        </div>
+        <div class="faq reveal">
+          <details>
+            <summary>Is this real market data?</summary>
+            <p>No. Every price comes from a simulation engine. Historical scenarios are shaped to follow the rough path of the real period, but individual stock prices, earnings results and news are simulated.</p>
+          </details>
+          <details>
+            <summary>Is this investment advice?</summary>
+            <p>No. Dip Lab is a learning game. It teaches how markets and orders behave, not what to buy.</p>
+          </details>
+          <details>
+            <summary>Do I need to know anything about stocks?</summary>
+            <p>Not at all. A guided first trade, plain-English orders and glossary cards on every term mean you learn while you play. Start with the <b>First steps</b> scenario.</p>
+          </details>
+          <details>
+            <summary>Do I need an account or an internet connection?</summary>
+            <p>No account, ever. You need a connection only for the first visit; after that the whole app, including all stock data, is stored on your device.</p>
+          </details>
+          <details>
+            <summary>Where is my data stored?</summary>
+            <p>Only on your device, in your browser's storage. Nothing is sent anywhere. Settings lets you export a run or back up everything to a file and import it on another device.</p>
+          </details>
+          <details>
+            <summary>Why does replay give me exactly the same market?</summary>
+            <p>Every run is built from a seed. The same seed always produces the same prices, headlines and earnings results, so you can compare strategies fairly or send a seed to a friend and race on the same market.</p>
+          </details>
+          <details>
+            <summary>Does it cost anything?</summary>
+            <p>No. Dip Lab is free and open-source software (GPL-3.0-or-later). No ads, no in-app purchases.</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- FINAL CTA -->
+      <section class="final" id="go">
+        <div class="final-inner reveal">
+          <img src="icon.svg" alt="" width="88" height="88" class="final-icon" />
+          <h2>Your first dip is waiting.</h2>
+          <p>Virtual cash, real lessons. Be trading in under a minute.</p>
+          <a class="btn btn-lg magnetic" href="../"><span aria-hidden="true">▶</span> Play Dip Lab</a>
+          <p class="fine">Psst: type <kbd>dip</kbd> anywhere on this page.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <a class="brand" href="#top"><img src="icon.svg" alt="" width="24" height="24" /><span class="pixel">DIP_LAB</span></a>
+        <ul>
+          <li><a href="../">Play</a></li>
+          <li><a href="https://github.com/PrataapMS/dip-lab">Source</a></li>
+          <li><a href="https://github.com/PrataapMS/dip-lab/blob/main/docs/ROADMAP.md">Roadmap</a></li>
+          <li><a href="https://github.com/PrataapMS/dip-lab/issues">Feedback</a></li>
+          <li><a href="https://github.com/PrataapMS/dip-lab/blob/main/LICENSE">GPL-3.0</a></li>
+        </ul>
+        <p class="fine">Prices are simulated. Nothing here is investment advice.</p>
+      </div>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+  </body>
+</html>
