@@ -200,4 +200,6 @@ export type WorkerEvent =
   | { type: 'alerts'; alerts: RunAlert[] }
   /** Orders that filled, expired or were rejected while the clock ran. */
   | { type: 'orderUpdates'; orders: Order[] }
+  /** A one-off message for the notice stack. */
+  | { type: 'notice'; ok: boolean; message: string }
   | { type: 'error'; message: string };

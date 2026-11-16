@@ -52,7 +52,9 @@ export function startPrice(seed: number, ticker: string): number {
 /** Instruments that existed when the scenario starts, plus its made-up stocks. */
 export function instrumentsFor(def: ScenarioDef, universe: readonly Instrument[]): Instrument[] {
   const startYear = Number(def.start.slice(0, 4));
-  const listed = universe.filter((i) => i.ipoYear <= startYear);
+  const listed = universe.filter(
+    (i) => i.ipoYear <= startYear && (i.delistYear === undefined || startYear < i.delistYear),
+  );
   const special: Instrument[] = (def.special ?? []).map((s) => ({
     ticker: s.ticker,
     name: s.name,

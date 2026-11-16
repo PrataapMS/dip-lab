@@ -140,6 +140,77 @@ export function checkSave(save: RunSave, market: BuiltMarket): void {
   });
 }
 
+/**
+ * Tickers whose first listing year was corrected after saves existed (1.0), so an older save of
+ * an early scenario can hold one its rebuilt market no longer lists.
+ */
+export const CORRECTED_LISTINGS: ReadonlySet<string> = new Set(['CZR', 'MARA', 'PWR', 'TDY']);
+
+/**
+ * The save with every position in a corrected ticker its market doesn't list closed at cost
+ * (cash back, no gain or loss) and its open orders cancelled, in the account and at every close.
+ * `dropped` names the ones the run held or had orders in at the save; the save is returned
+ * unchanged when nothing needed fixing.
+ */
+export function dropUnlisted(
+  save: RunSave,
+  market: BuiltMarket,
+): { save: RunSave; dropped: string[] } {
+  const listed = new Set(market.instruments.map((i) => i.ticker));
+  const gone = (t: string) => CORRECTED_LISTINGS.has(t) && !listed.has(t);
+  const prune = (positions: Record<string, Position>) => {
+    let refund = 0;
+    const kept: Record<string, Position> = {};
+    const out: string[] = [];
+    for (const [t, p] of Object.entries(positions)) {
+      if (gone(t)) {
+        out.push(t);
+        refund += p.costBasis;
+      } else kept[t] = p;
+    }
+    return { kept, refund, out };
+  };
+  const openIn = (orders: { ticker: string; status: string }[]) =>
+    orders.filter((o) => o.status === 'open' && gone(o.ticker)).map((o) => o.ticker);
+  const cancel = <T extends { ticker: string; status: string }>(orders: T[]): T[] =>
+    orders.map((o) => (o.status === 'open' && gone(o.ticker) ? { ...o, status: 'cancelled' } : o));
+  let changed = false;
+  // Closes that point at an earlier one share its positions, so they need the same refund.
+  const resolved: Record<string, Position>[] = [];
+  const snapshots = save.snapshots.map((s, i) => {
+    const positions = typeof s.positions === 'number' ? resolved[s.positions] : s.positions;
+    if (!positions) return s;
+    resolved[i] = positions;
+    const { kept, refund, out } = prune(positions);
+    if (!out.length && !openIn(s.openOrders).length) return s;
+    changed = true;
+    return {
+      ...s,
+      state: { ...s.state, cash: s.state.cash + refund },
+      positions: typeof s.positions === 'number' ? s.positions : kept,
+      openOrders: cancel(s.openOrders),
+    };
+  });
+  const account = save.account;
+  const now = prune(account.positions);
+  // Only what the run holds now is news to the player; older closes are fixed quietly.
+  const dropped = [...new Set([...now.out, ...openIn(account.orders)])].sort();
+  if (!changed && !dropped.length) return { save, dropped };
+  return {
+    save: {
+      ...save,
+      account: {
+        ...account,
+        cash: account.cash + now.refund,
+        positions: now.kept,
+        orders: cancel(account.orders),
+      },
+      snapshots,
+    },
+    dropped,
+  };
+}
+
 /** The run a save describes, on its rebuilt market, paused. Throws `SaveError`. */
 export function restoreRun(market: BuiltMarket, save: RunSave): Run {
   checkSave(save, market);

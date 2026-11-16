@@ -287,6 +287,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'exported':
     case 'imported':
       return state;
+    case 'notice':
+      return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
     case 'error':
       return { ...state, error: e.message, starting: false };
   }

@@ -25,6 +25,7 @@ describe('universe', () => {
       expect(Number.isInteger(i.ipoYear)).toBe(true);
       expect(i.ipoYear).toBeLessThanOrEqual(2026);
       expect(i.name.length).toBeGreaterThan(0);
+      if (i.delistYear !== undefined) expect(i.delistYear).toBeGreaterThan(i.ipoYear);
     }
   });
 
@@ -48,5 +49,8 @@ describe('universe', () => {
         etfs: [{ ticker: 'Y', name: 'Y', tracks: 'moon', ipoYear: 2000 }],
       }),
     ).toThrow(/tracks/);
+    expect(() => parseUniverse({ stocks: [{ ...row, delistYear: 1999 }], etfs: [] })).toThrow(
+      /delisted/,
+    );
   });
 });

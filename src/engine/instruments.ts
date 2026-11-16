@@ -8,6 +8,8 @@ export interface Instrument extends StockParams {
   divYield: number;
   /** First year it traded; it is hidden in scenarios that start earlier. */
   ipoYear: number;
+  /** Year it stopped trading (bought out or merged); it is hidden in scenarios from then on. */
+  delistYear?: number;
 }
 
 /** What an ETF follows. */

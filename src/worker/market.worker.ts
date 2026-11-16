@@ -12,7 +12,14 @@ import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { customScenario, getScenario } from '../engine/scenarios';
 import type { ScenarioInfo } from '../engine/protocol';
-import { encodeSnapshots, type RunSource, restoreRun, SaveError, saveRun } from '../engine/save';
+import {
+  dropUnlisted,
+  encodeSnapshots,
+  type RunSource,
+  restoreRun,
+  SaveError,
+  saveRun,
+} from '../engine/save';
 import { daySummary } from '../engine/summary';
 import { deleteSlot, readHeaders, readSlot, writeSlot } from '../storage/saves';
 import {
@@ -415,7 +422,8 @@ async function openSlot(s: number): Promise<void> {
   const body = await readSlot(s);
   if (!body) throw new Error('That save slot is empty.');
   const market = buildFor(body.header.config);
-  const r = restoreRun(market, body.save);
+  const { save, dropped } = dropUnlisted(body.save, market);
+  const r = restoreRun(market, save);
   stopLoop();
   generation++;
   slot = s;
@@ -423,6 +431,12 @@ async function openSlot(s: number): Promise<void> {
   savedCloses = body.save.snapshots.length;
   clearChunks = false;
   load(r, r.market.seed, true);
+  if (dropped.length) post({ type: 'notice', ok: false, message: unlistedMessage(dropped) });
+}
+
+/** Why positions in a corrected listing were closed when a save was opened. */
+function unlistedMessage(tickers: string[]): string {
+  return `${tickers.join(', ')} wasn't listed yet in this market, so it was closed at what you paid.`;
 }
 
 async function removeSlot(s: number): Promise<void> {
@@ -450,8 +464,13 @@ async function exportSlots(list: number[]): Promise<void> {
 /** Check a run from a file against its rebuilt market, then store it in a slot. */
 async function importRun(s: number, body: SlotBody): Promise<void> {
   if (!Number.isInteger(s) || s < 0 || s >= SLOTS) throw new Error('No such save slot.');
+  let dropped: string[] = [];
   try {
-    restoreRun(buildFor(body.header.config), body.save);
+    const market = buildFor(body.header.config);
+    const fixed = dropUnlisted(body.save, market);
+    restoreRun(market, fixed.save);
+    dropped = fixed.dropped;
+    body = { ...body, save: fixed.save };
   } catch (err) {
     if (err instanceof SaveError) throw err;
     throw new Error("This run is damaged and can't be opened.");
@@ -472,6 +491,7 @@ async function importRun(s: number, body: SlotBody): Promise<void> {
     throw new Error("Couldn't store the run on this device (storage is off or full).");
   headers[s] = header;
   post({ type: 'slots', headers: [...headers] });
+  if (dropped.length) post({ type: 'notice', ok: false, message: unlistedMessage(dropped) });
   post({ type: 'imported', slot: s });
 }
 

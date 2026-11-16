@@ -15,6 +15,7 @@ interface RawStock {
   vol: number;
   divYield: number;
   ipoYear: number;
+  delistYear?: number;
 }
 
 interface RawEtf {
@@ -39,6 +40,10 @@ export function parseUniverse(data: { stocks: RawStock[]; etfs: RawEtf[] }): Ins
     check(s.beta > 0 && s.beta < 4, `${s.ticker} beta out of range`);
     check(s.vol > 0.05 && s.vol < 2, `${s.ticker} vol out of range`);
     check(s.divYield >= 0 && s.divYield < 0.2, `${s.ticker} divYield out of range`);
+    check(
+      s.delistYear === undefined || s.delistYear > s.ipoYear,
+      `${s.ticker} delisted before it listed`,
+    );
     seen.add(s.ticker);
     out.push({
       ticker: s.ticker,
@@ -49,6 +54,7 @@ export function parseUniverse(data: { stocks: RawStock[]; etfs: RawEtf[] }): Ins
       vol: s.vol,
       divYield: s.divYield,
       ipoYear: s.ipoYear,
+      ...(s.delistYear !== undefined ? { delistYear: s.delistYear } : {}),
     });
   }
   for (const e of data.etfs) {

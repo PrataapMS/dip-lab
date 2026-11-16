@@ -6,7 +6,16 @@ import { BARS_PER_DAY } from './intraday';
 import { buildMarket } from './market';
 import type { OrderDraft } from './orders';
 import { Run } from './run';
-import { encodeSnapshots, type RunSave, restoreRun, SAVE_FORMAT, SaveError, saveRun } from './save';
+import {
+  checkSave,
+  dropUnlisted,
+  encodeSnapshots,
+  type RunSave,
+  restoreRun,
+  SAVE_FORMAT,
+  SaveError,
+  saveRun,
+} from './save';
 import { getScenario } from './scenarios';
 
 const first = buildMarket(getScenario('first-steps'), 7, UNIVERSE);
@@ -165,5 +174,43 @@ describe('run saves', () => {
     );
     expect(bad(() => {})).not.toThrow();
     expect(bad((s) => (s.format = 0))).toThrow(SaveError);
+  });
+
+  it('closes positions in a corrected listing at cost, everywhere', () => {
+    const good = saveRun(walk(fresh(), SCRIPT, 10, 5), SOURCE);
+    expect(dropUnlisted(good, first)).toEqual({ save: good, dropped: [] });
+    const old = viaJson(good);
+    const mara = { shares: 10, costBasis: 250 };
+    old.account.positions.MARA = mara;
+    old.account.orders.push({
+      ...(old.account.orders[0] as RunSave['account']['orders'][number]),
+      id: 99,
+      ticker: 'MARA',
+      status: 'open',
+    });
+    // Close 4 holds it; close 5 points back at close 4.
+    const s4 = old.snapshots[4] as RunSave['snapshots'][number];
+    s4.positions = { ...(s4.positions as Record<string, typeof mara>), MARA: mara };
+    (old.snapshots[5] as RunSave['snapshots'][number]).positions = 4;
+    // First steps lists MARA; an early scenario wouldn't.
+    const early = { ...first, instruments: first.instruments.filter((i) => i.ticker !== 'MARA') };
+    expect(() => checkSave(old, early)).toThrow(/MARA/);
+    expect(dropUnlisted(old, first).dropped).toEqual([]);
+    const { save, dropped } = dropUnlisted(old, early);
+    expect(dropped).toEqual(['MARA']);
+    expect(save.account.cash).toBeCloseTo(good.account.cash + 250, 6);
+    expect(save.account.positions.MARA).toBeUndefined();
+    expect(save.account.orders.find((o) => o.id === 99)?.status).toBe('cancelled');
+    for (const i of [4, 5])
+      expect(save.snapshots[i]?.state.cash).toBeCloseTo(
+        (old.snapshots[i]?.state.cash ?? 0) + 250,
+        6,
+      );
+    expect(save.snapshots[3]).toBe(old.snapshots[3]);
+    const run = restoreRun(first, save);
+    expect(run.snapshots[5]?.state.positions.MARA).toBeUndefined();
+    // Unknown tickers that were never corrected still fail.
+    old.account.positions.NOPE = mara;
+    expect(() => checkSave(dropUnlisted(old, early).save, early)).toThrow(/NOPE/);
   });
 });

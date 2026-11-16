@@ -21,6 +21,15 @@ describe('market', () => {
     expect(tickers('gfc-2008')).toContain('GOOGL');
     expect(tickers('gfc-2008')).not.toContain('XLRE');
     expect(tickers('meme-squeeze')).toContain('MOONR');
+    expect(tickers('gfc-2008')).not.toContain('MARA');
+    expect(tickers('long-bull')).not.toContain('CZR');
+  });
+
+  it('hides instruments from the year they stopped trading', () => {
+    const def = { ...getScenario('first-steps'), start: '2026-01-02' };
+    const inst = [...UNIVERSE.filter((i) => i.ticker === 'EA')];
+    expect(instrumentsFor({ ...def, start: '2025-06-02' }, inst)).toHaveLength(1);
+    expect(instrumentsFor(def, inst)).toHaveLength(0);
   });
 
   it('gives every instrument one close per day plus a start price', () => {
