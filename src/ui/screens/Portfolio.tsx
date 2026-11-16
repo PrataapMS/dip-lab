@@ -194,6 +194,23 @@ export function Portfolio({ market }: { market: Market }) {
           Costs so far: {money(a.spreadPaid, true)} in spreads, {money(a.feesPaid, true)} in fees.
         </p>
       </section>
+      {!view.finished && (
+        <section class="panel">
+          <h2 class="section">END THE RUN</h2>
+          <p class="small dim">
+            Stop here and see your debrief. Holdings are valued at today's prices and open orders are cancelled.
+          </p>
+          <button
+            type="button"
+            class="ghost danger"
+            onClick={() => {
+              if (confirm('End this run now and see your debrief?')) send({ type: 'end' });
+            }}
+          >
+            End run now
+          </button>
+        </section>
+      )}
     </>
   );
 }

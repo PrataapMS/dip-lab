@@ -3,7 +3,17 @@ import type { AccountSettings } from '../engine/account';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import type { Order } from '../engine/orders';
-import type { AccountView, Command, InstrumentInfo, NewsItem, ScenarioInfo, Upcoming, WorkerEvent } from '../engine/protocol';
+import type {
+  AccountView,
+  Command,
+  DaySummary,
+  EndReason,
+  InstrumentInfo,
+  NewsItem,
+  ScenarioInfo,
+  Upcoming,
+  WorkerEvent,
+} from '../engine/protocol';
 
 export interface Notice {
   id: number;
@@ -56,6 +66,10 @@ export interface MarketView {
   notices: Notice[];
   /** News feed, newest last. */
   news: NewsItem[];
+  endReason: EndReason | null;
+  pauseAtClose: boolean;
+  /** Summary of the latest close, until dismissed. */
+  daySummary: DaySummary | null;
 }
 
 const EMPTY = new Float32Array(0);
@@ -88,6 +102,9 @@ export const initialView: MarketView = {
   account: null,
   notices: [],
   news: [],
+  endReason: null,
+  pauseAtClose: false,
+  daySummary: null,
 };
 
 /** News lines kept for the feed. */
@@ -150,6 +167,8 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
         history,
         playing: e.playing,
         finished: e.finished,
+        endReason: e.endReason,
+        pauseAtClose: e.pauseAtClose,
         dayLengthMs: e.dayLengthMs,
       };
     }
@@ -167,6 +186,10 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
       return { ...state, notices: addNotices(state, [{ ok: e.ok, message: e.message }]) };
     case 'orderUpdates':
       return { ...state, notices: addNotices(state, e.orders.map(updateMessage)) };
+    case 'dayEnd':
+      return { ...state, daySummary: e.summary };
+    case 'ended':
+      return { ...state, endReason: e.reason, finished: true, playing: false };
     case 'error':
       return { ...state, error: e.message };
   }
@@ -195,8 +218,9 @@ export function useMarket() {
     },
     [send],
   );
+  const dismissSummary = useCallback(() => setView((s) => ({ ...s, daySummary: null })), []);
   const dismissNotice = useCallback((id: number) => setView((s) => ({ ...s, notices: s.notices.filter((n) => n.id !== id) })), []);
-  return { view, send, startRun, dismissNotice };
+  return { view, send, startRun, dismissNotice, dismissSummary };
 }
 
 export type Market = ReturnType<typeof useMarket>;

@@ -56,6 +56,29 @@ export interface AccountView {
 
 const RECENT_FILLS = 20;
 
+/** Why a run ended: its last day, the player pressed End, the account went bust, or hit its target. */
+export type EndReason = 'lastDay' | 'ended' | 'bust' | 'target';
+
+/** The run ends at a close when the account is worth this share of its start or less. */
+export const BUST_LINE = 0.1;
+
+/** Scenarios up to this many trading days pause at each close by default. */
+export const SHORT_RUN_DAYS = 70;
+
+export interface RunOptions {
+  /** Stop the clock at every close so the day summary can be read. */
+  pauseAtClose?: boolean;
+  /** End the run at a close once the account is up this much (e.g. 0.2 for +20%). */
+  targetReturn?: number;
+}
+
+/** How a close ends the run, if it does. */
+export function endAtClose(value: number, startingCash: number, targetReturn?: number): EndReason | null {
+  if (value <= startingCash * BUST_LINE) return 'bust';
+  if (targetReturn !== undefined && targetReturn > 0 && value >= startingCash * (1 + targetReturn)) return 'target';
+  return null;
+}
+
 /**
  * One play-through: a built market, the clock and the player's account. Every step of the
  * clock (each 5-minute bar, and the overnight move to the next open) runs the open orders
@@ -67,6 +90,9 @@ export class Run {
   readonly indexInstrument: number;
   clock: ClockState;
   account: AccountState;
+  pauseAtClose: boolean;
+  readonly targetReturn?: number;
+  endReason: EndReason | null = null;
   private bars: DayBars;
   private barsDay: number;
   private readonly tickerIndex: Map<string, number>;
@@ -75,8 +101,15 @@ export class Run {
   /** SPY with dividends reinvested is worth price × indexFactor[day]. */
   readonly indexFactor: Float64Array;
 
-  constructor(market: BuiltMarket, settings: AccountSettings = DEFAULT_ACCOUNT_SETTINGS, dayLengthMs = DEFAULT_DAY_LENGTH_MS) {
+  constructor(
+    market: BuiltMarket,
+    settings: AccountSettings = DEFAULT_ACCOUNT_SETTINGS,
+    dayLengthMs = DEFAULT_DAY_LENGTH_MS,
+    options: RunOptions = {},
+  ) {
     this.market = market;
+    this.pauseAtClose = options.pauseAtClose ?? market.dates.length <= SHORT_RUN_DAYS;
+    this.targetReturn = options.targetReturn;
     this.tickerIndex = new Map(market.instruments.map((inst, i) => [inst.ticker, i]));
     this.indexInstrument = this.tickerIndex.get('SPY') ?? -1;
     this.dividendsByDay = new Map();
@@ -96,8 +129,27 @@ export class Run {
     return { day: this.clock.day, bar: this.clock.bar };
   }
 
+  /** True once the run is over, for whatever reason. */
   get finished(): boolean {
-    return isFinished(this.clock);
+    return this.endReason !== null || isFinished(this.clock);
+  }
+
+  /**
+   * End the run now: stop the clock and cancel open orders. Holdings stay, valued at the
+   * current price. Returns the orders cancelled.
+   */
+  end(reason: EndReason = 'ended'): Order[] {
+    if (this.endReason) return [];
+    const cancelled: Order[] = [];
+    for (const o of this.account.orders) {
+      if (o.status !== 'open') continue;
+      const r = cancelOrder(this.account, o.id);
+      this.account = r.state;
+      if (r.order) cancelled.push(r.order);
+    }
+    this.endReason = reason;
+    this.clock = { ...this.clock, playing: false, carry: 0 };
+    return cancelled;
   }
 
   indexOf(ticker: string): number | undefined {
@@ -175,6 +227,7 @@ export class Run {
   }
 
   place(draft: OrderDraft): Order {
+    if (this.endReason) throw new Error('This run is over. Start a new one to keep trading.');
     const i = this.tickerIndex.get(draft.ticker);
     const quote = i === undefined ? undefined : { mid: this.mid(i), half: this.halfSpreadOf(i) };
     const r = placeOrder(this.account, draft, { at: this.at, quote });
@@ -189,7 +242,7 @@ export class Run {
   }
 
   play(playing: boolean): void {
-    this.clock = setPlaying(this.clock, playing);
+    this.clock = setPlaying(this.clock, playing && !this.endReason);
   }
 
   setDayLength(ms: number): void {
@@ -239,7 +292,12 @@ export class Run {
     if (at.bar === BARS_PER_DAY) {
       const e = expireDayOrders(this.account, at.day);
       changed.push(...e.changed);
-      this.account = recordClose(e.state, this.marks().value);
+      const value = this.marks().value;
+      this.account = recordClose(e.state, value);
+      const reason = endAtClose(value, this.account.settings.startingCash, this.targetReturn);
+      if (reason) changed.push(...this.end(reason));
+      else if (isFinished(this.clock)) this.endReason = 'lastDay';
+      else if (this.pauseAtClose) this.clock = { ...this.clock, playing: false, carry: 0 };
     }
     if (this.finished) this.clock = { ...this.clock, playing: false, carry: 0 };
     return changed;
@@ -249,8 +307,8 @@ export class Run {
   advance(elapsedMs: number): Order[] {
     const { steps, carry } = pendingSteps(this.clock, elapsedMs);
     const changed: Order[] = [];
-    for (let s = 0; s < steps && !this.finished; s++) changed.push(...this.step());
-    if (!this.finished) this.clock = { ...this.clock, carry };
+    for (let s = 0; s < steps && this.clock.playing && !this.finished; s++) changed.push(...this.step());
+    if (!this.finished && this.clock.playing) this.clock = { ...this.clock, carry };
     return changed;
   }
 

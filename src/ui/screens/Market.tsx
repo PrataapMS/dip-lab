@@ -3,6 +3,7 @@ import { BARS_PER_DAY, barTime } from '../../engine/intraday';
 import type { InstrumentInfo } from '../../engine/protocol';
 import { price, signedPct, upDown } from '../format';
 import { dayChange, defaultWatchlist, INDEX_TILES, inSector, searchInstruments, SECTOR_CHIPS, topMovers } from '../marketList';
+import { DayCard, RunOverCard } from '../DayCard';
 import { NewsList } from '../NewsList';
 import { formatRoute } from '../router';
 import { Sparkline } from '../Sparkline';
@@ -86,6 +87,8 @@ export function Market({ market }: { market: MarketApi }) {
 
   return (
     <>
+      <RunOverCard market={market} />
+      <DayCard market={market} />
       <div class="index-tiles">
         {INDEX_TILES.map(({ ticker, label }) => {
           const i = view.tickerIndex.get(ticker);

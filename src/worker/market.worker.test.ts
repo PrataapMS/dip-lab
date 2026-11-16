@@ -169,6 +169,21 @@ describe('market worker', () => {
     send({ type: 'inspect', ticker: null });
   });
 
+  it('summarises each close and ends the run on request', () => {
+    send({ type: 'newRun', scenarioId: 'first-steps', seed: 5 });
+    send({ type: 'stepDay' });
+    expect(last('dayEnd').summary.day).toBe(0);
+    expect(last('tick').pauseAtClose).toBe(true);
+    send({ type: 'pauseAtClose', on: false });
+    expect(last('tick').pauseAtClose).toBe(false);
+    send({ type: 'end' });
+    expect(last('ended').reason).toBe('ended');
+    expect(last('tick')).toMatchObject({ finished: true, endReason: 'ended' });
+    send({ type: 'placeOrder', draft: { ticker: 'KO', side: 'buy', type: 'market', amount: { kind: 'dollars', value: 10 } } });
+    expect(last('orderResult').ok).toBe(false);
+    expect(events.filter((e) => e.type === 'ended')).toHaveLength(1);
+  });
+
   it('reports errors instead of throwing', () => {
     send({ type: 'newRun', scenarioId: 'nope', seed: 1 });
     expect(last('error').message).toMatch(/Unknown scenario/);

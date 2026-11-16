@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { UNIVERSE } from '../data/universe';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
+import { BARS_PER_DAY } from '../engine/intraday';
 import { buildMarket } from '../engine/market';
 import { dividendItem, selectNews, tickerNews, upcomingFor } from '../engine/news';
 import { type Order, orderMessage } from '../engine/orders';
@@ -8,6 +9,7 @@ import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engi
 import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { getScenario } from '../engine/scenarios';
+import { daySummary } from '../engine/summary';
 
 /**
  * Runs the market off the main thread. Owns the real-time loop: it measures elapsed time,
@@ -30,6 +32,9 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let newsCursor = 0;
 /** Dividend payments already sent to the feed. */
 let dividendsSent = 0;
+/** Closes already summarised. */
+let closesSent = 0;
+let endSent = false;
 
 function post(event: WorkerEvent, transfer: Transferable[] = []): void {
   scope.postMessage(event, transfer);
@@ -125,12 +130,21 @@ function emitTick(): void {
       focus: inspected && focusIndex !== undefined ? { ticker: inspected, values: r.today(focusIndex) } : null,
       playing: r.clock.playing,
       finished: r.finished,
+      endReason: r.endReason,
+      pauseAtClose: r.pauseAtClose,
       dayLengthMs: r.clock.dayLengthMs,
     },
     [prices.buffer],
   );
   emitNews(r);
   post({ type: 'account', account: r.view() });
+  const closes = r.account.equityByDay.length;
+  if (closes > closesSent && r.clock.bar === BARS_PER_DAY) post({ type: 'dayEnd', summary: daySummary(r) });
+  closesSent = closes;
+  if (r.endReason && !endSent) {
+    endSent = true;
+    post({ type: 'ended', reason: r.endReason });
+  }
 }
 
 function emitUpdates(changed: Order[]): void {
@@ -173,10 +187,12 @@ function handle(cmd: Command): void {
       stopLoop();
       const def = getScenario(cmd.scenarioId);
       const market = buildMarket(def, cmd.seed, UNIVERSE);
-      run = new Run(market, cmd.settings, dayLengthMs);
+      run = new Run(market, cmd.settings, dayLengthMs, { targetReturn: cmd.targetReturn });
       postedDay = -1;
       newsCursor = 0;
       dividendsSent = 0;
+      closesSent = 0;
+      endSent = false;
       post({
         type: 'loaded',
         scenario: { id: def.id, name: def.name, teaches: def.teaches, fictional: def.fictional },
@@ -218,7 +234,22 @@ function handle(cmd: Command): void {
       emitUpdates(requireRun().stepDay());
       emitTick();
       return;
+    case 'end': {
+      const r = requireRun();
+      stopLoop();
+      emitUpdates(r.end('ended'));
+      emitTick();
+      return;
+    }
+    case 'pauseAtClose':
+      requireRun().pauseAtClose = cmd.on;
+      emitTick();
+      return;
     case 'placeOrder': {
+      if (requireRun().endReason) {
+        post({ type: 'orderResult', ok: false, order: null, message: 'This run is over. Start a new one to keep trading.' });
+        return;
+      }
       const order = requireRun().place(cmd.draft);
       post({ type: 'orderResult', ok: order.status !== 'rejected', order, message: orderMessage(order) });
       post({ type: 'account', account: requireRun().view() });

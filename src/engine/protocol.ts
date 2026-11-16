@@ -5,17 +5,30 @@
 import type { AccountSettings } from './account';
 import type { NewsItem, Upcoming } from './news';
 import type { Order, OrderDraft } from './orders';
-import type { AccountView } from './run';
+import type { AccountView, EndReason } from './run';
+import type { DaySummary } from './summary';
 
 export type { AccountView } from './run';
 export type { NewsItem, Upcoming } from './news';
+export type { EndReason } from './run';
+export type { DaySummary } from './summary';
 
 export type Command =
-  | { type: 'newRun'; scenarioId: string; seed: number; settings?: AccountSettings }
+  | {
+      type: 'newRun';
+      scenarioId: string;
+      seed: number;
+      settings?: AccountSettings;
+      /** End at a close once the account is up this much. */
+      targetReturn?: number;
+    }
   | { type: 'play' }
   | { type: 'pause' }
   | { type: 'speed'; dayLengthMs: number }
   | { type: 'stepDay' }
+  /** Finish the run now and go to the debrief. */
+  | { type: 'end' }
+  | { type: 'pauseAtClose'; on: boolean }
   | { type: 'placeOrder'; draft: OrderDraft }
   | { type: 'cancelOrder'; id: number }
   /** Tickers whose recent closes come with each `day` event (watchlist sparklines). */
@@ -86,8 +99,14 @@ export type WorkerEvent =
       focus: Series | null;
       playing: boolean;
       finished: boolean;
+      endReason: EndReason | null;
+      pauseAtClose: boolean;
       dayLengthMs: number;
     }
+  /** Sent at each close. */
+  | { type: 'dayEnd'; summary: DaySummary }
+  /** The run is over. */
+  | { type: 'ended'; reason: EndReason }
   | { type: 'account'; account: AccountView }
   | {
       type: 'history';
