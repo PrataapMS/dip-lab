@@ -67,6 +67,8 @@ export type WorkerEvent =
       indexHistory: number[];
       /** Recent closes (up to the previous close) for each watched ticker. */
       watch: Series[];
+      /** Annualised market volatility today; spreads widen when it is high. */
+      marketVol: number;
     }
   | {
       type: 'tick';

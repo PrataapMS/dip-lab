@@ -4,6 +4,7 @@ import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
 import { buildMarket } from '../engine/market';
 import { type Order, orderMessage } from '../engine/orders';
 import { type Command, type Series, SPARK_DAYS, type WorkerEvent } from '../engine/protocol';
+import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import { Run } from '../engine/run';
 import { getScenario } from '../engine/scenarios';
 
@@ -52,6 +53,7 @@ function dayPayload(r: Run): Extract<WorkerEvent, { type: 'day' }> {
     prevCloses: Float32Array.from(r.market.closes, (c) => c[day] ?? 0),
     indexHistory: r.indexInstrument < 0 ? [] : closesUpTo(r, r.indexInstrument, day, day + 1),
     watch: watchSeries(r, day),
+    marketVol: r.market.factors.vols[day] ?? REFERENCE_MARKET_VOL,
   };
 }
 

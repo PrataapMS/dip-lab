@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import type { AccountSettings } from '../engine/account';
 import { DEFAULT_DAY_LENGTH_MS } from '../engine/clock';
+import { REFERENCE_MARKET_VOL } from '../engine/regimes';
 import type { Order } from '../engine/orders';
 import type { AccountView, Command, InstrumentInfo, ScenarioInfo, WorkerEvent } from '../engine/protocol';
 
@@ -36,6 +37,8 @@ export interface MarketView {
   dayLengthMs: number;
   prices: Float32Array;
   prevCloses: Float32Array;
+  /** Today's annualised market volatility (sets the spread). */
+  marketVol: number;
   /** Market index closes up to yesterday. */
   indexHistory: number[];
   /** Market index price at each bar so far today. */
@@ -70,6 +73,7 @@ export const initialView: MarketView = {
   dayLengthMs: DEFAULT_DAY_LENGTH_MS,
   prices: EMPTY,
   prevCloses: EMPTY,
+  marketVol: REFERENCE_MARKET_VOL,
   indexHistory: [],
   indexToday: [],
   watch: {},
@@ -116,7 +120,7 @@ export function reduce(state: MarketView, e: WorkerEvent): MarketView {
     case 'day': {
       const watch: Record<string, number[]> = {};
       for (const s of e.watch) watch[s.ticker] = s.values;
-      return { ...state, day: e.day, prevCloses: e.prevCloses, indexHistory: e.indexHistory, watch };
+      return { ...state, day: e.day, prevCloses: e.prevCloses, indexHistory: e.indexHistory, watch, marketVol: e.marketVol };
     }
     case 'tick': {
       const history =

@@ -211,7 +211,7 @@ export function describeOrder(d: OrderDraft): string {
   const amount =
     d.amount.kind === 'dollars'
       ? `${money(d.amount.value)} of ${d.ticker}`
-      : `${Number(d.amount.value.toFixed(6))} ${d.amount.value === 1 ? 'share' : 'shares'} of ${d.ticker}`;
+      : `${Number(d.amount.value.toFixed(4))} ${d.amount.value === 1 ? 'share' : 'shares'} of ${d.ticker}`;
   const verb = d.side === 'buy' ? 'Buy' : 'Sell';
   switch (d.type) {
     case 'market':
@@ -226,7 +226,7 @@ export function describeOrder(d: OrderDraft): string {
 }
 
 function sharesWord(shares: number): string {
-  const n = Number(shares.toFixed(6));
+  const n = Number(shares.toFixed(4));
   return `${n} ${n === 1 ? 'share' : 'shares'}`;
 }
 

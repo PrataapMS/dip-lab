@@ -4,6 +4,7 @@ import { Home } from './ui/screens/Home';
 import { Learn } from './ui/screens/Learn';
 import { Market as MarketScreen } from './ui/screens/Market';
 import { Placeholder } from './ui/screens/Placeholder';
+import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
 import { type Market, useMarket } from './ui/useMarket';
 
@@ -27,7 +28,7 @@ function Screen({ route, market }: { route: Route; market: Market }) {
     case 'portfolio':
       return <Placeholder title="Portfolio" />;
     case 'stock':
-      return <Placeholder title={route.ticker} />;
+      return <Stock key={route.ticker} market={market} ticker={route.ticker} />;
   }
 }
 
