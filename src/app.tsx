@@ -12,6 +12,7 @@ import { Portfolio } from './ui/screens/Portfolio';
 import { newSeed, Scenarios } from './ui/screens/Scenarios';
 import { Stock } from './ui/screens/Stock';
 import { Notices, RunControls, TabBar, TopBar } from './ui/Shell';
+import { UpdateBanner } from './ui/UpdateBanner';
 import { type Market, useMarket } from './ui/useMarket';
 import { ProgressProvider } from './ui/useProgress';
 
@@ -89,6 +90,7 @@ export function App() {
           <TopBar view={view}>{route.name === 'market' && <RunControls market={market} />}</TopBar>
         )}
         <main class="screen">
+          <UpdateBanner hasRun={view.ready && !view.finished} />
           <Screen route={route} market={market} startTutorial={startTutorial} />
         </main>
         <Notices market={market} />

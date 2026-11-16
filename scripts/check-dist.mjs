@@ -9,7 +9,7 @@ const BUDGET = {
   totalKb: 1500, // everything in dist/
   jsGzipKb: 150, // all JavaScript, gzipped
 };
-const REQUIRED = ['index.html', 'sw.js', 'manifest.webmanifest', 'registerSW.js'];
+const REQUIRED = ['index.html', 'sw.js', 'manifest.webmanifest', 'sw-update.js'];
 
 function files(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>

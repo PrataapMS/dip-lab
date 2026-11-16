@@ -8,6 +8,7 @@ import { BadgeIcon, FlameIcon, GROUP_COLOR, LockIcon } from '../BadgeIcon';
 import { money, signedPct, upDown } from '../format';
 import { PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
+import { UpdateAlertsOptIn } from '../UpdateBanner';
 import type { Market } from '../useMarket';
 import { today, useProgress } from '../useProgress';
 
@@ -256,6 +257,7 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
         {hasRun ? <PlusIcon /> : <PlayIcon />} {hasRun ? 'Start a new run' : 'Pick your first run'}
       </a>
 
+      <UpdateAlertsOptIn />
       <p class="small dim">Prices are simulated. Nothing here is investment advice.</p>
     </>
   );

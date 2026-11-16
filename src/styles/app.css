@@ -1336,6 +1336,15 @@ button:disabled {
   background: var(--down);
 }
 
+.update-banner {
+  border-color: var(--accent);
+  gap: 8px;
+}
+
+.update-banner .row > button {
+  flex: 1;
+}
+
 .margin-banner {
   border-color: var(--down);
   gap: 4px;

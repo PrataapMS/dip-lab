@@ -14,7 +14,8 @@ export default defineConfig({
   plugins: [
     preact(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // A new version waits until the player taps "Update" (src/ui/UpdateBanner.tsx).
+      registerType: 'prompt',
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Dip Lab',
@@ -35,6 +36,10 @@ export default defineConfig({
       workbox: {
         // Precache everything the game needs so it runs with zero network after first load.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,bin}'],
+        // Update notifications and the background update check (public/sw-update.js).
+        importScripts: ['sw-update.js'],
+        // Control the first visit right away so it works offline without a reload.
+        clientsClaim: true,
       },
     }),
   ],
