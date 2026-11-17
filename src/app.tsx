@@ -3,6 +3,7 @@ import { latestUnfinished } from './storage/slots';
 import { DEFAULT_ACCOUNT_SETTINGS } from './engine/account';
 import { Coach } from './ui/Coach';
 import { ErrorScreen } from './ui/ErrorScreen';
+import { ExitSheet } from './ui/ExitSheet';
 import { HOME, type Route, useRoute } from './ui/router';
 import { navigate } from './ui/router';
 import { Badges } from './ui/screens/Badges';
@@ -142,6 +143,7 @@ export function App() {
         </main>
         <Notices market={market} />
         <SlotPicker market={market} />
+        <ExitSheet market={market} />
         {coaching && view.ready && (
           <Coach route={route} market={market} onClose={() => setCoaching(false)} />
         )}

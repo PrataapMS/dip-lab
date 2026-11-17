@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { type GlossaryEntry, glossaryEntry } from '../learn/glossary';
 import { trapTab, useReturnFocus } from './focus';
 import { CloseIcon } from './icons';
+import { useBackClose } from './router';
 import { useProgress } from './useProgress';
 
 /** The glossary card, as a small bottom sheet above everything else. */
 export function TermSheet({ entry, onClose }: { entry: GlossaryEntry; onClose: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
   useReturnFocus();
+  useBackClose(onClose);
   useEffect(() => {
     close.current?.focus();
   }, []);

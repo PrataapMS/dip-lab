@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { SLOTS, type SlotHeader, slotToReplace } from '../storage/slots';
 import { money, signedPct, upDown } from './format';
 import { CloseIcon } from './icons';
-import { navigate } from './router';
+import { navigate, useBackClose } from './router';
 import type { Market } from './useMarket';
 import { trapTab } from './focus';
 
@@ -108,6 +108,7 @@ export function SlotPicker({ market }: { market: Market }) {
   const slots = view.slots ?? [];
   const [picked, setPicked] = useState(() => slotToReplace(slots));
   const first = useRef<HTMLButtonElement>(null);
+  useBackClose(cancelSlotPick, !!pending);
   useEffect(() => {
     if (pending) setPicked(slotToReplace(slots));
     first.current?.focus();

@@ -8,6 +8,7 @@ import { orderXpHint } from '../game/hints';
 import { money, shares as fmtShares } from './format';
 import { cents, parseAmount, previewOrder, riskCheck } from './orderPreview';
 import { trapTab, useReturnFocus } from './focus';
+import { useBackClose } from './router';
 import { Term } from './Term';
 import type { Market } from './useMarket';
 import { today, useProgress } from './useProgress';
@@ -68,6 +69,7 @@ export function OrderSheet({ market, inst, initialSide, onClose }: Props) {
   const [explain, setExplain] = useState(false);
   const dialog = useRef<HTMLDivElement>(null);
   useReturnFocus();
+  useBackClose(onClose);
 
   // Pause while deciding; resume on close if the clock was running.
   useEffect(() => {
