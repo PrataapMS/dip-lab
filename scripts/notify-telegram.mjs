@@ -79,12 +79,28 @@ function message() {
 }
 
 async function send(text) {
-  const token = env('TELEGRAM_BOT_TOKEN');
-  const chatId = env('TELEGRAM_CHAT_ID');
+  // Tolerate stray whitespace and a pasted "bot" prefix (it belongs in the URL, not the token).
+  const token = env('TELEGRAM_BOT_TOKEN')
+    .trim()
+    .replace(/^bot(?=\d)/, '');
+  const chatId = env('TELEGRAM_CHAT_ID').trim();
   if (!token || !chatId) {
     console.warn('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set; skipping the notification.');
     console.info(text);
     return;
+  }
+  // Describe a malformed secret without printing it; Telegram only answers 404 for these.
+  if (!/^\d+:[\w-]+$/.test(token)) {
+    throw new Error(
+      'TELEGRAM_BOT_TOKEN is not a bot token: expected "<digits>:<letters>" as BotFather shows it ' +
+        `(got ${token.length} characters, ${token.includes(':') ? 'with' : 'no'} colon, ` +
+        `starts with ${/^\d/.test(token) ? 'a digit' : 'a non-digit'}).`,
+    );
+  }
+  if (!/^(-?\d+|@\w+)$/.test(chatId)) {
+    throw new Error(
+      `TELEGRAM_CHAT_ID is not a chat ID: expected a number such as 123456789 (got ${chatId.length} characters).`,
+    );
   }
   // Telegram rejects messages over 4096 characters. Cut on a line break so no HTML tag is split.
   let body = text;
