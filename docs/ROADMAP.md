@@ -33,6 +33,7 @@ Prices are simulated. Nothing here is investment advice.
 - XP, levels and ranks, earned from finished runs, quests and lessons.
 - Run grade (A to F) that rewards good process, not lucky all-in bets.
 - Daily quests, streaks and badges.
+- Streak reminders: an opt-in notification when a streak is about to end.
 - Replay a moment: jump back to the day of a mistake and try again.
 - Risk check on every order.
 

@@ -1,4 +1,5 @@
 import { SLOW_DAY_LENGTHS, SPEEDS } from '../engine/clock';
+import { DEFAULT_REMINDER_HOUR, REMINDER_HOURS } from './reminders';
 import { cleanWatchlist, DEFAULT_WATCHLIST } from './watchlist';
 
 /**
@@ -21,6 +22,12 @@ export interface Settings {
   installDismissed: boolean;
   /** The player's watchlist, the same in every run. */
   watchlist: string[];
+  /** Streak reminders as system notifications (off until the player turns them on). */
+  reminders: boolean;
+  /** Local hour for reminders, one of `REMINDER_HOURS`. */
+  reminderHour: number;
+  /** The Home card asking to turn reminders on was closed. */
+  reminderOfferDismissed: boolean;
 }
 
 export interface DayLength {
@@ -52,6 +59,9 @@ export function defaultSettings(): Settings {
     sound: true,
     installDismissed: false,
     watchlist: [...DEFAULT_WATCHLIST],
+    reminders: false,
+    reminderHour: DEFAULT_REMINDER_HOUR,
+    reminderOfferDismissed: false,
   };
 }
 
@@ -73,6 +83,11 @@ export function migrateSettings(saved: unknown): Settings {
     sound: typeof s.sound === 'boolean' ? s.sound : base.sound,
     installDismissed: s.installDismissed === true,
     watchlist: cleanWatchlist(s.watchlist) ?? base.watchlist,
+    reminders: s.reminders === true,
+    reminderHour: REMINDER_HOURS.some((h) => h.value === s.reminderHour)
+      ? (s.reminderHour as number)
+      : base.reminderHour,
+    reminderOfferDismissed: s.reminderOfferDismissed === true,
   };
 }
 

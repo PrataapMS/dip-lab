@@ -36,8 +36,9 @@ export default defineConfig({
       workbox: {
         // Precache everything the game needs so it runs with zero network after first load.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,bin}'],
-        // Update notifications and the background update check (public/sw-update.js).
-        importScripts: ['sw-update.js'],
+        // Update notifications and the background update check (public/sw-update.js);
+        // streak reminders (public/sw-reminders.js).
+        importScripts: ['sw-update.js', 'sw-reminders.js'],
         // Control the first visit right away so it works offline without a reload.
         clientsClaim: true,
         // The landing page (dist/welcome/, added by scripts/build-site.mjs) is a separate site.

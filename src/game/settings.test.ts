@@ -32,6 +32,20 @@ describe('settings', () => {
     expect(migrateSettings({ sound: true }).watchlist).toEqual(defaultSettings().watchlist);
     expect(migrateSettings({ watchlist: ['KO', 'KO', 'nope'] }).watchlist).toEqual(['KO']);
     expect(migrateSettings({ watchlist: [] }).watchlist).toEqual([]);
+    // Reminders stay off for older records; unknown hours fall back to 7 pm.
+    expect(migrateSettings({ sound: true })).toMatchObject({
+      reminders: false,
+      reminderHour: 19,
+      reminderOfferDismissed: false,
+    });
+    expect(migrateSettings({ reminders: true, reminderHour: 9 })).toMatchObject({
+      reminders: true,
+      reminderHour: 9,
+    });
+    expect(migrateSettings({ reminders: 'yes', reminderHour: 3 })).toMatchObject({
+      reminders: false,
+      reminderHour: 19,
+    });
   });
 
   it('offers every speed chip plus 5 min and real time', () => {

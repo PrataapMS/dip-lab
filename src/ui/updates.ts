@@ -36,20 +36,27 @@ interface PeriodicSync {
   register(tag: string, options: { minInterval: number }): Promise<void>;
 }
 
-/** Ask Chrome to wake the service worker daily; silently does nothing elsewhere. */
-export async function registerBackgroundCheck(reg: ServiceWorkerRegistration): Promise<void> {
+/** Ask Chrome to wake the service worker about every `minInterval` ms; does nothing elsewhere. */
+export async function registerPeriodic(
+  reg: ServiceWorkerRegistration,
+  tag: string,
+  minInterval: number,
+): Promise<void> {
   const sync = (reg as ServiceWorkerRegistration & { periodicSync?: PeriodicSync }).periodicSync;
   if (!sync || Notification.permission !== 'granted') return;
   try {
     const status = await navigator.permissions.query({
       name: 'periodic-background-sync' as PermissionName,
     });
-    if (status.state === 'granted') {
-      await sync.register(UPDATE_TAG, { minInterval: BACKGROUND_CHECK_MS });
-    }
+    if (status.state === 'granted') await sync.register(tag, { minInterval });
   } catch {
-    // Not supported or not allowed: the hourly in-app check still runs.
+    // Not supported or not allowed: checks made while the app is open still run.
   }
+}
+
+/** Ask Chrome to wake the service worker daily to look for a new version. */
+export function registerBackgroundCheck(reg: ServiceWorkerRegistration): Promise<void> {
+  return registerPeriodic(reg, UPDATE_TAG, BACKGROUND_CHECK_MS);
 }
 
 /** Ask for notification permission, then set up the background check. */

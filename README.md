@@ -111,8 +111,9 @@ flowchart LR
 | **Replay** | Rerun any market with the same seed, or jump back to the close before a flagged moment and try again. |
 | **Learn** | A guided first trade, glossary cards on every term, 12 short lessons and 8 fixed-market challenges. |
 | **Rewards** | XP, levels and ranks, daily quests, streaks and 24 badges. XP rewards good process, not lucky bets. |
+| **Streak reminders** | Opt-in notification at the hour you pick when your streak is about to end, at most two more if you miss days, then quiet. Planned on the device; no server. |
 | **Saves** | Runs save themselves in 3 slots and reopen where you left off. Export a run, or back up everything to a file and import it on another device. |
-| **Settings** | Player name, default speed, pause at each close, sound, storage used, reset progress. |
+| **Settings** | Player name, default speed, pause at each close, sound, streak reminders, storage used, reset progress. |
 | **Offline app** | Installable PWA. Fonts and data ship inside the app; no network calls at runtime. |
 
 See the full [roadmap](docs/ROADMAP.md).

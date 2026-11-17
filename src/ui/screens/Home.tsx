@@ -9,6 +9,7 @@ import { money, signedPct, upDown } from '../format';
 import { GearIcon, PlayIcon, PlusIcon } from '../icons';
 import { runChange, vsSpyText } from '../Shell';
 import { InstallCard } from '../InstallCard';
+import { ReminderOffer } from '../Reminders';
 import { SavedRuns } from '../Slots';
 import { UpdateAlertsOptIn } from '../UpdateBanner';
 import type { Market } from '../useMarket';
@@ -255,6 +256,7 @@ export function Home({ market, startTutorial }: { market: Market; startTutorial:
         </a>
       )}
 
+      <ReminderOffer streak={streak} />
       <InstallCard />
       <SavedRuns market={market} />
       <Quests />

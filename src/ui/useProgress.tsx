@@ -26,6 +26,7 @@ import { type Lesson, LESSONS } from '../learn/lessons';
 import { load, save } from '../storage/db';
 import { SLOTS } from '../storage/slots';
 import { cueFor, play, setSoundEnabled } from './sound';
+import { useReminders } from './streakReminders';
 import type { Market, MarketView } from './useMarket';
 
 const KEY = 'player';
@@ -130,6 +131,7 @@ export function ProgressProvider({
       return next;
     });
   }, []);
+  useReminders(progress?.streak, settings?.reminders, settings?.reminderHour);
   const soundOn = settings?.sound;
   useEffect(() => {
     if (soundOn !== undefined) setSoundEnabled(soundOn);

@@ -27,6 +27,7 @@ import {
 import { deliverFile } from '../files';
 import { InstallRow } from '../InstallCard';
 import { OFFLINE_TEXT, useOfflineStatus } from '../offline';
+import { ReminderSettings } from '../Reminders';
 import { play, setSoundEnabled, startAudio } from '../sound';
 import { navigate } from '../router';
 import { BackIcon } from '../icons';
@@ -499,6 +500,8 @@ export function Settings({ market }: { market: Market }) {
           }}
         />
       </section>
+
+      <ReminderSettings />
 
       <SavesAndData market={market} />
       <ResetProgress />

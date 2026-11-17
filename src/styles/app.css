@@ -1849,6 +1849,21 @@ button:disabled {
   margin: 0;
 }
 
+/* ---------- Streak reminders ---------- */
+.reminder-offer {
+  border-color: var(--warn);
+  gap: 8px;
+}
+
+.reminder-offer p,
+.reminder-offer h2 {
+  margin: 0;
+}
+
+.reminder-offer .row > button {
+  flex: 1;
+}
+
 /* ---------- Guided first trade ---------- */
 .welcome {
   border: 2px solid var(--accent);
